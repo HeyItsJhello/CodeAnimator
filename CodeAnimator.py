@@ -181,7 +181,7 @@ class CodeAnimation(Scene):
             temp_lines.append((line_num, content, line_group))
             max_line_width = max(max_line_width, line_group.width)
         
-        # Calculate width scaling factor if lines are too wid
+        # Calculate width scaling factor if lines are too wide
         # This will be applied to ALL lines to keep them consistent
         width_scale = 1.0
         if max_line_width > available_width:
