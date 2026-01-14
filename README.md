@@ -18,7 +18,7 @@ Create beautiful animated videos of your code with the use of Manim (A Python ba
 
 ## 🌐 Web Application (Recommended)
 
-- If you wish to use the program on your own device, follow the next steps: 
+- If you wish to use the website on your own device, follow the next steps: 
 
 ### Prerequisites
 
