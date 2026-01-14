@@ -206,7 +206,7 @@ function App() {
               <input
                 type="file"
                 id="file-upload"
-                accept=".py,.js,.jsx,.ts,.tsx,.java,.cpp,.c,.h,.go,.rs,.rb,.php,.swift,.kt"
+                accept=".py,.js,.jsx,.ts,.tsx,.java,.cpp,.c,.h,.go,.rs,.rb,.php,.swift,.kt,.gd"
                 onChange={handleFileUpload}
                 required
               />

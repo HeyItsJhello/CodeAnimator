@@ -4,7 +4,7 @@ FastAPI Backend for Code Animator
 Handles file uploads, configuration, and Manim rendering
 """
 
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pathlib import Path
@@ -83,12 +83,12 @@ async def create_animation(
         # Generate output filename
         output_name = f"{original_filename}_{start_line}-{end_line}"
 
-        # Run Manim to generate animation
+        # Run Manim to generate animation at 1080p60 ALWAYS
         print(f"Starting animation generation for {unique_filename}...")
         result = subprocess.run(
             [
                 "manim",
-                "-pql",
+                "-pqh",  # High quality: 1080p60
                 "--disable_caching",
                 "--flush_cache",
                 "-o", output_name,
@@ -108,30 +108,30 @@ async def create_animation(
             )
 
         # Find the generated video file
-        # Manim outputs to media/videos/CodeAnimator/{quality}/
-        video_search_path = BASE_DIR.parent / "media" / "videos" / "CodeAnimator" / "480p15"
+        # Manim outputs to media/videos/CodeAnimator/1080p60/ (ALWAYS)
         video_filename = f"{output_name}.mp4"
-        video_path = video_search_path / video_filename
+        video_path = BASE_DIR / "media" / "videos" / "CodeAnimator" / "1080p60" / video_filename
 
         if not video_path.exists():
-            # Try other quality folders
-            alt_paths = [
-                BASE_DIR.parent / "media" / "videos" / "CodeAnimator" / "720p30" / video_filename,
-                BASE_DIR.parent / "media" / "videos" / "CodeAnimator" / "1080p60" / video_filename,
-            ]
-            for alt_path in alt_paths:
-                if alt_path.exists():
-                    video_path = alt_path
-                    break
-            else:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Generated video not found at expected location: {video_path}"
-                )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Generated video not found at expected location: {video_path}"
+            )
 
         # Copy video to outputs directory
         output_video_path = OUTPUTS_DIR / f"{timestamp}_{video_filename}"
         shutil.copy(video_path, output_video_path)
+
+        # Clean up user's uploaded file immediately (PRIVACY)
+        if upload_path.exists():
+            upload_path.unlink()
+            print(f"Deleted uploaded file: {upload_path}")
+
+        # Clean up all generated media files (PRIVACY)
+        media_dir = BASE_DIR / "media"
+        if media_dir.exists():
+            shutil.rmtree(media_dir)
+            print(f"Cleaned up media directory: {media_dir}")
 
         print(f"Animation generated successfully: {output_video_path}")
 
@@ -152,14 +152,24 @@ async def create_animation(
 
 
 @app.get("/api/download/{video_id}")
-async def download_video(video_id: str):
+async def download_video(video_id: str, background_tasks: BackgroundTasks):
     """
-    Download the generated animation video
+    Download the generated animation video and delete it after sending (PRIVACY)
     """
     video_path = OUTPUTS_DIR / video_id
 
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Video not found")
+
+    # Delete ALL outputs after download completes (PRIVACY)
+    def cleanup_all_outputs():
+        for file in OUTPUTS_DIR.glob("*"):
+            if file.is_file():
+                file.unlink()
+                print(f"Deleted: {file}")
+        print("Cleaned all outputs directory after download")
+
+    background_tasks.add_task(cleanup_all_outputs)
 
     return FileResponse(
         path=video_path,
