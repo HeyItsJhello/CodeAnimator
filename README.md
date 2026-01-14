@@ -16,6 +16,12 @@ Create beautiful animated videos of your code with the use of Manim (A Python ba
 
 ---
 
+## Example 🎥
+
+https://github.com/user-attachments/assets/ed7b0d6c-e840-499b-a7b9-a5f8b1194bd0
+
+---
+
 ## 🌐 Web Application (Recommended)
 
 - If you wish to use the website on your own device, follow the next steps: 
@@ -57,6 +63,9 @@ npm run dev
 - Define animation groups (or press "Add Group" with empty input for all remaining lines)
 - Click "Generate Animation"
 - Your video downloads automatically!
+
+3.5. **EXAMPLE**:
+<img width="1773" height="1105" alt="Screenshot 2026-01-13 at 11 15 25 PM" src="https://github.com/user-attachments/assets/17c2e873-e9a0-4566-90ed-b6611202ba86" />
 
 ### Privacy & Security 🔒
 
@@ -145,6 +154,8 @@ manim -pqh --disable_caching --flush_cache -o example_6-20 CodeAnimator.py CodeA
 ```
 
 ### CLI Usage Examples 💡
+
+<img width="1191" height="596" alt="Screenshot 2026-01-13 at 11 16 48 PM" src="https://github.com/user-attachments/assets/e97c3201-86b2-411e-b9ad-2c8a139a9849" />
 
 **Example 1: Animate a function definition**
 ```
