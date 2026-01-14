@@ -2,6 +2,8 @@
 
 Create beautiful animated videos of your code with the use of Manim (A Python based Animation Library)! Available as both a **web application** and a **command-line tool**.
 
+This was originally created to help with some Godot / Xogot showcases for my code, editting line after line of code became tedious so I decided to learn MANIM to create this project for my exact needs.
+
 ## Features ✨
 
 - 🌐 **Web Interface**: Easy-to-use browser-based UI with live code preview
