@@ -4,6 +4,27 @@ Create beautiful animated videos of your code with the use of Manim (A Python ba
 
 This was originally created to help with some Godot / Xogot showcases for my code, editting line after line of code became tedious so I decided to learn MANIM to create this project for my exact needs.
 
+---
+
+## Getting Started 🚀
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/HeyItsJhello/CodeAnimator.git
+cd CodeAnimator
+```
+
+### 2. Choose Your Setup
+
+You can use Code Animator in two ways:
+- **Web Application** (Recommended) - Full-featured browser interface with live preview
+- **Command-Line Tool** - Traditional CLI for local use
+
+See the sections below for setup instructions for each option.
+
+---
+
 ## Features ✨
 
 - 🌐 **Web Interface**: Easy-to-use browser-based UI with live code preview
@@ -26,9 +47,9 @@ https://github.com/user-attachments/assets/ed7b0d6c-e840-499b-a7b9-a5f8b1194bd0
 
 ## 🌐 Web Application (Recommended)
 
-- If you wish to use the website on your own device, follow the next steps: 
-
 ### Prerequisites
+
+Make sure you have Node.js and Python installed on your system.
 
 **Backend:**
 ```bash
@@ -310,9 +331,54 @@ CodeAnimator/
 
 ---
 
-## License
+## License 📄
 
-Feel free to use and modify for your projects!
+This project is licensed under the **MIT License** - see below for details.
+
+### MIT License
+
+```
+MIT License
+
+Copyright (c) 2026 HeyItsJhello
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+**What this means:**
+- ✅ Free to use for any purpose (personal, commercial, educational)
+- ✅ Free to modify and distribute
+- ✅ Free to include in your own projects
+- ✅ No attribution required (but appreciated!)
+- ⚠️ No warranty provided
+
+---
+
+## Contributing 🤝
+
+Contributions are welcome! Feel free to:
+- Report bugs or issues
+- Suggest new features
+- Submit pull requests
+- Improve documentation
+
+Visit the [GitHub repository](https://github.com/HeyItsJhello/CodeAnimator) to contribute!
 
 ---
 

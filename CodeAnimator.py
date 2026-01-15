@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Interactive Code Animation Script with Manim
-Animates specific lines of code sliding in from the left
-"""
-
 from manim import *
 import sys
 import os

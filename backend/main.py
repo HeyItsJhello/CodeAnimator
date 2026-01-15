@@ -1,16 +1,9 @@
-#!/usr/bin/env python3
-"""
-FastAPI Backend for Code Animator
-Handles file uploads, configuration, and Manim rendering
-"""
-
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pathlib import Path
 import json
 import subprocess
-import os
 import shutil
 from datetime import datetime
 import threading
@@ -21,23 +14,20 @@ app = FastAPI(title="Code Animator API")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite dev server
+    allow_origins=["http://localhost:5173"],  # Where our frontend is yipeee
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Directories
 BASE_DIR = Path(__file__).parent
 UPLOADS_DIR = BASE_DIR / "uploads"
 OUTPUTS_DIR = BASE_DIR / "outputs"
 ANIMATOR_SCRIPT = BASE_DIR.parent / "CodeAnimator.py"
 
-# Create directories if they don't exist
 UPLOADS_DIR.mkdir(exist_ok=True)
 OUTPUTS_DIR.mkdir(exist_ok=True)
 
-# Progress tracking dictionary
 progress_tracking = {}
 
 
@@ -46,9 +36,9 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
     progress_tracking[task_id] = {"progress": 0, "status": "starting"}
 
     # Manim rendering phases:
-    # 1. SVG generation (~10-15% of time) - Creates .svg files
-    # 2. Frame rendering (~70-80% of time) - Creates .png frames in partial_movie_files
-    # 3. Video compilation (~10% of time) - Creates final .mp4
+    # 1. SVG generation 10%
+    # 2. Frame rendering 80%
+    # 3. Video compilation 10%
 
     last_file_count = 0
     svg_phase_complete = False

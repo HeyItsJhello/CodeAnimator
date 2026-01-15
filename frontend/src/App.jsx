@@ -22,7 +22,6 @@ function App() {
       setFile(uploadedFile)
       setFileName(uploadedFile.name)
 
-      // Read file to count lines and store content
       const reader = new FileReader()
       reader.onload = (event) => {
         const content = event.target.result
@@ -39,7 +38,6 @@ function App() {
 
   const addLineGroup = () => {
     if (!currentGroup.trim()) {
-      // Add "ALL_REMAINING" marker and mark only remaining lines as shown
       setLineGroups([...lineGroups, 'ALL_REMAINING'])
       const newShownLines = new Set(shownLines)
       // Only add lines that aren't already shown
