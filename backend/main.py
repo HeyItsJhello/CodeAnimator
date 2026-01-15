@@ -135,6 +135,7 @@ async def create_animation(
         end_line = config_data["endLine"]
         include_comments = config_data["includeComments"]
         line_groups = config_data["lineGroups"]
+        syntax_colors = config_data.get("syntaxColors", {})
 
         # Generate unique filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -155,6 +156,8 @@ async def create_animation(
             f.write(f"{start_line}\n")
             f.write(f"{end_line}\n")
             f.write(f"{include_comments}\n")
+            # Write syntax colors as JSON on line 5
+            f.write(f"{json.dumps(syntax_colors)}\n")
             for group in line_groups:
                 f.write(f"{group}\n")
 

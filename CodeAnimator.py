@@ -1,6 +1,7 @@
 from manim import *
 import sys
 import os
+import json
 from pygments import lex
 from pygments.lexers import get_lexer_for_filename, TextLexer
 from pygments.token import Token
@@ -25,6 +26,15 @@ class CodeAnimation(Scene):
         end_line = int(lines[2])
         include_comments = lines[3].lower() == "true"
 
+        # Parse custom syntax colors (line 5 is JSON)
+        custom_colors = {}
+        try:
+            custom_colors = json.loads(lines[4]) if len(lines) > 4 and lines[4].strip().startswith('{') else {}
+        except (json.JSONDecodeError, IndexError):
+            custom_colors = {}
+
+        print(f"DEBUG: Custom colors: {custom_colors}")
+
         # making the custom filename for the output, example_1-11.mp4
         base_filename = os.path.splitext(os.path.basename(script_path))[0]
         custom_name = f"{base_filename}_{start_line}-{end_line}"
@@ -35,14 +45,15 @@ class CodeAnimation(Scene):
             self.renderer.file_writer.output_name = custom_name
         except AttributeError:
             pass  # Manim is kind sucky sometimes
-        
+
         print(f"DEBUG: Script: {script_path}")
         print(f"DEBUG: Lines {start_line}-{end_line}")
         print(f"DEBUG: Include comments: {include_comments}")
-        
-        # Reading line groups
+
+        # Reading line groups (start from line 5 if no colors, or line 6 if colors present)
         line_groups = []
-        for i in range(4, len(lines)):
+        start_idx = 5 if custom_colors or (len(lines) > 4 and lines[4].strip().startswith('{')) else 4
+        for i in range(start_idx, len(lines)):
             if lines[i].strip():
                 if lines[i].strip() == "ALL_REMAINING":
                     line_groups.append("ALL_REMAINING")
@@ -152,29 +163,104 @@ class CodeAnimation(Scene):
                 base_font_size = max(MIN_FONT_SIZE, min(MAX_FONT_SIZE, base_font_size))
                 print(f"INFO: Scaling content to fit ({num_lines} lines, scale factor: {scale_to_fit:.2f})")
         
+        # Get colors from custom config or use defaults
+        # Custom colors use hex format (#RRGGBB), convert to Manim colors
+        color_keywords = custom_colors.get('keywords', '#9b59b6')  # PURPLE
+        color_types = custom_colors.get('types', '#3498db')        # BLUE
+        color_functions = custom_colors.get('functions', '#3498db')  # BLUE
+        color_strings = custom_colors.get('strings', '#2ecc71')    # GREEN
+        color_numbers = custom_colors.get('numbers', '#e67e22')    # ORANGE
+        color_comments = custom_colors.get('comments', '#7f8c8d')  # GRAY
+        color_decorators = custom_colors.get('decorators', '#f1c40f')  # YELLOW
+        color_default = custom_colors.get('default', '#ffffff')    # WHITE
+
         # Token type to color mapping for Pygments
+        # More specific types should come first to match correctly
         TOKEN_COLORS = {
-            Token.Keyword: PURPLE,
-            Token.Keyword.Namespace: BLUE,
-            Token.Keyword.Type: BLUE,
-            Token.Name.Builtin: BLUE,
-            Token.Name.Function: BLUE,
-            Token.String: GREEN,
-            Token.String.Single: GREEN,
-            Token.String.Double: GREEN,
-            Token.Number: ORANGE,
-            Token.Number.Integer: ORANGE,
-            Token.Number.Float: ORANGE,
-            Token.Comment: GRAY,
-            Token.Comment.Single: GRAY,
-            Token.Comment.Multiline: GRAY,
+            # Comments (all types)
+            Token.Comment.Multiline: color_comments,
+            Token.Comment.Single: color_comments,
+            Token.Comment.Special: color_comments,
+            Token.Comment.Preproc: color_comments,
+            Token.Comment.PreprocFile: color_comments,
+            Token.Comment: color_comments,
+            # Keywords
+            Token.Keyword.Namespace: color_types,
+            Token.Keyword.Type: color_types,
+            Token.Keyword.Constant: color_keywords,
+            Token.Keyword.Declaration: color_keywords,
+            Token.Keyword.Pseudo: color_keywords,
+            Token.Keyword.Reserved: color_keywords,
+            Token.Keyword: color_keywords,
+            # Names/Identifiers
+            Token.Name.Builtin: color_types,
+            Token.Name.Builtin.Pseudo: color_types,
+            Token.Name.Function: color_functions,
+            Token.Name.Function.Magic: color_functions,
+            Token.Name.Class: color_types,
+            Token.Name.Decorator: color_decorators,
+            Token.Name.Constant: color_numbers,
+            # Strings
+            Token.String.Doc: color_strings,
+            Token.String.Single: color_strings,
+            Token.String.Double: color_strings,
+            Token.String.Escape: color_decorators,
+            Token.String.Interpol: color_decorators,
+            Token.String.Regex: color_strings,
+            Token.String.Char: color_strings,
+            Token.String: color_strings,
+            Token.Literal.String: color_strings,
+            Token.Literal.String.Doc: color_strings,
+            # Numbers
+            Token.Number.Integer: color_numbers,
+            Token.Number.Float: color_numbers,
+            Token.Number.Hex: color_numbers,
+            Token.Number.Oct: color_numbers,
+            Token.Number.Bin: color_numbers,
+            Token.Number: color_numbers,
+            Token.Literal.Number: color_numbers,
+            # Operators
+            Token.Operator.Word: color_keywords,
+            # Preprocessor (C/C++)
+            Token.Comment.Preproc: color_keywords,
         }
+
+        # Default text color
+        DEFAULT_COLOR = color_default
 
         # Get appropriate lexer for the file
         try:
             lexer = get_lexer_for_filename(script_path)
         except:
             lexer = TextLexer()
+
+        # For accurate multi-line comment handling, tokenize the entire visible code block
+        # This allows Pygments to correctly identify comment spans
+        full_code_text = '\n'.join([content for _, content in filtered_lines])
+        full_tokens = list(lex(full_code_text, lexer))
+
+        # Build a map of (line_index, char_index) -> color for accurate highlighting
+        # This handles multi-line comments correctly
+        color_map = {}  # (line_idx, char_idx) -> color
+        current_line = 0
+        current_char = 0
+
+        for token_type, token_value in full_tokens:
+            # Determine color for this token
+            token_color = DEFAULT_COLOR
+            for ttype, tcolor in TOKEN_COLORS.items():
+                if token_type in ttype:
+                    token_color = tcolor
+                    break
+
+            # Map each character in the token to its color
+            for char in token_value:
+                if char == '\n':
+                    current_line += 1
+                    current_char = 0
+                else:
+                    color_map[(current_line, current_char)] = token_color
+                    current_char += 1
 
         # First pass: create all lines to measure max width
         temp_lines = []
@@ -188,10 +274,10 @@ class CodeAnimation(Scene):
                 full_line,
                 font="Monospace",
                 font_size=base_font_size,
-                color=WHITE,
+                color=DEFAULT_COLOR,
                 disable_ligatures=True,
             )
-            
+
             temp_lines.append((line_num, content, line_group))
             max_line_width = max(max_line_width, line_group.width)
         
@@ -220,7 +306,7 @@ class CodeAnimation(Scene):
             y_start = (total_height / 2) - (line_height / 2)
 
         # Second pass: create final lines with correct sizing and coloring
-        for line_num, content in filtered_lines:
+        for line_idx, (line_num, content) in enumerate(filtered_lines):
             # Replace tabs with 4 spaces for consistent rendering
             content_display = content.replace('\t', '    ')
 
@@ -232,35 +318,35 @@ class CodeAnimation(Scene):
                 full_line,
                 font="Monospace",
                 font_size=base_font_size,
-                color=WHITE,
+                color=DEFAULT_COLOR,
                 disable_ligatures=True,
             )
 
-            # Use Pygments for syntax highlighting - O(n) complexity
-            tokens = list(lex(content_display, lexer))
-
-            # Apply syntax coloring by character indices
+            # Apply syntax coloring using the pre-computed color_map
             # Start at index 5 to skip line number prefix "XXX  "
-            char_idx = 5
+            # The color_map was built from content without tab expansion,
+            # so we need to track both original and display positions
+            display_char_idx = 5  # Position in the Text object (after line number)
+            original_char_idx = 0  # Position in original content
 
-            for token_type, token_value in tokens:
-                token_length = len(token_value)
-
-                # Get color for this token type
-                color = WHITE
-                for ttype, tcolor in TOKEN_COLORS.items():
-                    if token_type in ttype:
-                        color = tcolor
-                        break
-
-                # Color each character in the token
-                for i in range(char_idx, char_idx + token_length):
+            for orig_char in content:
+                if orig_char == '\t':
+                    # Tab expands to 4 spaces, all get the same color
+                    color = color_map.get((line_idx, original_char_idx), DEFAULT_COLOR)
+                    for _ in range(4):
+                        try:
+                            line_group[display_char_idx].set_color(color)
+                        except:
+                            pass
+                        display_char_idx += 1
+                else:
+                    color = color_map.get((line_idx, original_char_idx), DEFAULT_COLOR)
                     try:
-                        line_group[i].set_color(color)
+                        line_group[display_char_idx].set_color(color)
                     except:
                         pass
-
-                char_idx += token_length
+                    display_char_idx += 1
+                original_char_idx += 1
 
             # Calculate position within chunk for this line
             # In chunking mode, position is relative to chunk, not absolute
