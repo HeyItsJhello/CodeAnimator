@@ -6,6 +6,15 @@ This was originally created to help with some Godot / Xogot showcases for my cod
 
 ---
 
+![Python](https://img.shields.io/badge/python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Manim](https://img.shields.io/badge/Manim-orange?style=for-the-badge)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+![GitHub Stars](https://img.shields.io/github/stars/HeyItsJhello/CodeAnimator?style=for-the-badge)
+
+---
 ## Getting Started 🚀
 
 ### 1. Clone the Repository
