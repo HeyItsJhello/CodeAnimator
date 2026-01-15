@@ -15,6 +15,8 @@ function App() {
   const [shownLines, setShownLines] = useState(new Set())
   const [isLoading, setIsLoading] = useState(false)
   const [loadingProgress, setLoadingProgress] = useState(0)
+  const [showSplitModal, setShowSplitModal] = useState(false)
+  const [splitLineInput, setSplitLineInput] = useState('')
 
   const handleFileUpload = (e) => {
     const uploadedFile = e.target.files[0]
@@ -90,6 +92,8 @@ function App() {
     newGroups.forEach(g => {
       if (Array.isArray(g)) {
         g.forEach(line => newShownLines.add(line))
+      } else if (typeof g === 'object' && g.type === 'SPLIT') {
+        newShownLines.add(g.line)
       }
     })
 
@@ -102,6 +106,33 @@ function App() {
     }
 
     setShownLines(newShownLines)
+  }
+
+  const addSplit = () => {
+    const lineNum = parseInt(splitLineInput)
+
+    if (isNaN(lineNum)) {
+      alert('Please enter a valid line number')
+      return
+    }
+
+    if (lineNum < startLine || lineNum > endLine) {
+      alert(`Line ${lineNum} is outside range [${startLine}, ${endLine}]`)
+      return
+    }
+
+    if (shownLines.has(lineNum)) {
+      alert(`Line ${lineNum} has already been shown`)
+      return
+    }
+
+    // Add the SPLIT group
+    setLineGroups([...lineGroups, { type: 'SPLIT', line: lineNum }])
+    const newShownLines = new Set(shownLines)
+    newShownLines.add(lineNum)
+    setShownLines(newShownLines)
+    setSplitLineInput('')
+    setShowSplitModal(false)
   }
 
   const handleSubmit = async (e) => {
@@ -123,9 +154,11 @@ function App() {
       startLine,
       endLine,
       includeComments,
-      lineGroups: lineGroups.map(group =>
-        group === 'ALL_REMAINING' ? 'ALL_REMAINING' : group.join(' ')
-      )
+      lineGroups: lineGroups.map(group => {
+        if (group === 'ALL_REMAINING') return 'ALL_REMAINING'
+        if (typeof group === 'object' && group.type === 'SPLIT') return `SPLIT ${group.line}`
+        return group.join(' ')
+      })
     }
 
     // Create FormData to send file and config
@@ -377,6 +410,9 @@ function App() {
                   <button type="button" onClick={addLineGroup} className="btn-add">
                     Add Group
                   </button>
+                  <button type="button" onClick={() => setShowSplitModal(true)} className="btn-split">
+                    Split
+                  </button>
                 </div>
 
                 <AnimatePresence>
@@ -401,9 +437,11 @@ function App() {
                         layout
                       >
                         <span className="group-number">Group {index + 1}:</span>
-                        <span className="group-lines">
+                        <span className={`group-lines ${typeof group === 'object' && group.type === 'SPLIT' ? 'split-group' : ''}`}>
                           {group === 'ALL_REMAINING'
                             ? 'All remaining lines'
+                            : typeof group === 'object' && group.type === 'SPLIT'
+                            ? `SPLIT at line ${group.line}`
                             : `Lines ${group.join(', ')}`}
                         </span>
                         <button
@@ -517,6 +555,65 @@ function App() {
                 >
                   {Math.round(loadingProgress)}%
                 </motion.span>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+      </AnimatePresence>
+
+      {/* Split Modal */}
+      <AnimatePresence>
+      {showSplitModal && (
+        <motion.div
+          className="loading-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={() => setShowSplitModal(false)}
+        >
+          <motion.div
+            className="split-modal"
+            initial={{ scale: 0.8, opacity: 0, y: -50 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: -50 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="split-header">
+              <span className="split-title">Add Split Point</span>
+              <button className="btn-close" onClick={() => setShowSplitModal(false)}>✕</button>
+            </div>
+            <div className="split-body">
+              <p className="split-description">
+                Where would you like to split? This will scroll the current content off screen and start fresh with the specified line at the top.
+              </p>
+              <div className="split-input-group">
+                <label htmlFor="split-line">Start next section at line:</label>
+                <input
+                  type="number"
+                  id="split-line"
+                  min={startLine}
+                  max={endLine}
+                  value={splitLineInput}
+                  onChange={(e) => setSplitLineInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addSplit()
+                    }
+                  }}
+                  autoFocus
+                />
+              </div>
+              <div className="split-buttons">
+                <button type="button" className="btn-cancel" onClick={() => setShowSplitModal(false)}>
+                  Cancel
+                </button>
+                <button type="button" className="btn-confirm" onClick={addSplit}>
+                  Add Split
+                </button>
               </div>
             </div>
           </motion.div>

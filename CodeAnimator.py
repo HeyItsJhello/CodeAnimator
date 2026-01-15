@@ -46,6 +46,10 @@ class CodeAnimation(Scene):
             if lines[i].strip():
                 if lines[i].strip() == "ALL_REMAINING":
                     line_groups.append("ALL_REMAINING")
+                elif lines[i].strip().startswith("SPLIT "):
+                    # SPLIT X means: scroll current content, then start fresh with line X at top
+                    split_line = int(lines[i].strip().split()[1])
+                    line_groups.append(("SPLIT", split_line))
                 else:
                     group = [int(x) for x in lines[i].split()]
                     line_groups.append(group)
@@ -120,17 +124,33 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Available height: {available_height:.3f}")
 
         # Calculate if we need to chunk the content
+        # Only enable chunking if content is significantly larger than available space
+        # Otherwise, scale everything down to fit without scrolling
         enable_chunking = False
         chunk_size = 0
+        lines_that_fit = int(available_height / MIN_LINE_HEIGHT)
+
+        # Calculate the scale factor needed to fit all lines
+        # If we can fit by scaling down reasonably, do that instead of chunking
         if total_height > available_height:
-            lines_that_fit = int(available_height / MIN_LINE_HEIGHT)
-            enable_chunking = True
-            chunk_size = lines_that_fit
-            print(f"INFO: {num_lines} lines will be displayed in chunks of {chunk_size}")
-            print(f"INFO: Content will scroll up between chunks for better readability")
-            # Use minimum settings for chunked display
-            line_height = MIN_LINE_HEIGHT
-            base_font_size = MIN_FONT_SIZE
+            scale_to_fit = available_height / total_height
+
+            # Only enable chunking if we'd need to scale below ~60% (i.e., more than ~1.67x the space)
+            # or if we have significantly more lines than can fit
+            if num_lines > lines_that_fit * 1.5:
+                enable_chunking = True
+                chunk_size = lines_that_fit
+                print(f"INFO: {num_lines} lines will be displayed in chunks of {chunk_size}")
+                print(f"INFO: Content will scroll up between chunks for better readability")
+                # Use minimum settings for chunked display
+                line_height = MIN_LINE_HEIGHT
+                base_font_size = MIN_FONT_SIZE
+            else:
+                # Scale down to fit without chunking
+                line_height = available_height / num_lines
+                base_font_size = int(line_height * 45)
+                base_font_size = max(MIN_FONT_SIZE, min(MAX_FONT_SIZE, base_font_size))
+                print(f"INFO: Scaling content to fit ({num_lines} lines, scale factor: {scale_to_fit:.2f})")
         
         # Token type to color mapping for Pygments
         TOKEN_COLORS = {
@@ -280,6 +300,14 @@ class CodeAnimation(Scene):
         if enable_chunking:
             # Chunked display mode - show lines in chunks, scrolling up between chunks
             currently_visible = []  # Track which line objects are currently visible on screen
+            current_visible_count = 0  # Track how many lines are currently visible
+
+            # Helper function to calculate position for a line within the current visible chunk
+            def get_chunk_position(slot_index):
+                """Calculate Y position for a line at the given slot index (0 = top of visible area)"""
+                chunk_height = chunk_size * line_height
+                y_start_chunk = (chunk_height / 2) - (line_height / 2)
+                return y_start_chunk - (slot_index * line_height)
 
             for group in line_groups:
                 if group == "ALL_REMAINING":
@@ -291,29 +319,73 @@ class CodeAnimation(Scene):
 
                     # Process remaining lines in chunks
                     while remaining_indices:
-                        chunk = remaining_indices[:chunk_size]
-                        remaining_indices = remaining_indices[chunk_size:]
+                        # How many slots are available in the current visible area?
+                        available_slots = chunk_size - current_visible_count
 
-                        # Check if we need to scroll (if we've already shown a full chunk)
-                        if len(currently_visible) >= chunk_size:
-                            # Scroll only the currently visible lines up and off screen
+                        if available_slots <= 0:
+                            # Need to scroll - no room left
                             scroll_animations = []
                             for line_obj in currently_visible:
                                 scroll_animations.append(line_obj.animate.shift(UP * (available_height + 1)))
                             self.play(*scroll_animations, run_time=0.8)
                             currently_visible.clear()
+                            current_visible_count = 0
+                            available_slots = chunk_size
 
-                        # Slide in the new chunk
+                        # Take as many lines as will fit
+                        chunk = remaining_indices[:available_slots]
+                        remaining_indices = remaining_indices[available_slots:]
+
+                        # Slide in the new chunk from the left
                         animations = []
                         for idx, line_num in chunk:
-                            line_obj, final_pos = line_mobjects[idx]
-                            animations.append(line_obj.animate.move_to(final_pos))
+                            line_obj, _ = line_mobjects[idx]
+                            # Position at the next available slot
+                            slot_y = get_chunk_position(current_visible_count)
+                            # Get x position from original final_pos
+                            _, original_final_pos = line_mobjects[idx]
+                            target_pos = [original_final_pos[0], slot_y, 0]
+                            # First, move to correct Y position while staying off-screen left
+                            line_obj.move_to([-(config.frame_width + 2), slot_y, 0])
+                            # Then animate sliding in from left
+                            animations.append(line_obj.animate.move_to(target_pos))
                             shown_lines.add(line_num)
                             currently_visible.append(line_obj)
+                            current_visible_count += 1
 
                         if animations:
                             self.play(*animations, run_time=0.6)
                             self.wait(1.5)  # Increased pause to view code
+
+                elif isinstance(group, tuple) and group[0] == "SPLIT":
+                    # SPLIT command: scroll current content off, then show from the split line
+                    split_line_num = group[1]
+
+                    # Scroll all currently visible lines off screen
+                    if currently_visible:
+                        scroll_animations = []
+                        for line_obj in currently_visible:
+                            scroll_animations.append(line_obj.animate.shift(UP * (available_height + 1)))
+                        self.play(*scroll_animations, run_time=0.8)
+                        currently_visible.clear()
+                        current_visible_count = 0
+
+                    # Now show the split line (if not already shown)
+                    if split_line_num in line_to_index and split_line_num not in shown_lines:
+                        idx = line_to_index[split_line_num]
+                        if idx < len(line_mobjects):
+                            line_obj, original_final_pos = line_mobjects[idx]
+                            slot_y = get_chunk_position(current_visible_count)
+                            target_pos = [original_final_pos[0], slot_y, 0]
+                            # First, move to correct Y position while staying off-screen left
+                            line_obj.move_to([-(config.frame_width + 2), slot_y, 0])
+                            # Then animate sliding in from left
+                            self.play(line_obj.animate.move_to(target_pos), run_time=0.6)
+                            shown_lines.add(split_line_num)
+                            currently_visible.append(line_obj)
+                            current_visible_count += 1
+                            self.wait(1.5)
+
                 else:
                     # Show specific lines (user-defined group)
                     lines_to_show = []
@@ -324,22 +396,33 @@ class CodeAnimation(Scene):
                                 lines_to_show.append((idx, line_num))
 
                     if lines_to_show:
-                        # Check if we need to scroll before showing this group
-                        if len(currently_visible) >= chunk_size:
-                            # Scroll only currently visible lines up
+                        # Check how many slots we need vs how many are available
+                        lines_needed = len(lines_to_show)
+                        available_slots = chunk_size - current_visible_count
+
+                        # If we can't fit the group, scroll first
+                        if lines_needed > available_slots:
                             scroll_animations = []
                             for line_obj in currently_visible:
                                 scroll_animations.append(line_obj.animate.shift(UP * (available_height + 1)))
                             self.play(*scroll_animations, run_time=0.8)
                             currently_visible.clear()
+                            current_visible_count = 0
 
-                        # Slide in from the left to original position
+                        # Slide in from the left, positioning at sequential slots
                         animations = []
                         for idx, line_num in lines_to_show:
-                            line_obj, final_pos = line_mobjects[idx]
-                            animations.append(line_obj.animate.move_to(final_pos))
+                            line_obj, original_final_pos = line_mobjects[idx]
+                            # Position at the next available slot
+                            slot_y = get_chunk_position(current_visible_count)
+                            target_pos = [original_final_pos[0], slot_y, 0]
+                            # First, move to correct Y position while staying off-screen left
+                            line_obj.move_to([-(config.frame_width + 2), slot_y, 0])
+                            # Then animate sliding in from left
+                            animations.append(line_obj.animate.move_to(target_pos))
                             shown_lines.add(line_num)
                             currently_visible.append(line_obj)
+                            current_visible_count += 1
 
                         self.play(*animations, run_time=0.6)
                         self.wait(1.5)  # Increased pause to view code

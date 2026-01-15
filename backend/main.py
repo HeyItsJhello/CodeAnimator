@@ -32,7 +32,7 @@ progress_tracking = {}
 
 
 def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.Event):
-    """Monitor Manim's progress by tracking files in media directory"""
+    # Monitor Manim's progress by tracking the files made in media directory
     progress_tracking[task_id] = {"progress": 0, "status": "starting"}
 
     # Manim rendering phases:
@@ -41,7 +41,6 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
     # 3. Video compilation 10%
 
     last_file_count = 0
-    svg_phase_complete = False
     max_svg_files = 0
 
     while not stop_event.is_set():
@@ -108,13 +107,13 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
 
 @app.get("/")
 async def root():
-    """Health check endpoint"""
+    # Health check endpoint
     return {"status": "ok", "message": "Code Animator API is running"}
 
 
 @app.get("/api/progress/{task_id}")
 async def get_progress(task_id: str):
-    """Get progress for a specific rendering task"""
+    # Get progress for a specific rendering task
     if task_id not in progress_tracking:
         raise HTTPException(status_code=404, detail="Task not found")
 
@@ -126,9 +125,9 @@ async def create_animation(
     file: UploadFile = File(...),
     config: str = Form(...)
 ):
-    """
-    Upload a code file and configuration, then generate animation
-    """
+    
+    # Upload a code file and configuration, then generate animation
+    
     try:
         # Parse configuration
         config_data = json.loads(config)
@@ -261,9 +260,9 @@ async def create_animation(
 
 @app.get("/api/download/{video_id}")
 async def download_video(video_id: str, background_tasks: BackgroundTasks):
-    """
-    Download the generated animation video and delete it after sending (PRIVACY)
-    """
+    
+    # Download the generated animation video and delete it after sending (PRIVACY)
+    
     video_path = OUTPUTS_DIR / video_id
 
     if not video_path.exists():
@@ -284,24 +283,6 @@ async def download_video(video_id: str, background_tasks: BackgroundTasks):
         media_type="video/mp4",
         filename=video_id.split("_", 1)[1]  # Remove timestamp prefix
     )
-
-
-@app.get("/api/videos")
-async def list_videos():
-    """
-    List all generated videos
-    """
-    videos = []
-    for video_path in OUTPUTS_DIR.glob("*.mp4"):
-        videos.append({
-            "id": video_path.name,
-            "filename": video_path.name.split("_", 1)[1],
-            "size": video_path.stat().st_size,
-            "created": datetime.fromtimestamp(video_path.stat().st_ctime).isoformat()
-        })
-
-    return {"videos": sorted(videos, key=lambda x: x["created"], reverse=True)}
-
 
 @app.delete("/api/videos/{video_id}")
 async def delete_video(video_id: str):
