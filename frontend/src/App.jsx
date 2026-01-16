@@ -19,13 +19,34 @@ const DEFAULT_SYNTAX_COLORS = {
 const getTokenPatterns = (fileExtension) => {
   const ext = fileExtension?.toLowerCase() || ''
 
+  // Map file extension to language
+  const extToLang = {
+    '.cpp': 'cpp', '.cc': 'cpp', '.cxx': 'cpp', '.hpp': 'cpp', '.h': 'cpp',
+    '.c': 'c',
+    '.py': 'py',
+    '.js': 'js', '.jsx': 'js', '.ts': 'js', '.tsx': 'js', '.mjs': 'js',
+    '.java': 'java',
+    '.go': 'go',
+    '.rs': 'rs',
+    '.rb': 'rb',
+    '.php': 'php',
+    '.swift': 'swift',
+    '.kt': 'kt', '.kts': 'kt',
+    '.gd': 'gd',
+  }
+
+  const lang = extToLang[ext] || 'cpp'
+  const isCLike = ['cpp', 'c'].includes(lang)
+
   // Common patterns for most languages
+  // NOTE: Order matters - patterns applied later override earlier ones
   const basePatterns = [
     // Multi-line comments (must come before single-line)
     { type: 'comments', pattern: /\/\*[\s\S]*?\*\//g },
     // Single-line comments
     { type: 'comments', pattern: /\/\/.*$/gm },
-    { type: 'comments', pattern: /#.*$/gm },
+    // Python/Ruby style comments (NOT for C/C++ - those use # for preprocessor)
+    ...(!isCLike ? [{ type: 'comments', pattern: /#.*$/gm }] : []),
     // Strings (double and single quotes)
     { type: 'strings', pattern: /"(?:[^"\\]|\\.)*"/g },
     { type: 'strings', pattern: /'(?:[^'\\]|\\.)*'/g },
@@ -37,10 +58,20 @@ const getTokenPatterns = (fileExtension) => {
     { type: 'numbers', pattern: /\b\d+\.?\d*(?:[eE][+-]?\d+)?[fFlL]?\b/g },
   ]
 
+  // C/C++ preprocessor patterns (match Pygments behavior)
+  // #include, #define, etc. -> keywords (purple)
+  // <file.h> after #include -> comments (gray, matches PreprocFile token)
+  const preprocessorPatterns = isCLike ? [
+    { type: 'keywords', pattern: /^[ \t]*#\s*(include|define|undef|ifdef|ifndef|if|else|elif|endif|error|pragma|line)\b/gm },
+    { type: 'comments', pattern: /<[a-zA-Z0-9_./]+>/g },  // <iostream>, <stdio.h>, etc.
+  ] : []
+
   // Language-specific keywords
   const keywordsByLang = {
-    cpp: /\b(if|else|for|while|do|switch|case|break|continue|return|class|struct|public|private|protected|virtual|override|const|static|void|int|char|float|double|bool|long|short|unsigned|signed|auto|namespace|using|new|delete|try|catch|throw|template|typename|sizeof|typedef|enum|union|extern|inline|volatile|register|true|false|nullptr|NULL|this|operator|friend|explicit|mutable|constexpr|noexcept|decltype|nullptr_t|final)\b/g,
-    c: /\b(if|else|for|while|do|switch|case|break|continue|return|struct|const|static|void|int|char|float|double|long|short|unsigned|signed|auto|sizeof|typedef|enum|union|extern|inline|volatile|register|NULL)\b/g,
+    // Note: namespace and using are Keyword.Namespace in Pygments -> types color
+    // Note: primitive types (int, void, char, etc.) are Token.Keyword.Type in Pygments -> types color
+    cpp: /\b(if|else|for|while|do|switch|case|break|continue|return|class|struct|public|private|protected|virtual|override|const|static|new|delete|try|catch|throw|template|typename|sizeof|typedef|enum|union|extern|inline|volatile|register|true|false|nullptr|NULL|this|operator|friend|explicit|mutable|constexpr|noexcept|decltype|final)\b/g,
+    c: /\b(if|else|for|while|do|switch|case|break|continue|return|struct|const|static|sizeof|typedef|enum|union|extern|inline|volatile|register|NULL)\b/g,
     py: /\b(if|elif|else|for|while|try|except|finally|with|as|def|class|return|yield|import|from|raise|pass|break|continue|and|or|not|in|is|lambda|True|False|None|self|async|await|global|nonlocal)\b/g,
     js: /\b(if|else|for|while|do|switch|case|break|continue|return|function|class|const|let|var|new|delete|try|catch|throw|finally|typeof|instanceof|this|super|import|export|default|from|as|async|await|yield|true|false|null|undefined|of|in)\b/g,
     java: /\b(if|else|for|while|do|switch|case|break|continue|return|class|interface|extends|implements|public|private|protected|static|final|void|int|char|float|double|boolean|long|short|byte|new|try|catch|throw|throws|finally|this|super|import|package|true|false|null|abstract|synchronized|volatile|transient|native|strictfp|enum|assert|instanceof)\b/g,
@@ -54,8 +85,10 @@ const getTokenPatterns = (fileExtension) => {
   }
 
   // Type keywords by language
+  // Note: namespace, using are Keyword.Namespace in Pygments -> types color
+  // std, cout, cin, endl, cerr are Name.Builtin in Pygments -> types color
   const typesByLang = {
-    cpp: /\b(int|char|float|double|bool|void|long|short|unsigned|signed|auto|size_t|string|vector|map|set|list|array|pair|tuple|unique_ptr|shared_ptr|weak_ptr|optional|variant|any|nullptr_t|int8_t|int16_t|int32_t|int64_t|uint8_t|uint16_t|uint32_t|uint64_t|ptrdiff_t|intptr_t|uintptr_t|wchar_t|char16_t|char32_t)\b/g,
+    cpp: /\b(int|char|float|double|bool|void|long|short|unsigned|signed|auto|size_t|string|vector|map|set|list|array|pair|tuple|unique_ptr|shared_ptr|weak_ptr|optional|variant|any|nullptr_t|int8_t|int16_t|int32_t|int64_t|uint8_t|uint16_t|uint32_t|uint64_t|ptrdiff_t|intptr_t|uintptr_t|wchar_t|char16_t|char32_t|namespace|using|std|cout|cin|endl|cerr|clog|wcout|wcin|wcerr|wclog)\b/g,
     c: /\b(int|char|float|double|void|long|short|unsigned|signed|size_t|int8_t|int16_t|int32_t|int64_t|uint8_t|uint16_t|uint32_t|uint64_t|ptrdiff_t|intptr_t|uintptr_t|wchar_t|FILE)\b/g,
     py: /\b(int|float|str|bool|list|dict|set|tuple|bytes|bytearray|object|type|None|Any|Union|Optional|List|Dict|Set|Tuple|Callable|Iterable|Iterator|Generator|Sequence|Mapping|MutableMapping|MutableSequence|MutableSet)\b/g,
     js: /\b(Array|Object|String|Number|Boolean|Function|Symbol|BigInt|Map|Set|WeakMap|WeakSet|Promise|Date|RegExp|Error|TypeError|ReferenceError|SyntaxError|RangeError|EvalError|URIError|JSON|Math|console|window|document|HTMLElement|Element|Node|Event|EventTarget|NodeList|HTMLCollection)\b/g,
@@ -75,26 +108,9 @@ const getTokenPatterns = (fileExtension) => {
     kt: /@[a-zA-Z_][a-zA-Z0-9_]*/g,
   }
 
-  // Map file extension to language
-  const extToLang = {
-    '.cpp': 'cpp', '.cc': 'cpp', '.cxx': 'cpp', '.hpp': 'cpp', '.h': 'cpp',
-    '.c': 'c',
-    '.py': 'py',
-    '.js': 'js', '.jsx': 'js', '.ts': 'js', '.tsx': 'js', '.mjs': 'js',
-    '.java': 'java',
-    '.go': 'go',
-    '.rs': 'rs',
-    '.rb': 'rb',
-    '.php': 'php',
-    '.swift': 'swift',
-    '.kt': 'kt', '.kts': 'kt',
-    '.gd': 'gd',
-  }
-
-  const lang = extToLang[ext] || 'cpp'
-
   return {
     base: basePatterns,
+    preprocessor: preprocessorPatterns,
     keywords: keywordsByLang[lang] || keywordsByLang.cpp,
     types: typesByLang[lang] || typesByLang.cpp,
     functions: functionPattern,
@@ -125,6 +141,11 @@ const tokenizeLine = (line, patterns, colors) => {
 
   // Apply base patterns (comments, strings, numbers)
   patterns.base.forEach(p => applyPattern(p.pattern, p.type))
+
+  // Apply C/C++ preprocessor patterns (override base patterns for #include, etc.)
+  if (patterns.preprocessor) {
+    patterns.preprocessor.forEach(p => applyPattern(p.pattern, p.type))
+  }
 
   // Apply types before keywords (more specific)
   if (patterns.types) applyPattern(patterns.types, 'types')

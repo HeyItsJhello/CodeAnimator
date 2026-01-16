@@ -42,7 +42,7 @@ See the sections below for setup instructions for each option.
 - 🎯 Choose specific line ranges to animate
 - 🎨 Group lines to appear together in sequences
 - 💬 Option to include/exclude comments
-- 🎥 Professional syntax highlighting with line numbers
+- 🎥 Customizable syntax highlighting with line numbers
 - 🔒 **Privacy-focused**: Uploaded files are automatically deleted after processing
 - 📺 **High Quality**: All videos rendered at 1080p60
 
@@ -91,6 +91,7 @@ npm run dev
 - Open http://localhost:5173 in your browser
 - Upload your code file
 - Select line range (start/end lines)
+- Customize Syntax Highlighting for your preference
 - Choose whether to include comments
 - Define animation groups (or press "Add Group" with empty input for all remaining lines)
 - Click "Generate Animation"
