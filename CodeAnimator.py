@@ -89,6 +89,10 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Filtered {len(filtered_lines)} lines")
         print(f"DEBUG: Line groups: {line_groups}")
         
+        # Calculate max line number width for alignment
+        max_line_num = max(line_num for line_num, _ in filtered_lines)
+        line_num_width = len(str(max_line_num))
+        
         # Create text objects for each line with syntax highlighting
         line_mobjects = []
         shown_lines = set()  # Track which lines have been shown
@@ -107,10 +111,6 @@ class CodeAnimation(Scene):
         available_width = config.frame_width - left_margin - right_margin
         
         # Adaptive line height and font size based on number of lines
-        # For few lines: use larger spacing and font
-        # For many lines: use smaller spacing and font
-        # But enforce min/max to keep things readable
-
         MIN_FONT_SIZE = 16  
         MAX_FONT_SIZE = 28
         MIN_LINE_HEIGHT = 0.35  
@@ -122,7 +122,6 @@ class CodeAnimation(Scene):
         line_height = max(MIN_LINE_HEIGHT, min(MAX_LINE_HEIGHT, ideal_line_height))
 
         # Font size scales with line height
-        # Rough heuristic: font_size ≈ line_height * 45 (increased from 40)
         base_font_size = int(line_height * 45)
         base_font_size = max(MIN_FONT_SIZE, min(MAX_FONT_SIZE, base_font_size))
 
@@ -134,65 +133,46 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Total height needed: {total_height:.3f}")
         print(f"DEBUG: Available height: {available_height:.3f}")
 
-        # Calculate if we need to chunk the content
-        # Only enable chunking if content is significantly larger than available space
-        # Otherwise, scale everything down to fit without scrolling
+        # Determine chunking
         enable_chunking = False
         chunk_size = 0
         lines_that_fit = int(available_height / MIN_LINE_HEIGHT)
-
-        # Calculate the scale factor needed to fit all lines
-        # If we can fit by scaling down reasonably, do that instead of chunking
         if total_height > available_height:
             scale_to_fit = available_height / total_height
-
-            # Only enable chunking if we'd need to scale below ~60% (i.e., more than ~1.67x the space)
-            # or if we have significantly more lines than can fit
             if num_lines > lines_that_fit * 1.5:
                 enable_chunking = True
                 chunk_size = lines_that_fit
-                print(f"INFO: {num_lines} lines will be displayed in chunks of {chunk_size}")
-                print(f"INFO: Content will scroll up between chunks for better readability")
-                # Use minimum settings for chunked display
                 line_height = MIN_LINE_HEIGHT
                 base_font_size = MIN_FONT_SIZE
             else:
-                # Scale down to fit without chunking
                 line_height = available_height / num_lines
                 base_font_size = int(line_height * 45)
                 base_font_size = max(MIN_FONT_SIZE, min(MAX_FONT_SIZE, base_font_size))
-                print(f"INFO: Scaling content to fit ({num_lines} lines, scale factor: {scale_to_fit:.2f})")
         
-        # Get colors from custom config or use defaults
-        # Custom colors use hex format (#RRGGBB), convert to Manim colors
-        color_keywords = custom_colors.get('keywords', '#9b59b6')  # PURPLE
-        color_types = custom_colors.get('types', '#3498db')        # BLUE
-        color_functions = custom_colors.get('functions', '#3498db')  # BLUE
-        color_strings = custom_colors.get('strings', '#2ecc71')    # GREEN
-        color_numbers = custom_colors.get('numbers', '#e67e22')    # ORANGE
-        color_comments = custom_colors.get('comments', '#7f8c8d')  # GRAY
-        color_decorators = custom_colors.get('decorators', '#f1c40f')  # YELLOW
-        color_default = custom_colors.get('default', '#ffffff')    # WHITE
+        # Get colors from custom config or defaults
+        color_keywords = custom_colors.get('keywords', '#9b59b6')
+        color_types = custom_colors.get('types', '#3498db')
+        color_functions = custom_colors.get('functions', '#3498db')
+        color_strings = custom_colors.get('strings', '#2ecc71')
+        color_numbers = custom_colors.get('numbers', '#e67e22')
+        color_comments = custom_colors.get('comments', '#7f8c8d')
+        color_decorators = custom_colors.get('decorators', '#f1c40f')
+        color_default = custom_colors.get('default', '#ffffff')
 
-        # Token type to color mapping for Pygments
-        # More specific types should come first to match correctly
         TOKEN_COLORS = {
-            # Comments (all types)
             Token.Comment.Multiline: color_comments,
             Token.Comment.Single: color_comments,
             Token.Comment.Special: color_comments,
             Token.Comment.Preproc: color_comments,
             Token.Comment.PreprocFile: color_comments,
             Token.Comment: color_comments,
-            # Keywords
             Token.Keyword.Namespace: color_types,
-            Token.Keyword.Type: color_keywords,  # Primitive types (int, void, etc.) -> purple
+            Token.Keyword.Type: color_keywords,
             Token.Keyword.Constant: color_keywords,
             Token.Keyword.Declaration: color_keywords,
             Token.Keyword.Pseudo: color_keywords,
             Token.Keyword.Reserved: color_keywords,
             Token.Keyword: color_keywords,
-            # Names/Identifiers
             Token.Name.Builtin: color_types,
             Token.Name.Builtin.Pseudo: color_types,
             Token.Name.Function: color_functions,
@@ -200,7 +180,6 @@ class CodeAnimation(Scene):
             Token.Name.Class: color_types,
             Token.Name.Decorator: color_decorators,
             Token.Name.Constant: color_numbers,
-            # Strings
             Token.String.Doc: color_strings,
             Token.String.Single: color_strings,
             Token.String.Double: color_strings,
@@ -211,7 +190,6 @@ class CodeAnimation(Scene):
             Token.String: color_strings,
             Token.Literal.String: color_strings,
             Token.Literal.String.Doc: color_strings,
-            # Numbers
             Token.Number.Integer: color_numbers,
             Token.Number.Float: color_numbers,
             Token.Number.Hex: color_numbers,
@@ -219,36 +197,26 @@ class CodeAnimation(Scene):
             Token.Number.Bin: color_numbers,
             Token.Number: color_numbers,
             Token.Literal.Number: color_numbers,
-            # Operators
             Token.Operator.Word: color_keywords,
-            # Preprocessor (C/C++)
             Token.Comment.Preproc: color_keywords,
         }
 
-        # Default text color
         DEFAULT_COLOR = color_default
 
-        # Get appropriate lexer for the file
         try:
             lexer = get_lexer_for_filename(script_path)
         except:
             lexer = TextLexer()
 
-        # For accurate multi-line comment handling, tokenize the entire visible code block
-        # This allows Pygments to correctly identify comment spans
         full_code_text = '\n'.join([content for _, content in filtered_lines])
         full_tokens = list(lex(full_code_text, lexer))
 
-        # Build a map of (line_index, char_index) -> color for accurate highlighting
-        # This handles multi-line comments correctly
-        color_map = {}  # (line_idx, char_idx) -> color
+        color_map = {}
         current_line = 0
         current_char = 0
 
         for token_type, token_value in full_tokens:
-            # Determine color for this token
             token_color = DEFAULT_COLOR
-            # First try exact match (most specific), then fall back to parent type match
             if token_type in TOKEN_COLORS:
                 token_color = TOKEN_COLORS[token_type]
             else:
@@ -256,8 +224,6 @@ class CodeAnimation(Scene):
                     if token_type in ttype:
                         token_color = tcolor
                         break
-
-            # Map each character in the token to its color
             for char in token_value:
                 if char == '\n':
                     current_line += 1
@@ -266,76 +232,32 @@ class CodeAnimation(Scene):
                     color_map[(current_line, current_char)] = token_color
                     current_char += 1
 
-        # First pass: create all lines to measure max width
+        # First pass to measure max width
         temp_lines = []
         max_line_width = 0
-        
         for line_num, content in filtered_lines:
             content_display = content.replace('\t', '    ')
-            full_line = f"{line_num:3d}  {content_display}"
-            
-            line_group = Text(
-                full_line,
-                font="Monospace",
-                font_size=base_font_size,
-                color=DEFAULT_COLOR,
-                disable_ligatures=True,
-            )
-
+            full_line = f"{line_num:>{line_num_width}}  {content_display}"
+            line_group = Text(full_line, font="Monospace", font_size=base_font_size, color=DEFAULT_COLOR, disable_ligatures=True)
             temp_lines.append((line_num, content, line_group))
             max_line_width = max(max_line_width, line_group.width)
         
-        # Calculate width scaling factor if lines are too wide
-        # This will be applied to ALL lines to keep them consistent
         width_scale = 1.0
         if max_line_width > available_width:
             width_scale = available_width / max_line_width
 
-        print(f"DEBUG: Width scale factor: {width_scale:.3f}")
-        print(f"DEBUG: Final font size: {base_font_size}")
-        print(f"DEBUG: Line height: {line_height:.3f}")
-        print(f"DEBUG: Max line width: {max_line_width:.3f}")
-        print(f"DEBUG: Available width: {available_width:.3f}")
-        
-        # Calculate starting Y position
-        # For chunking mode, position lines to fit within visible area
-        # For normal mode, center all lines
-        if enable_chunking:
-            # Position lines to fit within the chunk
-            chunk_height = chunk_size * line_height
-            y_start = (chunk_height / 2) - (line_height / 2)
-        else:
-            # Center the entire block
-            total_height = num_lines * line_height
-            y_start = (total_height / 2) - (line_height / 2)
+        y_start = (num_lines * line_height / 2) - (line_height / 2)
 
-        # Second pass: create final lines with correct sizing and coloring
+        # Second pass: final lines
         for line_idx, (line_num, content) in enumerate(filtered_lines):
-            # Replace tabs with 4 spaces for consistent rendering
             content_display = content.replace('\t', '    ')
+            full_line = f"{line_num:>{line_num_width}}  {content_display}"
 
-            # Create the full line as a single monospace text
-            full_line = f"{line_num:3d}  {content_display}"
-
-            # Use Text with disable_ligatures to ensure proper character spacing
-            line_group = Text(
-                full_line,
-                font="Monospace",
-                font_size=base_font_size,
-                color=DEFAULT_COLOR,
-                disable_ligatures=True,
-            )
-
-            # Apply syntax coloring using the pre-computed color_map
-            # Start at index 5 to skip line number prefix "XXX  "
-            # The color_map was built from content without tab expansion,
-            # so we need to track both original and display positions
-            display_char_idx = 5  # Position in the Text object (after line number)
-            original_char_idx = 0  # Position in original content
-
+            line_group = Text(full_line, font="Monospace", font_size=base_font_size, color=DEFAULT_COLOR, disable_ligatures=True)
+            display_char_idx = line_num_width + 2
+            original_char_idx = 0
             for orig_char in content:
                 if orig_char == '\t':
-                    # Tab expands to 4 spaces, all get the same color
                     color = color_map.get((line_idx, original_char_idx), DEFAULT_COLOR)
                     for _ in range(4):
                         try:
@@ -352,38 +274,18 @@ class CodeAnimation(Scene):
                     display_char_idx += 1
                 original_char_idx += 1
 
-            # Calculate position within chunk for this line
-            # In chunking mode, position is relative to chunk, not absolute
-            if enable_chunking:
-                # Position based on line index within entire set
-                line_idx = filtered_lines.index((line_num, content))
-                chunk_idx = line_idx % chunk_size
-                y_pos = y_start - (chunk_idx * line_height)
-            else:
-                # Normal positioning
-                line_idx = filtered_lines.index((line_num, content))
-                y_pos = y_start - (line_idx * line_height)
-
-            # Position (where it should end up)
+            y_pos = y_start - (line_idx * line_height)
             line_group.move_to([0, y_pos, 0])
             line_group.to_edge(LEFT, buff=left_margin)
-
-            # Apply consistent scaling to ALL lines (not just long ones)
             if width_scale < 1.0:
                 line_group.scale(width_scale)
-                # Re-position after scaling
                 line_group.move_to([0, y_pos, 0])
                 line_group.to_edge(LEFT, buff=left_margin)
-
-            # Store final position before moving off-screen
             final_pos = line_group.get_center().copy()
-
-            # Start off-screen to the left
             line_group.shift(LEFT * (config.frame_width + 2))
-
             self.add(line_group)
             line_mobjects.append((line_group, final_pos))
-        
+
         self.wait(1.5)
 
         # Animate line groups with chunking support
