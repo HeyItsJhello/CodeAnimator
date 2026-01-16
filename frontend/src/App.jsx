@@ -67,11 +67,10 @@ const getTokenPatterns = (fileExtension) => {
   ] : []
 
   // Language-specific keywords
+  // Primitive types (int, void, char, etc.) are included here as keywords (purple) to match Pygments Token.Keyword.Type
   const keywordsByLang = {
-    // Note: namespace and using are Keyword.Namespace in Pygments -> types color
-    // Note: primitive types (int, void, char, etc.) are Token.Keyword.Type in Pygments -> types color
-    cpp: /\b(if|else|for|while|do|switch|case|break|continue|return|class|struct|public|private|protected|virtual|override|const|static|new|delete|try|catch|throw|template|typename|sizeof|typedef|enum|union|extern|inline|volatile|register|true|false|nullptr|NULL|this|operator|friend|explicit|mutable|constexpr|noexcept|decltype|final)\b/g,
-    c: /\b(if|else|for|while|do|switch|case|break|continue|return|struct|const|static|sizeof|typedef|enum|union|extern|inline|volatile|register|NULL)\b/g,
+    cpp: /\b(if|else|for|while|do|switch|case|break|continue|return|class|struct|public|private|protected|virtual|override|const|static|new|delete|try|catch|throw|template|typename|sizeof|typedef|enum|union|extern|inline|volatile|register|true|false|nullptr|NULL|this|operator|friend|explicit|mutable|constexpr|noexcept|decltype|final|int|char|float|double|bool|void|long|short|unsigned|signed|auto|wchar_t|char16_t|char32_t)\b/g,
+    c: /\b(if|else|for|while|do|switch|case|break|continue|return|struct|const|static|sizeof|typedef|enum|union|extern|inline|volatile|register|NULL|int|char|float|double|void|long|short|unsigned|signed)\b/g,
     py: /\b(if|elif|else|for|while|try|except|finally|with|as|def|class|return|yield|import|from|raise|pass|break|continue|and|or|not|in|is|lambda|True|False|None|self|async|await|global|nonlocal)\b/g,
     js: /\b(if|else|for|while|do|switch|case|break|continue|return|function|class|const|let|var|new|delete|try|catch|throw|finally|typeof|instanceof|this|super|import|export|default|from|as|async|await|yield|true|false|null|undefined|of|in)\b/g,
     java: /\b(if|else|for|while|do|switch|case|break|continue|return|class|interface|extends|implements|public|private|protected|static|final|void|int|char|float|double|boolean|long|short|byte|new|try|catch|throw|throws|finally|this|super|import|package|true|false|null|abstract|synchronized|volatile|transient|native|strictfp|enum|assert|instanceof)\b/g,
@@ -87,9 +86,10 @@ const getTokenPatterns = (fileExtension) => {
   // Type keywords by language
   // Note: namespace, using are Keyword.Namespace in Pygments -> types color
   // std, cout, cin, endl, cerr are Name.Builtin in Pygments -> types color
+  // Primitive types (int, void, etc.) are now in keywordsByLang (purple)
   const typesByLang = {
-    cpp: /\b(int|char|float|double|bool|void|long|short|unsigned|signed|auto|size_t|string|vector|map|set|list|array|pair|tuple|unique_ptr|shared_ptr|weak_ptr|optional|variant|any|nullptr_t|int8_t|int16_t|int32_t|int64_t|uint8_t|uint16_t|uint32_t|uint64_t|ptrdiff_t|intptr_t|uintptr_t|wchar_t|char16_t|char32_t|namespace|using|std|cout|cin|endl|cerr|clog|wcout|wcin|wcerr|wclog)\b/g,
-    c: /\b(int|char|float|double|void|long|short|unsigned|signed|size_t|int8_t|int16_t|int32_t|int64_t|uint8_t|uint16_t|uint32_t|uint64_t|ptrdiff_t|intptr_t|uintptr_t|wchar_t|FILE)\b/g,
+    cpp: /\b(size_t|string|vector|map|set|list|array|pair|tuple|unique_ptr|shared_ptr|weak_ptr|optional|variant|any|nullptr_t|int8_t|int16_t|int32_t|int64_t|uint8_t|uint16_t|uint32_t|uint64_t|ptrdiff_t|intptr_t|uintptr_t|namespace|using|std|cout|cin|endl|cerr|clog|wcout|wcin|wcerr|wclog)\b/g,
+    c: /\b(size_t|int8_t|int16_t|int32_t|int64_t|uint8_t|uint16_t|uint32_t|uint64_t|ptrdiff_t|intptr_t|uintptr_t|FILE)\b/g,
     py: /\b(int|float|str|bool|list|dict|set|tuple|bytes|bytearray|object|type|None|Any|Union|Optional|List|Dict|Set|Tuple|Callable|Iterable|Iterator|Generator|Sequence|Mapping|MutableMapping|MutableSequence|MutableSet)\b/g,
     js: /\b(Array|Object|String|Number|Boolean|Function|Symbol|BigInt|Map|Set|WeakMap|WeakSet|Promise|Date|RegExp|Error|TypeError|ReferenceError|SyntaxError|RangeError|EvalError|URIError|JSON|Math|console|window|document|HTMLElement|Element|Node|Event|EventTarget|NodeList|HTMLCollection)\b/g,
     java: /\b(int|char|float|double|boolean|byte|short|long|void|String|Integer|Character|Float|Double|Boolean|Byte|Short|Long|Object|Class|System|Math|List|ArrayList|LinkedList|Map|HashMap|TreeMap|Set|HashSet|TreeSet|Queue|Stack|Vector|Collection|Iterator|Iterable|Comparable|Comparator|Exception|RuntimeException|Throwable|Thread|Runnable)\b/g,

@@ -186,7 +186,7 @@ class CodeAnimation(Scene):
             Token.Comment: color_comments,
             # Keywords
             Token.Keyword.Namespace: color_types,
-            Token.Keyword.Type: color_types,
+            Token.Keyword.Type: color_keywords,  # Primitive types (int, void, etc.) -> purple
             Token.Keyword.Constant: color_keywords,
             Token.Keyword.Declaration: color_keywords,
             Token.Keyword.Pseudo: color_keywords,
@@ -248,10 +248,14 @@ class CodeAnimation(Scene):
         for token_type, token_value in full_tokens:
             # Determine color for this token
             token_color = DEFAULT_COLOR
-            for ttype, tcolor in TOKEN_COLORS.items():
-                if token_type in ttype:
-                    token_color = tcolor
-                    break
+            # First try exact match (most specific), then fall back to parent type match
+            if token_type in TOKEN_COLORS:
+                token_color = TOKEN_COLORS[token_type]
+            else:
+                for ttype, tcolor in TOKEN_COLORS.items():
+                    if token_type in ttype:
+                        token_color = tcolor
+                        break
 
             # Map each character in the token to its color
             for char in token_value:
