@@ -20,7 +20,7 @@ class CodeAnimation(Scene):
             return
 
         print(f"DEBUG: Config loaded, {len(lines)} lines")
-
+        
         script_path = lines[0]
         start_line = int(lines[1])
         end_line = int(lines[2])
@@ -50,9 +50,16 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Lines {start_line}-{end_line}")
         print(f"DEBUG: Include comments: {include_comments}")
 
-        # Reading line groups (start from line 5 if no colors, or line 6 if colors present)
+        # Reading line groups (start after colors and timing JSON lines)
         line_groups = []
-        start_idx = 5 if custom_colors or (len(lines) > 4 and lines[4].strip().startswith('{')) else 4
+        # Find the first non-JSON line after line 4
+        start_idx = 4
+        for i in range(4, len(lines)):
+            if lines[i].strip().startswith('{'):
+                start_idx = i + 1
+            else:
+                start_idx = i
+                break
         for i in range(start_idx, len(lines)):
             if lines[i].strip():
                 if lines[i].strip() == "ALL_REMAINING":
@@ -347,7 +354,7 @@ class CodeAnimation(Scene):
 
                         if animations:
                             self.play(*animations, run_time=0.6)
-                            self.wait(1.5)  # Increased pause to view code
+                            self.wait(0.3)
 
                 elif isinstance(group, tuple) and group[0] == "SPLIT":
                     # SPLIT command: scroll current content off, then show from the split line
@@ -376,7 +383,7 @@ class CodeAnimation(Scene):
                             shown_lines.add(split_line_num)
                             currently_visible.append(line_obj)
                             current_visible_count += 1
-                            self.wait(1.5)
+                            self.wait(0.3)
 
                 else:
                     # Show specific lines (user-defined group)
@@ -417,7 +424,7 @@ class CodeAnimation(Scene):
                             current_visible_count += 1
 
                         self.play(*animations, run_time=0.6)
-                        self.wait(1.5)  # Increased pause to view code
+                        self.wait(0.3)
         else:
             # Normal mode - no chunking needed
             for group in line_groups:
@@ -448,7 +455,7 @@ class CodeAnimation(Scene):
                     self.wait(0.3)
 
         # Final pause
-        self.wait(2)
+        self.wait(2.0)
 
         # Clean up SVG cache files after rendering
         import shutil

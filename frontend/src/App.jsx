@@ -215,6 +215,13 @@ function App() {
   const [showColorModal, setShowColorModal] = useState(false)
   const [syntaxColors, setSyntaxColors] = useState({ ...DEFAULT_SYNTAX_COLORS })
   const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [showUploadAnotherModal, setShowUploadAnotherModal] = useState(false)
+  const [animationTiming, setAnimationTiming] = useState({
+    initialDelay: 1.5,
+    lineSlideIn: 0.6,
+    pauseBetweenGroups: 0.3,
+    finalPause: 2.0
+  })
 
   const handleFileUpload = (e) => {
     const uploadedFile = e.target.files[0]
@@ -306,6 +313,25 @@ function App() {
     setShownLines(newShownLines)
   }
 
+  const resetForNewFile = () => {
+    setFile(null)
+    setFileName('')
+    setFileContent('')
+    setTotalLines(0)
+    setStartLine(1)
+    setEndLine(1)
+    setLineGroups([])
+    setCurrentGroup('')
+    setShownLines(new Set())
+    setShowUploadAnotherModal(false)
+  }
+
+  const clearAllGroups = () => {
+    setLineGroups([])
+    setShownLines(new Set())
+    setCurrentGroup('')
+  }
+
   const addSplit = () => {
     const lineNum = parseInt(splitLineInput)
 
@@ -357,7 +383,8 @@ function App() {
         if (typeof group === 'object' && group.type === 'SPLIT') return `SPLIT ${group.line}`
         return group.join(' ')
       }),
-      syntaxColors
+      syntaxColors,
+      animationTiming
     }
 
     // Create FormData to send file and config
@@ -421,7 +448,6 @@ function App() {
         }, 500)
       })
 
-      // Wait a moment to show 100%
       await new Promise(resolve => setTimeout(resolve, 500))
 
       // Trigger download
@@ -433,9 +459,10 @@ function App() {
       a.click()
       document.body.removeChild(a)
 
-      // Hide loading modal
+      // Hide loading modal and show upload another modal
       setIsLoading(false)
       setLoadingProgress(0)
+      setShowUploadAnotherModal(true)
 
     } catch (error) {
       console.error('Error:', error)
@@ -527,7 +554,7 @@ function App() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3, delay: 0.1 }}
               >
-                ✓ File loaded: {totalLines} lines total
+                File loaded: {totalLines} lines total
               </motion.p>
             )}
             </AnimatePresence>
@@ -616,6 +643,7 @@ function App() {
                 </button>
               </motion.div>
 
+
               {/* Line Groups */}
               <motion.div
                 className="form-section"
@@ -624,7 +652,7 @@ function App() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
               >
-                <h2>5. Define Line Groups</h2>
+                <h2>6. Define Line Groups</h2>
                 <p className="help-text">
                   Enter line numbers for each animation group (space-separated).
                   Leave empty and click "Add Group" to show all remaining lines.
@@ -661,7 +689,12 @@ function App() {
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <h3>Animation Groups:</h3>
+                    <div className="groups-header">
+                      <h3>Animation Groups:</h3>
+                      <button type="button" onClick={clearAllGroups} className="btn-clear-all">
+                        Clear All
+                      </button>
+                    </div>
                     <AnimatePresence mode="popLayout">
                     {lineGroups.map((group, index) => (
                       <motion.div
@@ -739,20 +772,26 @@ function App() {
           </div>
           <div className="preview-content">
             <pre className="code-preview">
-              {getPreviewLines().map((line, index) => {
-                const lineNum = index + 1
-                const inRange = isLineInRange(lineNum)
-                const inGroup = isLineInGroup(lineNum)
-                return (
-                  <div
-                    key={index}
-                    className={`code-line ${inRange ? 'in-range' : ''} ${inGroup ? 'in-group' : ''}`}
-                  >
-                    <span className="line-number">{lineNum}</span>
-                    <span className="line-content">{line || ' '}</span>
-                  </div>
-                )
-              })}
+              {(() => {
+                const lines = getPreviewLines()
+                const maxLineNum = lines.length
+                const lineNumWidth = String(maxLineNum).length
+                return lines.map((line, index) => {
+                  const lineNum = index + 1
+                  const inRange = isLineInRange(lineNum)
+                  const inGroup = isLineInGroup(lineNum)
+                  const paddedLineNum = String(lineNum).padStart(lineNumWidth, ' ')
+                  return (
+                    <div
+                      key={index}
+                      className={`code-line ${inRange ? 'in-range' : ''} ${inGroup ? 'in-group' : ''}`}
+                    >
+                      <span className="line-number">{paddedLineNum}</span>
+                      <span className="line-content">{line || ' '}</span>
+                    </div>
+                  )
+                })
+              })()}
             </pre>
           </div>
         </motion.div>
@@ -780,7 +819,7 @@ function App() {
               <span className="loading-title">Code Animator</span>
             </div>
             <div className="loading-body">
-              <div className="loading-icon">🎬</div>
+              <div className="loading-icon"><img src="/Movie.png" alt="" className="icon-sprite" /></div>
               <h3 className="loading-text">Generating Animation...</h3>
               <p className="loading-subtext">Please wait while we render your code animation</p>
               <div className="progress-bar-container">
@@ -995,6 +1034,45 @@ function App() {
                 </button>
                 <button type="button" className="btn-confirm" onClick={() => setShowPreviewModal(false)}>
                   Close
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+      </AnimatePresence>
+
+      {/* Upload Another Modal */}
+      <AnimatePresence>
+      {showUploadAnotherModal && (
+        <motion.div
+          className="loading-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            className="upload-another-modal"
+            initial={{ scale: 0.8, opacity: 0, y: -50 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: -50 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="upload-another-header">
+              <span className="upload-another-title">Video Complete!</span>
+            </div>
+            <div className="upload-another-body">
+              <div className="upload-another-icon"><img src="/Check.png" alt="" className="icon-sprite" /></div>
+              <h3 className="upload-another-text">Your animation is downloading!</h3>
+              <p className="upload-another-subtext">Would you like to animate another file?</p>
+              <div className="upload-another-buttons">
+                <button type="button" className="btn-cancel" onClick={() => setShowUploadAnotherModal(false)}>
+                  Stay Here
+                </button>
+                <button type="button" className="btn-confirm" onClick={resetForNewFile}>
+                  Upload New File
                 </button>
               </div>
             </div>

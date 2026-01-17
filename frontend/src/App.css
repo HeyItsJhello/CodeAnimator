@@ -610,9 +610,13 @@ h3 {
 }
 
 .loading-icon {
-  font-size: 4rem;
   margin-bottom: 1rem;
   animation: pulse 1.5s ease-in-out infinite;
+}
+
+.loading-icon img {
+  width: 76px;
+  height: 76px;
 }
 
 @keyframes pulse {
@@ -1418,5 +1422,172 @@ h3 {
 
   .legend-items {
     gap: 0.5rem;
+  }
+}
+
+/* Groups Header with Clear Button */
+.groups-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.groups-header h3 {
+  margin: 0;
+}
+
+.btn-clear-all {
+  padding: 0.5rem 1rem;
+  background: #e63946;
+  color: white;
+  border: 3px solid #333;
+  box-shadow:
+    3px 3px 0 #333,
+    4px 4px 0 rgba(0, 0, 0, 0.1);
+  font-size: 0.9rem;
+  font-weight: bold;
+  font-family: 'Jersey 15', monospace;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-clear-all:hover {
+  background: #d62839;
+  transform: translate(-1px, -1px);
+  box-shadow:
+    4px 4px 0 #333,
+    5px 5px 0 rgba(0, 0, 0, 0.1);
+}
+
+.btn-clear-all:active {
+  transform: translate(3px, 3px);
+  box-shadow:
+    0 0 0 #333,
+    1px 1px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Upload Another Modal */
+.upload-another-modal {
+  background: white;
+  border: 4px solid #333;
+  box-shadow:
+    8px 8px 0 #333,
+    12px 12px 0 rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+}
+
+.upload-another-header {
+  background: #2a9d8f;
+  color: white;
+  padding: 1rem 1.5rem;
+  border-bottom: 4px solid #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.upload-another-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  font-family: 'Jersey 15', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.upload-another-body {
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+
+.upload-another-icon {
+  margin-bottom: 1rem;
+}
+
+.upload-another-icon img {
+  width: 76px;
+  height: 76px;
+}
+
+.upload-another-text {
+  color: #333;
+  font-size: 1.5rem;
+  margin: 0 0 0.75rem 0;
+  font-weight: bold;
+  font-family: 'Jersey 15', monospace;
+}
+
+.upload-another-subtext {
+  color: #666;
+  font-size: 1.05rem;
+  margin: 0 0 2rem 0;
+  font-weight: bold;
+  font-family: 'Jersey 15', monospace;
+}
+
+.upload-another-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+/* Animation Timing Settings */
+.timing-inputs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.timing-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.timing-input-group label {
+  color: #333;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.timing-input-group input {
+  padding: 0.5rem;
+  border: 3px solid #333;
+  background: white;
+  color: #333;
+  font-size: 1rem;
+  font-family: 'Jersey 15', monospace;
+  font-weight: bold;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.timing-input-group input:focus {
+  outline: none;
+  border-color: #e63946;
+  box-shadow: 2px 2px 0 rgba(230, 57, 70, 0.2);
+}
+
+.timing-input-group .input-suffix {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 768px) {
+  .timing-inputs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-another-buttons {
+    flex-direction: column;
+  }
+
+  .upload-another-buttons .btn-cancel,
+  .upload-another-buttons .btn-confirm {
+    width: 100%;
   }
 }
