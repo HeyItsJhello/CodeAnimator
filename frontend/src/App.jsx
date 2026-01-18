@@ -14,6 +14,17 @@ const DEFAULT_SYNTAX_COLORS = {
   default: '#ffffff',       // WHITE
 }
 
+const DEFAULT_TIMING = {
+  initialDelay: 1.5,
+  lineSlideIn: 0.6,
+  pauseBetweenGroups: 0.3,
+  finalPause: 2.0,
+}
+
+const DEFAULT_TIMING_STR = Object.fromEntries(
+  Object.entries(DEFAULT_TIMING).map(([k, v]) => [k, String(v)])
+)
+
 // Simple syntax highlighter patterns for preview
 // These patterns give a reasonable approximation of Pygments tokenization
 const getTokenPatterns = (fileExtension) => {
@@ -216,12 +227,8 @@ function App() {
   const [syntaxColors, setSyntaxColors] = useState({ ...DEFAULT_SYNTAX_COLORS })
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [showUploadAnotherModal, setShowUploadAnotherModal] = useState(false)
-  const [animationTiming, setAnimationTiming] = useState({
-    initialDelay: 1.5,
-    lineSlideIn: 0.6,
-    pauseBetweenGroups: 0.3,
-    finalPause: 2.0
-  })
+  const [orientation, setOrientation] = useState('landscape') // 'landscape' or 'portrait'
+  const [animationTiming, setAnimationTiming] = useState({ ...DEFAULT_TIMING_STR })
 
   const handleFileUpload = (e) => {
     const uploadedFile = e.target.files[0]
@@ -359,6 +366,21 @@ function App() {
     setShowSplitModal(false)
   }
 
+  const updateTiming = (key, value) => {
+    setAnimationTiming(prev => ({
+      ...prev,
+      [key]: value === '' ? '' : value
+    }))
+  }
+
+  const resetTiming = () => setAnimationTiming({ ...DEFAULT_TIMING_STR })
+
+  const sanitizeTimingValue = (value, fallback) => {
+    const num = parseFloat(value)
+    if (Number.isFinite(num) && num >= 0) return num
+    return fallback
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -372,19 +394,27 @@ function App() {
       return
     }
 
+    const timingConfig = {
+      initialDelay: sanitizeTimingValue(animationTiming.initialDelay, DEFAULT_TIMING.initialDelay),
+      lineSlideIn: sanitizeTimingValue(animationTiming.lineSlideIn, DEFAULT_TIMING.lineSlideIn),
+      pauseBetweenGroups: sanitizeTimingValue(animationTiming.pauseBetweenGroups, DEFAULT_TIMING.pauseBetweenGroups),
+      finalPause: sanitizeTimingValue(animationTiming.finalPause, DEFAULT_TIMING.finalPause)
+    }
+
     // Create configuration data
     const config = {
       scriptPath: fileName,
       startLine,
       endLine,
       includeComments,
+      orientation,
       lineGroups: lineGroups.map(group => {
         if (group === 'ALL_REMAINING') return 'ALL_REMAINING'
         if (typeof group === 'object' && group.type === 'SPLIT') return `SPLIT ${group.line}`
         return group.join(' ')
       }),
       syntaxColors,
-      animationTiming
+      animationTiming: timingConfig
     }
 
     // Create FormData to send file and config
@@ -490,6 +520,46 @@ function App() {
       tokens: tokenizeLine(line, patterns, syntaxColors)
     }))
   }, [fileContent, fileExtension, syntaxColors])
+
+  const lineGroupMap = useMemo(() => {
+    const map = new Map()
+    const addToMap = (lineNum, groupNum) => {
+      const existing = map.get(lineNum) || []
+      if (!existing.includes(groupNum)) {
+        map.set(lineNum, [...existing, groupNum])
+      }
+    }
+
+    // Track which lines are consumed by ALL_REMAINING to keep semantics consistent
+    const consumed = new Set()
+
+    lineGroups.forEach((group, idx) => {
+      const groupNum = idx + 1
+      if (group === 'ALL_REMAINING') {
+        for (let ln = startLine; ln <= endLine; ln++) {
+          if (!consumed.has(ln)) {
+            addToMap(ln, groupNum)
+            consumed.add(ln)
+          }
+        }
+      } else if (typeof group === 'object' && group.type === 'SPLIT') {
+        const ln = group.line
+        if (ln >= startLine && ln <= endLine && !consumed.has(ln)) {
+          addToMap(ln, groupNum)
+          consumed.add(ln)
+        }
+      } else if (Array.isArray(group)) {
+        group.forEach(ln => {
+          if (ln >= startLine && ln <= endLine && !consumed.has(ln)) {
+            addToMap(ln, groupNum)
+            consumed.add(ln)
+          }
+        })
+      }
+    })
+
+    return map
+  }, [lineGroups, startLine, endLine])
 
   const isLineInRange = (lineNum) => {
     return lineNum >= startLine && lineNum <= endLine
@@ -644,6 +714,112 @@ function App() {
               </motion.div>
 
 
+              {/* Video Orientation */}
+              <motion.div
+                className="form-section"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.4, delay: 0.28 }}
+              >
+                <h2>5. Video Orientation</h2>
+                <p className="help-text">
+                  Choose the aspect ratio for your video output.
+                </p>
+                <div className="orientation-toggle">
+                  <button
+                    type="button"
+                    className={`orientation-btn ${orientation === 'landscape' ? 'active' : ''}`}
+                    onClick={() => setOrientation('landscape')}
+                  >
+                    <span className="orientation-icon landscape-icon"></span>
+                    <span className="orientation-label">Landscape</span>
+                    <span className="orientation-size">1920×1080</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`orientation-btn ${orientation === 'portrait' ? 'active' : ''}`}
+                    onClick={() => setOrientation('portrait')}
+                  >
+                    <span className="orientation-icon portrait-icon"></span>
+                    <span className="orientation-label">Portrait</span>
+                    <span className="orientation-size">1080×1920</span>
+                  </button>
+                </div>
+              </motion.div>
+
+              {/* Animation Timing */}
+              <motion.div
+                className="form-section"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.4, delay: 0.29 }}
+              >
+                <h2>6. Animation Timing</h2>
+                <p className="help-text">
+                  Fine-tune how long each part of the animation lasts (seconds).
+                </p>
+                <div className="timing-inputs-grid">
+                  <div className="timing-input-group">
+                    <label htmlFor="initial-delay">Initial delay</label>
+                    <input
+                      type="number"
+                      id="initial-delay"
+                      min="0"
+                      step="0.1"
+                      value={animationTiming.initialDelay}
+                      onChange={(e) => updateTiming('initialDelay', e.target.value)}
+                    />
+                    <span className="input-suffix">sec</span>
+                  </div>
+
+                  <div className="timing-input-group">
+                    <label htmlFor="line-slide">Line slide-in</label>
+                    <input
+                      type="number"
+                      id="line-slide"
+                      min="0"
+                      step="0.1"
+                      value={animationTiming.lineSlideIn}
+                      onChange={(e) => updateTiming('lineSlideIn', e.target.value)}
+                    />
+                    <span className="input-suffix">sec</span>
+                  </div>
+
+                  <div className="timing-input-group">
+                    <label htmlFor="group-pause">Pause between groups</label>
+                    <input
+                      type="number"
+                      id="group-pause"
+                      min="0"
+                      step="0.1"
+                      value={animationTiming.pauseBetweenGroups}
+                      onChange={(e) => updateTiming('pauseBetweenGroups', e.target.value)}
+                    />
+                    <span className="input-suffix">sec</span>
+                  </div>
+
+                  <div className="timing-input-group">
+                    <label htmlFor="final-pause">Final pause</label>
+                    <input
+                      type="number"
+                      id="final-pause"
+                      min="0"
+                      step="0.1"
+                      value={animationTiming.finalPause}
+                      onChange={(e) => updateTiming('finalPause', e.target.value)}
+                    />
+                    <span className="input-suffix">sec</span>
+                  </div>
+                </div>
+                <div className="timing-actions">
+                  <button type="button" className="btn-reset" onClick={resetTiming}>
+                    Reset to defaults
+                  </button>
+                </div>
+              </motion.div>
+
               {/* Line Groups */}
               <motion.div
                 className="form-section"
@@ -652,7 +828,7 @@ function App() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
               >
-                <h2>6. Define Line Groups</h2>
+                <h2>7. Define Line Groups</h2>
                 <p className="help-text">
                   Enter line numbers for each animation group (space-separated).
                   Leave empty and click "Add Group" to show all remaining lines.
@@ -780,6 +956,9 @@ function App() {
                   const lineNum = index + 1
                   const inRange = isLineInRange(lineNum)
                   const inGroup = isLineInGroup(lineNum)
+                  const indicatorText = lineGroupMap.get(lineNum)?.length
+                    ? `G${lineGroupMap.get(lineNum).join(',')}`
+                    : ''
                   const paddedLineNum = String(lineNum).padStart(lineNumWidth, ' ')
                   return (
                     <div
@@ -788,6 +967,7 @@ function App() {
                     >
                       <span className="line-number">{paddedLineNum}</span>
                       <span className="line-content">{line || ' '}</span>
+                      <span className="line-group-indicator">{indicatorText}</span>
                     </div>
                   )
                 })

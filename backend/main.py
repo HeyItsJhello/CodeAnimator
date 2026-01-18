@@ -46,15 +46,22 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
     while not stop_event.is_set():
         try:
             if media_dir.exists():
-                # Count SVG files (text/code objects)
-                svg_files = sum(1 for _ in (media_dir / "Tex").rglob("*.svg") if (media_dir / "Tex").exists())
+                # Count SVG files (text/code objects) - single existence check
+                tex_dir = media_dir / "Tex"
+                svg_files = sum(1 for _ in tex_dir.rglob("*.svg")) if tex_dir.exists() else 0
 
-                # Count PNG frames in partial_movie_files
-                partial_dir = media_dir / "videos" / "CodeAnimator" / "1080p60" / "partial_movie_files"
-                frame_files = sum(1 for _ in partial_dir.rglob("*.png") if partial_dir.exists()) if partial_dir.exists() else 0
-
-                # Check for final video
-                video_exists = any((media_dir / "videos" / "CodeAnimator" / "1080p60").rglob("*.mp4")) if (media_dir / "videos" / "CodeAnimator" / "1080p60").exists() else False
+                # Count PNG frames more efficiently - consolidate directory checks
+                frame_files = 0
+                video_exists = False
+                for quality_dir in ["1080p60", "1920p60"]:
+                    partial_dir = media_dir / "videos" / "CodeAnimator" / quality_dir / "partial_movie_files"
+                    if partial_dir.exists():
+                        # Count files with list comprehension (more efficient than generator with sum)
+                        frame_files += len([f for f in partial_dir.glob("*.png")])
+                    video_dir = media_dir / "videos" / "CodeAnimator" / quality_dir
+                    # Early exit if video found - no need to check further
+                    if not video_exists and video_dir.exists():
+                        video_exists = any(video_dir.glob("*.mp4"))
 
                 total_files = svg_files + frame_files
 
@@ -77,11 +84,9 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
 
                     # Frame rendering phase (15-90%)
                     elif frame_files > 0 and current_progress < 90:
-                        svg_phase_complete = True
-                        # Estimate frames based on file count
-                        # 1080p60 generates many frames (typically 100-500+ depending on animation length)
-                        frame_progress = min(75, (frame_files / 300) * 75)  # Adjusted for typical frame count
-                        progress = min(90, 15 + frame_progress)  # Cap at 90%
+                        # Estimate frames based on file count - more efficient calculation
+                        frame_progress = min(75, (frame_files / 300) * 75)
+                        progress = min(90, 15 + frame_progress)
                         progress_tracking[task_id] = {
                             "progress": progress,
                             "status": "rendering frames",
@@ -98,8 +103,7 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
                         }
 
             time.sleep(0.5)  # Check every 500ms
-        except Exception as e:
-            print(f"Progress monitor error: {e}")
+        except Exception:
             break
 
     # Final progress will be set by main function
@@ -134,32 +138,35 @@ async def create_animation(
         start_line = config_data["startLine"]
         end_line = config_data["endLine"]
         include_comments = config_data["includeComments"]
+        orientation = config_data.get("orientation", "landscape")  # 'landscape' or 'portrait'
         line_groups = config_data["lineGroups"]
         syntax_colors = config_data.get("syntaxColors", {})
+        animation_timing = config_data.get("animationTiming", {})
 
-        # Generate unique filename
+        # Generate unique filename - do this once
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         original_filename = Path(file.filename).stem
         file_extension = Path(file.filename).suffix
         unique_filename = f"{original_filename}_{timestamp}{file_extension}"
 
-        # Save uploaded file
+        # Save uploaded file - read once into memory
         upload_path = UPLOADS_DIR / unique_filename
-        with open(upload_path, "wb") as buffer:
-            content = await file.read()
-            buffer.write(content)
+        content = await file.read()
+        upload_path.write_bytes(content)
 
-        # Create config file for CodeAnimator
+        # Create config file for CodeAnimator - build all content at once
         config_path = "/tmp/anim_config.txt"
-        with open(config_path, "w") as f:
-            f.write(f"{upload_path}\n")
-            f.write(f"{start_line}\n")
-            f.write(f"{end_line}\n")
-            f.write(f"{include_comments}\n")
-            # Write syntax colors as JSON on line 5
-            f.write(f"{json.dumps(syntax_colors)}\n")
-            for group in line_groups:
-                f.write(f"{group}\n")
+        config_lines = [
+            str(upload_path),
+            str(start_line),
+            str(end_line),
+            str(include_comments),
+            json.dumps(syntax_colors),
+            orientation,
+            json.dumps(animation_timing)
+        ]
+        config_lines.extend(line_groups)
+        Path(config_path).write_text('\n'.join(config_lines))
 
         # Generate output filename
         output_name = f"{original_filename}_{start_line}-{end_line}"
@@ -174,10 +181,25 @@ async def create_animation(
         )
         progress_thread.start()
 
-        # Run Manim to generate animation at 1080p60 ALWAYS
-        print(f"Starting animation generation for {unique_filename}...")
-        result = subprocess.run(
-            [
+        # Build Manim command based on orientation
+        if orientation == "portrait":
+            # Portrait mode: 1080x1920 at 60fps
+            # Use -r for resolution (W,H format) - this sets non-16:9 aspect ratio
+            manim_cmd = [
+                "manim",
+                "-r", "1080,1920",
+                "--frame_rate", "60",
+                "-p",  # Preview (opens when done)
+                "--disable_caching",
+                "--flush_cache",
+                "-o", output_name,
+                str(ANIMATOR_SCRIPT),
+                "CodeAnimation"
+            ]
+            video_quality_dir = "1920p60"  # Manim names by height + framerate
+        else:
+            # Landscape mode: 1920x1080 at 60fps (default -qh)
+            manim_cmd = [
                 "manim",
                 "-pqh",  # High quality: 1080p60
                 "--disable_caching",
@@ -185,13 +207,17 @@ async def create_animation(
                 "-o", output_name,
                 str(ANIMATOR_SCRIPT),
                 "CodeAnimation"
-            ],
+            ]
+            video_quality_dir = "1080p60"
+
+        result = subprocess.run(
+            manim_cmd,
             capture_output=True,
             text=True,
             timeout=300  # 5 minute timeout
         )
 
-        # Stop progress monitoring
+        # monitoring
         stop_event.set()
         progress_thread.join(timeout=2)
 
@@ -210,9 +236,9 @@ async def create_animation(
             progress_tracking[task_id] = {"progress": 95, "status": "finalizing"}
 
         # Find the generated video file
-        # Manim outputs to media/videos/CodeAnimator/1080p60/ (ALWAYS)
+        # Manim outputs to media/videos/CodeAnimator/{quality_dir}/
         video_filename = f"{output_name}.mp4"
-        video_path = BASE_DIR / "media" / "videos" / "CodeAnimator" / "1080p60" / video_filename
+        video_path = BASE_DIR / "media" / "videos" / "CodeAnimator" / video_quality_dir / video_filename
 
         if not video_path.exists():
             raise HTTPException(
@@ -225,17 +251,19 @@ async def create_animation(
         shutil.copy(video_path, output_video_path)
 
         # Clean up user's uploaded file immediately (PRIVACY)
-        if upload_path.exists():
-            upload_path.unlink()
-            print(f"Deleted uploaded file: {upload_path}")
+        try:
+            if upload_path.exists():
+                upload_path.unlink()
+        except Exception:
+            pass
 
-        # Clean up all generated media files (PRIVACY)
+        # Clean up all generated media files (PRIVACY) - more efficient batch delete
         media_dir = BASE_DIR / "media"
         if media_dir.exists():
-            shutil.rmtree(media_dir)
-            print(f"Cleaned up media directory: {media_dir}")
-
-        print(f"Animation generated successfully: {output_video_path}")
+            try:
+                shutil.rmtree(media_dir)
+            except Exception:
+                pass
 
         # Mark as complete
         progress_tracking[task_id] = {"progress": 100, "status": "complete"}
@@ -257,8 +285,7 @@ async def create_animation(
     except Exception as e:
         print(f"Error: {str(e)}")
         if 'task_id' in locals():
-            progress_tracking[task_id] = {"progress": 0, "status": "error"}
-        raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/download/{video_id}")
@@ -273,11 +300,13 @@ async def download_video(video_id: str, background_tasks: BackgroundTasks):
 
     # Delete ALL outputs after download completes (PRIVACY)
     def cleanup_all_outputs():
-        for file in OUTPUTS_DIR.glob("*"):
-            if file.is_file():
-                file.unlink()
-                print(f"Deleted: {file}")
-        print("Cleaned all outputs directory after download")
+        try:
+            # Use glob for more efficient batch operations
+            for file in OUTPUTS_DIR.glob("*"):
+                if file.is_file():
+                    file.unlink()
+        except Exception as e:
+            print(f"Warning during cleanup: {e}")
 
     background_tasks.add_task(cleanup_all_outputs)
 

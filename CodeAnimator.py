@@ -6,6 +6,28 @@ from pygments import lex
 from pygments.lexers import get_lexer_for_filename, TextLexer
 from pygments.token import Token
 
+# Check orientation from config before Scene initializes
+_orientation = "landscape"
+try:
+    with open("/tmp/anim_config.txt", "r") as f:
+        lines = f.read().strip().split("\n")
+        if len(lines) > 5 and lines[5].strip() in ['landscape', 'portrait']:
+            _orientation = lines[5].strip()
+except:
+    pass
+
+# Set frame dimensions based on orientation
+if _orientation == "portrait":
+    config.frame_width = 9.0
+    config.frame_height = 16.0
+    config.pixel_width = 1080
+    config.pixel_height = 1920
+else:
+    config.frame_width = 16.0
+    config.frame_height = 9.0
+    config.pixel_width = 1920
+    config.pixel_height = 1080
+
 class CodeAnimation(Scene):
     def construct(self):
         self.renderer.skip_animations = False
@@ -33,7 +55,43 @@ class CodeAnimation(Scene):
         except (json.JSONDecodeError, IndexError):
             custom_colors = {}
 
+        # Parse orientation (line 6) - 'landscape' or 'portrait'
+        orientation = "landscape"
+        try:
+            if len(lines) > 5 and lines[5].strip() in ['landscape', 'portrait']:
+                orientation = lines[5].strip()
+        except IndexError:
+            orientation = "landscape"
+
+        # Parse animation timing (line 7) - JSON with optional overrides
+        default_timing = {
+            "initialDelay": 1.5,
+            "lineSlideIn": 0.6,
+            "pauseBetweenGroups": 0.3,
+            "finalPause": 2.0,
+        }
+        animation_timing = default_timing.copy()
+        try:
+            if len(lines) > 6 and lines[6].strip().startswith('{'):
+                parsed_timings = json.loads(lines[6])
+                for key, default_val in default_timing.items():
+                    try:
+                        if key in parsed_timings:
+                            animation_timing[key] = float(parsed_timings[key])
+                    except (TypeError, ValueError):
+                        pass
+        except (json.JSONDecodeError, IndexError):
+            animation_timing = default_timing.copy()
+
+        initial_delay = max(0.0, animation_timing.get("initialDelay", default_timing["initialDelay"]))
+        line_slide_in = max(0.05, animation_timing.get("lineSlideIn", default_timing["lineSlideIn"]))
+        pause_between_groups = max(0.0, animation_timing.get("pauseBetweenGroups", default_timing["pauseBetweenGroups"]))
+        final_pause = max(0.0, animation_timing.get("finalPause", default_timing["finalPause"]))
+        scroll_duration = max(line_slide_in, 0.5)
+
         print(f"DEBUG: Custom colors: {custom_colors}")
+        print(f"DEBUG: Orientation: {orientation}")
+        print(f"DEBUG: Animation timing: {animation_timing}")
 
         # making the custom filename for the output, example_1-11.mp4
         base_filename = os.path.splitext(os.path.basename(script_path))[0]
@@ -50,12 +108,12 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Lines {start_line}-{end_line}")
         print(f"DEBUG: Include comments: {include_comments}")
 
-        # Reading line groups (start after colors and timing JSON lines)
+        # Reading line groups (start after colors JSON, orientation, and timing lines)
         line_groups = []
-        # Find the first non-JSON line after line 4
-        start_idx = 4
-        for i in range(4, len(lines)):
-            if lines[i].strip().startswith('{'):
+        # Find the first line group entry (after line 5 which is colors, line 6 orientation, line 7 timing)
+        start_idx = 6
+        for i in range(6, len(lines)):
+            if lines[i].strip().startswith('{') or lines[i].strip() in ['landscape', 'portrait']:
                 start_idx = i + 1
             else:
                 start_idx = i
@@ -92,48 +150,64 @@ class CodeAnimation(Scene):
         # Getting the correct line indexes from the file
         line_to_index = {line_num: idx for idx, (line_num, _) in enumerate(filtered_lines)}
         
-        # Some debug, too much went wrong originally
         print(f"DEBUG: Filtered {len(filtered_lines)} lines")
         print(f"DEBUG: Line groups: {line_groups}")
         
-        # Calculate max line number width for alignment
         max_line_num = max(line_num for line_num, _ in filtered_lines)
         line_num_width = len(str(max_line_num))
         
         # Create text objects for each line with syntax highlighting
         line_mobjects = []
-        shown_lines = set()  # Track which lines have been shown
+        shown_lines = set()
         
-        # Calculate vertical positioning
         num_lines = len(filtered_lines)
-        
-        # Define margins (in Manim units) - smaller for more space
-        top_margin = 0.3
-        bottom_margin = 0.3
-        left_margin = 0.3
-        right_margin = 0.3
-        
-        # Available space
-        available_height = config.frame_height - top_margin - bottom_margin
-        available_width = config.frame_width - left_margin - right_margin
-        
-        # Adaptive line height and font size based on number of lines
-        MIN_FONT_SIZE = 16  
-        MAX_FONT_SIZE = 28
-        MIN_LINE_HEIGHT = 0.35  
-        MAX_LINE_HEIGHT = 0.6
+        frame_w = config.frame_width
+        frame_h = config.frame_height
 
-        # Start with ideal line height that would fill the screen
+        print(f"DEBUG: Manim frame dimensions AFTER setting: {frame_w:.2f}w x {frame_h:.2f}h")
+        print(f"DEBUG: Pixel dimensions: {config.pixel_width}x{config.pixel_height}")
+        print(f"DEBUG: Orientation setting: {orientation}")
+
+        if orientation == "portrait":
+            top_margin = 0.3
+            bottom_margin = 0.3
+            left_margin = 0.05
+            right_margin = 0.05
+        else:
+            top_margin = 0.3
+            bottom_margin = 0.3
+            left_margin = 0.3
+            right_margin = 0.3
+
+        available_height = frame_h - top_margin - bottom_margin
+        available_width = frame_w - left_margin - right_margin
+
+        print(f"DEBUG: Available space: {available_width:.2f}w x {available_height:.2f}h")
+        print(f"DEBUG: Margins - Top: {top_margin}, Bottom: {bottom_margin}, Left: {left_margin}, Right: {right_margin}")
+
+        if orientation == "portrait":
+            MIN_FONT_SIZE = 32
+            MAX_FONT_SIZE = 48
+            MIN_LINE_HEIGHT = 0.32
+            MAX_LINE_HEIGHT = 0.45
+        else:
+            MIN_FONT_SIZE = 16
+            MAX_FONT_SIZE = 28
+            MIN_LINE_HEIGHT = 0.35
+            MAX_LINE_HEIGHT = 0.6
+
         ideal_line_height = available_height / num_lines
-        # Clamp to reasonable range
         line_height = max(MIN_LINE_HEIGHT, min(MAX_LINE_HEIGHT, ideal_line_height))
 
-        # Font size scales with line height
-        base_font_size = int(line_height * 45)
+        # Font size scales with line height - use larger multiplier for portrait, normal for landscape
+        font_multiplier = 55 if orientation == "portrait" else 45
+        base_font_size = int(line_height * font_multiplier)
         base_font_size = max(MIN_FONT_SIZE, min(MAX_FONT_SIZE, base_font_size))
 
         total_height = num_lines * line_height
 
+        print(f"DEBUG: Font sizing params - MIN: {MIN_FONT_SIZE}, MAX: {MAX_FONT_SIZE}, Multiplier: {font_multiplier}")
+        print(f"DEBUG: Line height params - MIN: {MIN_LINE_HEIGHT}, MAX: {MAX_LINE_HEIGHT}")
         print(f"DEBUG: Initial line_height: {line_height:.3f}")
         print(f"DEBUG: Initial font_size: {base_font_size}")
         print(f"DEBUG: Number of lines: {num_lines}")
@@ -150,10 +224,13 @@ class CodeAnimation(Scene):
                 enable_chunking = True
                 chunk_size = lines_that_fit
                 line_height = MIN_LINE_HEIGHT
-                base_font_size = MIN_FONT_SIZE
+                font_multiplier = 55 if orientation == "portrait" else 45
+                base_font_size = int(line_height * font_multiplier)
+                base_font_size = max(MIN_FONT_SIZE, min(MAX_FONT_SIZE, base_font_size))
             else:
                 line_height = available_height / num_lines
-                base_font_size = int(line_height * 45)
+                font_multiplier = 55 if orientation == "portrait" else 45
+                base_font_size = int(line_height * font_multiplier)
                 base_font_size = max(MIN_FONT_SIZE, min(MAX_FONT_SIZE, base_font_size))
         
         # Get colors from custom config or defaults
@@ -210,27 +287,31 @@ class CodeAnimation(Scene):
 
         DEFAULT_COLOR = color_default
 
+        # Cache lexer to avoid repeated file detection
         try:
             lexer = get_lexer_for_filename(script_path)
-        except:
+        except Exception:
             lexer = TextLexer()
 
         full_code_text = '\n'.join([content for _, content in filtered_lines])
         full_tokens = list(lex(full_code_text, lexer))
 
+        # Build color map more efficiently - pre-compute token colors
         color_map = {}
         current_line = 0
         current_char = 0
 
         for token_type, token_value in full_tokens:
-            token_color = DEFAULT_COLOR
-            if token_type in TOKEN_COLORS:
-                token_color = TOKEN_COLORS[token_type]
-            else:
+            # Optimize token color lookup with early exit
+            token_color = TOKEN_COLORS.get(token_type, DEFAULT_COLOR)
+            if token_color == DEFAULT_COLOR and token_type not in TOKEN_COLORS:
+                # Only iterate through inherited types if not found directly
                 for ttype, tcolor in TOKEN_COLORS.items():
                     if token_type in ttype:
                         token_color = tcolor
                         break
+            
+            # Process token value and map positions to colors
             for char in token_value:
                 if char == '\n':
                     current_line += 1
@@ -239,47 +320,50 @@ class CodeAnimation(Scene):
                     color_map[(current_line, current_char)] = token_color
                     current_char += 1
 
-        # First pass to measure max width
+        # Measure max line width for scaling - create text objects once
         temp_lines = []
         max_line_width = 0
         for line_num, content in filtered_lines:
             content_display = content.replace('\t', '    ')
             full_line = f"{line_num:>{line_num_width}}  {content_display}"
+            # Create and cache Text object in one pass to avoid recreating later
             line_group = Text(full_line, font="Monospace", font_size=base_font_size, color=DEFAULT_COLOR, disable_ligatures=True)
-            temp_lines.append((line_num, content, line_group))
+            temp_lines.append((line_num, content, line_group, content_display))
             max_line_width = max(max_line_width, line_group.width)
         
         width_scale = 1.0
         if max_line_width > available_width:
             width_scale = available_width / max_line_width
 
+        print(f"DEBUG: Max line width: {max_line_width:.3f}, Available width: {available_width:.2f}")
+        print(f"DEBUG: Width scale: {width_scale:.3f}")
+
         y_start = (num_lines * line_height / 2) - (line_height / 2)
 
-        # Second pass: final lines
-        for line_idx, (line_num, content) in enumerate(filtered_lines):
-            content_display = content.replace('\t', '    ')
-            full_line = f"{line_num:>{line_num_width}}  {content_display}"
-
-            line_group = Text(full_line, font="Monospace", font_size=base_font_size, color=DEFAULT_COLOR, disable_ligatures=True)
+        for line_idx, (line_num, content, line_group, content_display) in enumerate(temp_lines):
             display_char_idx = line_num_width + 2
             original_char_idx = 0
+            
+            # Build color assignments once instead of char-by-char calls
+            color_assignments = []
             for orig_char in content:
                 if orig_char == '\t':
                     color = color_map.get((line_idx, original_char_idx), DEFAULT_COLOR)
                     for _ in range(4):
-                        try:
-                            line_group[display_char_idx].set_color(color)
-                        except:
-                            pass
+                        color_assignments.append((display_char_idx, color))
                         display_char_idx += 1
                 else:
                     color = color_map.get((line_idx, original_char_idx), DEFAULT_COLOR)
-                    try:
-                        line_group[display_char_idx].set_color(color)
-                    except:
-                        pass
+                    color_assignments.append((display_char_idx, color))
                     display_char_idx += 1
                 original_char_idx += 1
+            
+            # Apply all color changes in batch
+            for char_idx, color in color_assignments:
+                try:
+                    line_group[char_idx].set_color(color)
+                except:
+                    pass
 
             y_pos = y_start - (line_idx * line_height)
             line_group.move_to([0, y_pos, 0])
@@ -289,11 +373,11 @@ class CodeAnimation(Scene):
                 line_group.move_to([0, y_pos, 0])
                 line_group.to_edge(LEFT, buff=left_margin)
             final_pos = line_group.get_center().copy()
-            line_group.shift(LEFT * (config.frame_width + 2))
+            line_group.shift(LEFT * (frame_w + 2))
             self.add(line_group)
             line_mobjects.append((line_group, final_pos))
 
-        self.wait(1.5)
+        self.wait(initial_delay)
 
         # Animate line groups with chunking support
         if enable_chunking:
@@ -310,51 +394,37 @@ class CodeAnimation(Scene):
 
             for group in line_groups:
                 if group == "ALL_REMAINING":
-                    # Show all remaining lines in chunks
-                    remaining_indices = []
-                    for idx, (line_num, _) in enumerate(filtered_lines):
-                        if line_num not in shown_lines and idx < len(line_mobjects):
-                            remaining_indices.append((idx, line_num))
+                    remaining_indices = [(idx, line_num) for idx, (line_num, _) in enumerate(filtered_lines) 
+                                         if line_num not in shown_lines and idx < len(line_mobjects)]
 
-                    # Process remaining lines in chunks
                     while remaining_indices:
-                        # How many slots are available in the current visible area?
                         available_slots = chunk_size - current_visible_count
 
                         if available_slots <= 0:
-                            # Need to scroll - no room left
-                            scroll_animations = []
-                            for line_obj in currently_visible:
-                                scroll_animations.append(line_obj.animate.shift(UP * (available_height + 1)))
-                            self.play(*scroll_animations, run_time=0.8)
+                            scroll_animations = [line_obj.animate.shift(UP * (available_height + 1)) 
+                                                for line_obj in currently_visible]
+                            self.play(*scroll_animations, run_time=scroll_duration)
                             currently_visible.clear()
                             current_visible_count = 0
                             available_slots = chunk_size
 
-                        # Take as many lines as will fit
                         chunk = remaining_indices[:available_slots]
                         remaining_indices = remaining_indices[available_slots:]
 
-                        # Slide in the new chunk from the left
                         animations = []
                         for idx, line_num in chunk:
-                            line_obj, _ = line_mobjects[idx]
-                            # Position at the next available slot
+                            line_obj, original_final_pos = line_mobjects[idx]
                             slot_y = get_chunk_position(current_visible_count)
-                            # Get x position from original final_pos
-                            _, original_final_pos = line_mobjects[idx]
                             target_pos = [original_final_pos[0], slot_y, 0]
-                            # First, move to correct Y position while staying off-screen left
-                            line_obj.move_to([-(config.frame_width + 2), slot_y, 0])
-                            # Then animate sliding in from left
+                            line_obj.move_to([-(frame_w + 2), slot_y, 0])
                             animations.append(line_obj.animate.move_to(target_pos))
                             shown_lines.add(line_num)
                             currently_visible.append(line_obj)
                             current_visible_count += 1
 
                         if animations:
-                            self.play(*animations, run_time=0.6)
-                            self.wait(0.3)
+                            self.play(*animations, run_time=line_slide_in)
+                            self.wait(pause_between_groups)
 
                 elif isinstance(group, tuple) and group[0] == "SPLIT":
                     # SPLIT command: scroll current content off, then show from the split line
@@ -365,7 +435,7 @@ class CodeAnimation(Scene):
                         scroll_animations = []
                         for line_obj in currently_visible:
                             scroll_animations.append(line_obj.animate.shift(UP * (available_height + 1)))
-                        self.play(*scroll_animations, run_time=0.8)
+                        self.play(*scroll_animations, run_time=scroll_duration)
                         currently_visible.clear()
                         current_visible_count = 0
 
@@ -377,85 +447,64 @@ class CodeAnimation(Scene):
                             slot_y = get_chunk_position(current_visible_count)
                             target_pos = [original_final_pos[0], slot_y, 0]
                             # First, move to correct Y position while staying off-screen left
-                            line_obj.move_to([-(config.frame_width + 2), slot_y, 0])
+                            line_obj.move_to([-(frame_w + 2), slot_y, 0])
                             # Then animate sliding in from left
-                            self.play(line_obj.animate.move_to(target_pos), run_time=0.6)
+                            self.play(line_obj.animate.move_to(target_pos), run_time=line_slide_in)
                             shown_lines.add(split_line_num)
                             currently_visible.append(line_obj)
                             current_visible_count += 1
-                            self.wait(0.3)
+                            self.wait(pause_between_groups)
 
                 else:
-                    # Show specific lines (user-defined group)
-                    lines_to_show = []
-                    for line_num in group:
-                        if line_num in line_to_index and line_num not in shown_lines:
-                            idx = line_to_index[line_num]
-                            if idx < len(line_mobjects):
-                                lines_to_show.append((idx, line_num))
+                    lines_to_show = [(line_to_index[line_num], line_num) for line_num in group 
+                                     if line_num in line_to_index and line_num not in shown_lines 
+                                     and line_to_index[line_num] < len(line_mobjects)]
 
                     if lines_to_show:
-                        # Check how many slots we need vs how many are available
                         lines_needed = len(lines_to_show)
                         available_slots = chunk_size - current_visible_count
 
-                        # If we can't fit the group, scroll first
                         if lines_needed > available_slots:
-                            scroll_animations = []
-                            for line_obj in currently_visible:
-                                scroll_animations.append(line_obj.animate.shift(UP * (available_height + 1)))
-                            self.play(*scroll_animations, run_time=0.8)
+                            scroll_animations = [line_obj.animate.shift(UP * (available_height + 1)) 
+                                                for line_obj in currently_visible]
+                            self.play(*scroll_animations, run_time=scroll_duration)
                             currently_visible.clear()
                             current_visible_count = 0
 
-                        # Slide in from the left, positioning at sequential slots
                         animations = []
                         for idx, line_num in lines_to_show:
                             line_obj, original_final_pos = line_mobjects[idx]
-                            # Position at the next available slot
                             slot_y = get_chunk_position(current_visible_count)
                             target_pos = [original_final_pos[0], slot_y, 0]
-                            # First, move to correct Y position while staying off-screen left
-                            line_obj.move_to([-(config.frame_width + 2), slot_y, 0])
-                            # Then animate sliding in from left
+                            line_obj.move_to([-(frame_w + 2), slot_y, 0])
                             animations.append(line_obj.animate.move_to(target_pos))
                             shown_lines.add(line_num)
                             currently_visible.append(line_obj)
                             current_visible_count += 1
 
-                        self.play(*animations, run_time=0.6)
-                        self.wait(0.3)
+                        self.play(*animations, run_time=line_slide_in)
+                        self.wait(pause_between_groups)
         else:
-            # Normal mode - no chunking needed
             for group in line_groups:
                 if group == "ALL_REMAINING":
-                    # Show all lines that haven't been shown yet
-                    lines_to_show = []
-                    for idx, (line_num, _) in enumerate(filtered_lines):
-                        if line_num not in shown_lines and idx < len(line_mobjects):
-                            lines_to_show.append((idx, line_num))
+                    lines_to_show = [(idx, line_num) for idx, (line_num, _) in enumerate(filtered_lines) 
+                                     if line_num not in shown_lines and idx < len(line_mobjects)]
                 else:
-                    # Show specific lines
-                    lines_to_show = []
-                    for line_num in group:
-                        if line_num in line_to_index and line_num not in shown_lines:
-                            idx = line_to_index[line_num]
-                            if idx < len(line_mobjects):
-                                lines_to_show.append((idx, line_num))
+                    lines_to_show = [(line_to_index[line_num], line_num) for line_num in group 
+                                     if line_num in line_to_index and line_num not in shown_lines 
+                                     and line_to_index[line_num] < len(line_mobjects)]
 
                 if lines_to_show:
-                    # Slide in from the left to original position
-                    animations = []
+                    animations = [line_mobjects[idx][0].animate.move_to(line_mobjects[idx][1]) 
+                                 for idx, _ in lines_to_show]
                     for idx, line_num in lines_to_show:
-                        line_obj, final_pos = line_mobjects[idx]
-                        animations.append(line_obj.animate.move_to(final_pos))
                         shown_lines.add(line_num)
 
-                    self.play(*animations, run_time=0.6)
-                    self.wait(0.3)
+                    self.play(*animations, run_time=line_slide_in)
+                    self.wait(pause_between_groups)
 
         # Final pause
-        self.wait(2.0)
+        self.wait(final_pause)
 
         # Clean up SVG cache files after rendering
         import shutil
