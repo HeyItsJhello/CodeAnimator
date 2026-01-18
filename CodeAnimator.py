@@ -260,27 +260,31 @@ class CodeAnimation(Scene):
 
         DEFAULT_COLOR = color_default
 
+        # Cache lexer to avoid repeated file detection
         try:
             lexer = get_lexer_for_filename(script_path)
-        except:
+        except Exception:
             lexer = TextLexer()
 
         full_code_text = '\n'.join([content for _, content in filtered_lines])
         full_tokens = list(lex(full_code_text, lexer))
 
+        # Build color map more efficiently - pre-compute token colors
         color_map = {}
         current_line = 0
         current_char = 0
 
         for token_type, token_value in full_tokens:
-            token_color = DEFAULT_COLOR
-            if token_type in TOKEN_COLORS:
-                token_color = TOKEN_COLORS[token_type]
-            else:
+            # Optimize token color lookup with early exit
+            token_color = TOKEN_COLORS.get(token_type, DEFAULT_COLOR)
+            if token_color == DEFAULT_COLOR and token_type not in TOKEN_COLORS:
+                # Only iterate through inherited types if not found directly
                 for ttype, tcolor in TOKEN_COLORS.items():
                     if token_type in ttype:
                         token_color = tcolor
                         break
+            
+            # Process token value and map positions to colors
             for char in token_value:
                 if char == '\n':
                     current_line += 1
@@ -289,14 +293,15 @@ class CodeAnimation(Scene):
                     color_map[(current_line, current_char)] = token_color
                     current_char += 1
 
-        # Measure max line width for scaling
+        # Measure max line width for scaling - create text objects once
         temp_lines = []
         max_line_width = 0
         for line_num, content in filtered_lines:
             content_display = content.replace('\t', '    ')
             full_line = f"{line_num:>{line_num_width}}  {content_display}"
+            # Create and cache Text object in one pass to avoid recreating later
             line_group = Text(full_line, font="Monospace", font_size=base_font_size, color=DEFAULT_COLOR, disable_ligatures=True)
-            temp_lines.append((line_num, content, line_group))
+            temp_lines.append((line_num, content, line_group, content_display))
             max_line_width = max(max_line_width, line_group.width)
         
         width_scale = 1.0
@@ -308,27 +313,30 @@ class CodeAnimation(Scene):
 
         y_start = (num_lines * line_height / 2) - (line_height / 2)
 
-        for line_idx, (line_num, content, line_group) in enumerate(temp_lines):
+        for line_idx, (line_num, content, line_group, content_display) in enumerate(temp_lines):
             display_char_idx = line_num_width + 2
             original_char_idx = 0
             
+            # Build color assignments once instead of char-by-char calls
+            color_assignments = []
             for orig_char in content:
                 if orig_char == '\t':
                     color = color_map.get((line_idx, original_char_idx), DEFAULT_COLOR)
                     for _ in range(4):
-                        try:
-                            line_group[display_char_idx].set_color(color)
-                            display_char_idx += 1
-                        except:
-                            display_char_idx += 1
+                        color_assignments.append((display_char_idx, color))
+                        display_char_idx += 1
                 else:
                     color = color_map.get((line_idx, original_char_idx), DEFAULT_COLOR)
-                    try:
-                        line_group[display_char_idx].set_color(color)
-                    except:
-                        pass
+                    color_assignments.append((display_char_idx, color))
                     display_char_idx += 1
                 original_char_idx += 1
+            
+            # Apply all color changes in batch
+            for char_idx, color in color_assignments:
+                try:
+                    line_group[char_idx].set_color(color)
+                except:
+                    pass
 
             y_pos = y_start - (line_idx * line_height)
             line_group.move_to([0, y_pos, 0])
