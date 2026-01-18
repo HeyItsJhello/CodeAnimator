@@ -63,8 +63,35 @@ class CodeAnimation(Scene):
         except IndexError:
             orientation = "landscape"
 
+        # Parse animation timing (line 7) - JSON with optional overrides
+        default_timing = {
+            "initialDelay": 1.5,
+            "lineSlideIn": 0.6,
+            "pauseBetweenGroups": 0.3,
+            "finalPause": 2.0,
+        }
+        animation_timing = default_timing.copy()
+        try:
+            if len(lines) > 6 and lines[6].strip().startswith('{'):
+                parsed_timings = json.loads(lines[6])
+                for key, default_val in default_timing.items():
+                    try:
+                        if key in parsed_timings:
+                            animation_timing[key] = float(parsed_timings[key])
+                    except (TypeError, ValueError):
+                        pass
+        except (json.JSONDecodeError, IndexError):
+            animation_timing = default_timing.copy()
+
+        initial_delay = max(0.0, animation_timing.get("initialDelay", default_timing["initialDelay"]))
+        line_slide_in = max(0.05, animation_timing.get("lineSlideIn", default_timing["lineSlideIn"]))
+        pause_between_groups = max(0.0, animation_timing.get("pauseBetweenGroups", default_timing["pauseBetweenGroups"]))
+        final_pause = max(0.0, animation_timing.get("finalPause", default_timing["finalPause"]))
+        scroll_duration = max(line_slide_in, 0.5)
+
         print(f"DEBUG: Custom colors: {custom_colors}")
         print(f"DEBUG: Orientation: {orientation}")
+        print(f"DEBUG: Animation timing: {animation_timing}")
 
         # making the custom filename for the output, example_1-11.mp4
         base_filename = os.path.splitext(os.path.basename(script_path))[0]
@@ -81,9 +108,9 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Lines {start_line}-{end_line}")
         print(f"DEBUG: Include comments: {include_comments}")
 
-        # Reading line groups (start after colors JSON and orientation lines)
+        # Reading line groups (start after colors JSON, orientation, and timing lines)
         line_groups = []
-        # Find the first line group entry (after line 5 which is colors, line 6 which is orientation)
+        # Find the first line group entry (after line 5 which is colors, line 6 orientation, line 7 timing)
         start_idx = 6
         for i in range(6, len(lines)):
             if lines[i].strip().startswith('{') or lines[i].strip() in ['landscape', 'portrait']:
@@ -350,7 +377,7 @@ class CodeAnimation(Scene):
             self.add(line_group)
             line_mobjects.append((line_group, final_pos))
 
-        self.wait(1.5)
+        self.wait(initial_delay)
 
         # Animate line groups with chunking support
         if enable_chunking:
@@ -376,7 +403,7 @@ class CodeAnimation(Scene):
                         if available_slots <= 0:
                             scroll_animations = [line_obj.animate.shift(UP * (available_height + 1)) 
                                                 for line_obj in currently_visible]
-                            self.play(*scroll_animations, run_time=0.8)
+                            self.play(*scroll_animations, run_time=scroll_duration)
                             currently_visible.clear()
                             current_visible_count = 0
                             available_slots = chunk_size
@@ -396,8 +423,8 @@ class CodeAnimation(Scene):
                             current_visible_count += 1
 
                         if animations:
-                            self.play(*animations, run_time=0.6)
-                            self.wait(0.3)
+                            self.play(*animations, run_time=line_slide_in)
+                            self.wait(pause_between_groups)
 
                 elif isinstance(group, tuple) and group[0] == "SPLIT":
                     # SPLIT command: scroll current content off, then show from the split line
@@ -408,7 +435,7 @@ class CodeAnimation(Scene):
                         scroll_animations = []
                         for line_obj in currently_visible:
                             scroll_animations.append(line_obj.animate.shift(UP * (available_height + 1)))
-                        self.play(*scroll_animations, run_time=0.8)
+                        self.play(*scroll_animations, run_time=scroll_duration)
                         currently_visible.clear()
                         current_visible_count = 0
 
@@ -422,11 +449,11 @@ class CodeAnimation(Scene):
                             # First, move to correct Y position while staying off-screen left
                             line_obj.move_to([-(frame_w + 2), slot_y, 0])
                             # Then animate sliding in from left
-                            self.play(line_obj.animate.move_to(target_pos), run_time=0.6)
+                            self.play(line_obj.animate.move_to(target_pos), run_time=line_slide_in)
                             shown_lines.add(split_line_num)
                             currently_visible.append(line_obj)
                             current_visible_count += 1
-                            self.wait(0.3)
+                            self.wait(pause_between_groups)
 
                 else:
                     lines_to_show = [(line_to_index[line_num], line_num) for line_num in group 
@@ -440,7 +467,7 @@ class CodeAnimation(Scene):
                         if lines_needed > available_slots:
                             scroll_animations = [line_obj.animate.shift(UP * (available_height + 1)) 
                                                 for line_obj in currently_visible]
-                            self.play(*scroll_animations, run_time=0.8)
+                            self.play(*scroll_animations, run_time=scroll_duration)
                             currently_visible.clear()
                             current_visible_count = 0
 
@@ -455,8 +482,8 @@ class CodeAnimation(Scene):
                             currently_visible.append(line_obj)
                             current_visible_count += 1
 
-                        self.play(*animations, run_time=0.6)
-                        self.wait(0.3)
+                        self.play(*animations, run_time=line_slide_in)
+                        self.wait(pause_between_groups)
         else:
             for group in line_groups:
                 if group == "ALL_REMAINING":
@@ -473,11 +500,11 @@ class CodeAnimation(Scene):
                     for idx, line_num in lines_to_show:
                         shown_lines.add(line_num)
 
-                    self.play(*animations, run_time=0.6)
-                    self.wait(0.3)
+                    self.play(*animations, run_time=line_slide_in)
+                    self.wait(pause_between_groups)
 
         # Final pause
-        self.wait(2.0)
+        self.wait(final_pause)
 
         # Clean up SVG cache files after rendering
         import shutil

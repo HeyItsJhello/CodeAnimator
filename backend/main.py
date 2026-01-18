@@ -141,6 +141,7 @@ async def create_animation(
         orientation = config_data.get("orientation", "landscape")  # 'landscape' or 'portrait'
         line_groups = config_data["lineGroups"]
         syntax_colors = config_data.get("syntaxColors", {})
+        animation_timing = config_data.get("animationTiming", {})
 
         # Generate unique filename - do this once
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -161,7 +162,8 @@ async def create_animation(
             str(end_line),
             str(include_comments),
             json.dumps(syntax_colors),
-            orientation
+            orientation,
+            json.dumps(animation_timing)
         ]
         config_lines.extend(line_groups)
         Path(config_path).write_text('\n'.join(config_lines))

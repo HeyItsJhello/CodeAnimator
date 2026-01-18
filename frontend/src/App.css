@@ -533,6 +533,16 @@ h3 {
   flex-shrink: 0;
 }
 
+.line-group-indicator {
+  display: inline-block;
+  min-width: 80px;
+  padding: 0 0.75rem 0 0.5rem;
+  color: #e63946;
+  font-weight: bold;
+  text-align: right;
+  flex-shrink: 0;
+}
+
 .line-content {
   padding-right: 1rem;
   white-space: pre;
@@ -1653,6 +1663,12 @@ h3 {
   font-size: 0.85rem;
   color: #666;
   margin-top: 0.25rem;
+}
+
+.timing-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
 }
 
 @media (max-width: 768px) {
