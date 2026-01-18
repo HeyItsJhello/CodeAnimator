@@ -219,6 +219,18 @@ async def create_animation(
             timeout=300  # 5 minute timeout
         )
 
+        # Print all debug output from CodeAnimator
+        print("=" * 80)
+        print(f"MANIM OUTPUT FOR {orientation.upper()} MODE:")
+        print("=" * 80)
+        if result.stdout:
+            print("STDOUT:")
+            print(result.stdout)
+        if result.stderr:
+            print("STDERR:")
+            print(result.stderr)
+        print("=" * 80)
+
         # Stop progress monitoring
         stop_event.set()
         progress_thread.join(timeout=2)
