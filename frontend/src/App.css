@@ -156,6 +156,12 @@ h3 {
     4px 4px 0 rgba(0, 0, 0, 0.15);
 }
 
+/* Tauri native file button */
+button.tauri-file-btn {
+  font-family: 'Jersey 15', 'Courier New', monospace;
+  width: 100%;
+}
+
 .file-info {
   color: #2a9d8f;
   font-weight: bold;

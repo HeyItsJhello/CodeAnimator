@@ -2,6 +2,15 @@ import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './App.css'
 
+// Tauri imports - these will only work in the Tauri environment
+let invoke, openDialog;
+const isTauri = typeof window !== 'undefined' && window.__TAURI_INTERNALS__;
+
+if (isTauri) {
+  import('@tauri-apps/api/core').then(mod => { invoke = mod.invoke; });
+  import('@tauri-apps/plugin-dialog').then(mod => { openDialog = mod.open; });
+}
+
 // Default syntax highlighting colors (Manim color names)
 const DEFAULT_SYNTAX_COLORS = {
   keywords: '#9b59b6',      // PURPLE
@@ -230,9 +239,11 @@ function App() {
   const [orientation, setOrientation] = useState('landscape') // 'landscape' or 'portrait'
   const [animationTiming, setAnimationTiming] = useState({ ...DEFAULT_TIMING_STR })
 
-  const handleFileUpload = (e) => {
-    const uploadedFile = e.target.files[0]
-    if (uploadedFile) {
+  const handleFileUpload = async (e) => {
+    // Handle both HTML input and Tauri dialog
+    if (e && e.target && e.target.files && e.target.files[0]) {
+      // Standard HTML file input
+      const uploadedFile = e.target.files[0]
       setFile(uploadedFile)
       setFileName(uploadedFile.name)
 
@@ -247,6 +258,38 @@ function App() {
         setEndLine(lineCount)
       }
       reader.readAsText(uploadedFile)
+    }
+  }
+
+  // Tauri-specific file open using native dialog
+  const handleTauriFileOpen = async () => {
+    if (!isTauri || !openDialog) return
+
+    try {
+      const selected = await openDialog({
+        multiple: false,
+        filters: [{
+          name: 'Code Files',
+          extensions: ['py', 'js', 'jsx', 'ts', 'tsx', 'java', 'cpp', 'c', 'h', 'go', 'rs', 'rb', 'php', 'swift', 'kt', 'gd']
+        }]
+      })
+
+      if (selected) {
+        const filePath = typeof selected === 'string' ? selected : selected.path
+        const content = await invoke('read_file_content', { path: filePath })
+        const name = filePath.split('/').pop() || filePath.split('\\').pop() || 'code.txt'
+
+        setFile({ name, path: filePath, content })
+        setFileName(name)
+        setFileContent(content)
+        const lines = content.split('\n')
+        setTotalLines(lines.length)
+        setStartLine(1)
+        setEndLine(lines.length)
+      }
+    } catch (err) {
+      console.error('Failed to open file:', err)
+      alert('Failed to open file: ' + err)
     }
   }
 
@@ -417,86 +460,137 @@ function App() {
       animationTiming: timingConfig
     }
 
-    // Create FormData to send file and config
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('config', JSON.stringify(config))
-
     try {
       // Show loading modal
       setIsLoading(true)
       setLoadingProgress(0)
 
-      // Send request to backend
-      const response = await fetch('http://localhost:8000/api/animate', {
-        method: 'POST',
-        body: formData
-      })
+      // Use Tauri invoke if available, otherwise use fetch
+      if (isTauri && invoke) {
+        // Tauri desktop mode
+        const result = await invoke('generate_animation', {
+          filePath: file.path || fileName,
+          fileContent: fileContent,
+          config: config
+        })
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.detail || 'Failed to generate animation')
-      }
-
-      // Start polling for progress
-      const taskId = result.taskId
-      const progressInterval = setInterval(async () => {
-        try {
-          const progressResponse = await fetch(`http://localhost:8000/api/progress/${taskId}`)
-          if (progressResponse.ok) {
-            const progressData = await progressResponse.json()
+        // Poll for progress
+        const taskId = result.taskId
+        const progressInterval = setInterval(async () => {
+          try {
+            const progressData = await invoke('get_progress', { taskId })
             setLoadingProgress(progressData.progress)
 
-            // Stop polling when complete
             if (progressData.status === 'complete' || progressData.progress >= 100) {
               clearInterval(progressInterval)
             }
+          } catch (err) {
+            console.error('Progress polling error:', err)
           }
-        } catch (err) {
-          console.error('Progress polling error:', err)
-        }
-      }, 500)
+        }, 500)
 
-      // Wait for completion
-      await new Promise(resolve => {
-        const checkComplete = setInterval(async () => {
-          try {
-            const progressResponse = await fetch(`http://localhost:8000/api/progress/${taskId}`)
-            if (progressResponse.ok) {
-              const progressData = await progressResponse.json()
+        // Wait for completion
+        await new Promise(resolve => {
+          const checkComplete = setInterval(async () => {
+            try {
+              const progressData = await invoke('get_progress', { taskId })
               if (progressData.status === 'complete' || progressData.progress >= 100) {
                 clearInterval(checkComplete)
                 clearInterval(progressInterval)
                 setLoadingProgress(100)
                 resolve()
               }
+            } catch (err) {
+              console.error('Completion check error:', err)
+            }
+          }, 500)
+        })
+
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // Open the folder containing the video
+        if (result.videoPath) {
+          await invoke('open_file_location', { path: result.videoPath })
+        }
+
+        setIsLoading(false)
+        setLoadingProgress(0)
+        setShowUploadAnotherModal(true)
+
+      } else {
+        // Web mode - use fetch to backend
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('config', JSON.stringify(config))
+
+        const response = await fetch('http://localhost:8000/api/animate', {
+          method: 'POST',
+          body: formData
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          throw new Error(result.detail || 'Failed to generate animation')
+        }
+
+        // Start polling for progress
+        const taskId = result.taskId
+        const progressInterval = setInterval(async () => {
+          try {
+            const progressResponse = await fetch(`http://localhost:8000/api/progress/${taskId}`)
+            if (progressResponse.ok) {
+              const progressData = await progressResponse.json()
+              setLoadingProgress(progressData.progress)
+
+              if (progressData.status === 'complete' || progressData.progress >= 100) {
+                clearInterval(progressInterval)
+              }
             }
           } catch (err) {
-            console.error('Completion check error:', err)
+            console.error('Progress polling error:', err)
           }
         }, 500)
-      })
 
-      await new Promise(resolve => setTimeout(resolve, 500))
+        // Wait for completion
+        await new Promise(resolve => {
+          const checkComplete = setInterval(async () => {
+            try {
+              const progressResponse = await fetch(`http://localhost:8000/api/progress/${taskId}`)
+              if (progressResponse.ok) {
+                const progressData = await progressResponse.json()
+                if (progressData.status === 'complete' || progressData.progress >= 100) {
+                  clearInterval(checkComplete)
+                  clearInterval(progressInterval)
+                  setLoadingProgress(100)
+                  resolve()
+                }
+              }
+            } catch (err) {
+              console.error('Completion check error:', err)
+            }
+          }, 500)
+        })
 
-      // Trigger download
-      const downloadUrl = `http://localhost:8000/api/download/${result.videoId}`
-      const a = document.createElement('a')
-      a.href = downloadUrl
-      a.download = result.filename
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+        await new Promise(resolve => setTimeout(resolve, 500))
 
-      // Hide loading modal and show upload another modal
-      setIsLoading(false)
-      setLoadingProgress(0)
-      setShowUploadAnotherModal(true)
+        // Trigger download
+        const downloadUrl = `http://localhost:8000/api/download/${result.videoId}`
+        const a = document.createElement('a')
+        a.href = downloadUrl
+        a.download = result.filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+
+        setIsLoading(false)
+        setLoadingProgress(0)
+        setShowUploadAnotherModal(true)
+      }
 
     } catch (error) {
       console.error('Error:', error)
-      alert(`Error: ${error.message}`)
+      alert(`Error: ${error.message || error}`)
       setIsLoading(false)
       setLoadingProgress(0)
     }
@@ -604,16 +698,28 @@ function App() {
           >
             <h2>1. Upload Code File</h2>
             <div className="file-upload-wrapper">
-              <input
-                type="file"
-                id="file-upload"
-                accept=".py,.js,.jsx,.ts,.tsx,.java,.cpp,.c,.h,.go,.rs,.rb,.php,.swift,.kt,.gd"
-                onChange={handleFileUpload}
-                required
-              />
-              <label htmlFor="file-upload" className="file-upload-label">
-                {fileName || 'Choose a file...'}
-              </label>
+              {isTauri ? (
+                <button
+                  type="button"
+                  className="file-upload-label tauri-file-btn"
+                  onClick={handleTauriFileOpen}
+                >
+                  {fileName || 'Choose a file...'}
+                </button>
+              ) : (
+                <>
+                  <input
+                    type="file"
+                    id="file-upload"
+                    accept=".py,.js,.jsx,.ts,.tsx,.java,.cpp,.c,.h,.go,.rs,.rb,.php,.swift,.kt,.gd"
+                    onChange={handleFileUpload}
+                    required
+                  />
+                  <label htmlFor="file-upload" className="file-upload-label">
+                    {fileName || 'Choose a file...'}
+                  </label>
+                </>
+              )}
             </div>
             <AnimatePresence>
             {totalLines > 0 && (
