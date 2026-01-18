@@ -33,7 +33,16 @@ class CodeAnimation(Scene):
         except (json.JSONDecodeError, IndexError):
             custom_colors = {}
 
+        # Parse orientation (line 6) - 'landscape' or 'portrait'
+        orientation = "landscape"
+        try:
+            if len(lines) > 5 and lines[5].strip() in ['landscape', 'portrait']:
+                orientation = lines[5].strip()
+        except IndexError:
+            orientation = "landscape"
+
         print(f"DEBUG: Custom colors: {custom_colors}")
+        print(f"DEBUG: Orientation: {orientation}")
 
         # making the custom filename for the output, example_1-11.mp4
         base_filename = os.path.splitext(os.path.basename(script_path))[0]
@@ -50,12 +59,12 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Lines {start_line}-{end_line}")
         print(f"DEBUG: Include comments: {include_comments}")
 
-        # Reading line groups (start after colors and timing JSON lines)
+        # Reading line groups (start after colors JSON and orientation lines)
         line_groups = []
-        # Find the first non-JSON line after line 4
-        start_idx = 4
-        for i in range(4, len(lines)):
-            if lines[i].strip().startswith('{'):
+        # Find the first line group entry (after line 5 which is colors, line 6 which is orientation)
+        start_idx = 6
+        for i in range(6, len(lines)):
+            if lines[i].strip().startswith('{') or lines[i].strip() in ['landscape', 'portrait']:
                 start_idx = i + 1
             else:
                 start_idx = i
@@ -106,22 +115,51 @@ class CodeAnimation(Scene):
         
         # Calculate vertical positioning
         num_lines = len(filtered_lines)
-        
-        # Define margins (in Manim units) - smaller for more space
-        top_margin = 0.3
-        bottom_margin = 0.3
-        left_margin = 0.3
-        right_margin = 0.3
-        
+
+        # Get actual frame dimensions from Manim config
+        # When using -r flag, Manim adjusts these based on the resolution
+        frame_w = config.frame_width
+        frame_h = config.frame_height
+
+        print(f"DEBUG: Manim frame dimensions: {frame_w:.2f}w x {frame_h:.2f}h")
+        print(f"DEBUG: Orientation setting: {orientation}")
+
+        # Define margins (in Manim units) - adjust for orientation
+        if orientation == "portrait":
+            # Portrait: frame is taller than wide (9:16 ratio)
+            # Manim with -r 1080,1920 sets frame to ~4.5w x 8h
+            top_margin = 0.3
+            bottom_margin = 0.3
+            left_margin = 0.15
+            right_margin = 0.15
+        else:
+            # Landscape: standard margins
+            top_margin = 0.3
+            bottom_margin = 0.3
+            left_margin = 0.3
+            right_margin = 0.3
+
         # Available space
-        available_height = config.frame_height - top_margin - bottom_margin
-        available_width = config.frame_width - left_margin - right_margin
-        
-        # Adaptive line height and font size based on number of lines
-        MIN_FONT_SIZE = 16  
-        MAX_FONT_SIZE = 28
-        MIN_LINE_HEIGHT = 0.35  
-        MAX_LINE_HEIGHT = 0.6
+        available_height = frame_h - top_margin - bottom_margin
+        available_width = frame_w - left_margin - right_margin
+
+        print(f"DEBUG: Available space: {available_width:.2f}w x {available_height:.2f}h")
+
+        # Adaptive line height and font size based on number of lines and orientation
+        if orientation == "portrait":
+            # Portrait: 1080x1920 has ~1.78x more vertical space than landscape
+            # Frame height ~14.2 units vs ~8 in landscape
+            # This allows fitting ~35-40 lines before needing to scroll
+            MIN_FONT_SIZE = 18
+            MAX_FONT_SIZE = 30
+            MIN_LINE_HEIGHT = 0.22  # Allows ~35+ lines (14.2 / 0.22 ≈ 37)
+            MAX_LINE_HEIGHT = 0.50
+        else:
+            # Landscape: ~21 lines max before scrolling
+            MIN_FONT_SIZE = 16
+            MAX_FONT_SIZE = 28
+            MIN_LINE_HEIGHT = 0.35
+            MAX_LINE_HEIGHT = 0.6
 
         # Start with ideal line height that would fill the screen
         ideal_line_height = available_height / num_lines
@@ -289,7 +327,7 @@ class CodeAnimation(Scene):
                 line_group.move_to([0, y_pos, 0])
                 line_group.to_edge(LEFT, buff=left_margin)
             final_pos = line_group.get_center().copy()
-            line_group.shift(LEFT * (config.frame_width + 2))
+            line_group.shift(LEFT * (frame_w + 2))
             self.add(line_group)
             line_mobjects.append((line_group, final_pos))
 
@@ -345,7 +383,7 @@ class CodeAnimation(Scene):
                             _, original_final_pos = line_mobjects[idx]
                             target_pos = [original_final_pos[0], slot_y, 0]
                             # First, move to correct Y position while staying off-screen left
-                            line_obj.move_to([-(config.frame_width + 2), slot_y, 0])
+                            line_obj.move_to([-(frame_w + 2), slot_y, 0])
                             # Then animate sliding in from left
                             animations.append(line_obj.animate.move_to(target_pos))
                             shown_lines.add(line_num)
@@ -377,7 +415,7 @@ class CodeAnimation(Scene):
                             slot_y = get_chunk_position(current_visible_count)
                             target_pos = [original_final_pos[0], slot_y, 0]
                             # First, move to correct Y position while staying off-screen left
-                            line_obj.move_to([-(config.frame_width + 2), slot_y, 0])
+                            line_obj.move_to([-(frame_w + 2), slot_y, 0])
                             # Then animate sliding in from left
                             self.play(line_obj.animate.move_to(target_pos), run_time=0.6)
                             shown_lines.add(split_line_num)
@@ -416,7 +454,7 @@ class CodeAnimation(Scene):
                             slot_y = get_chunk_position(current_visible_count)
                             target_pos = [original_final_pos[0], slot_y, 0]
                             # First, move to correct Y position while staying off-screen left
-                            line_obj.move_to([-(config.frame_width + 2), slot_y, 0])
+                            line_obj.move_to([-(frame_w + 2), slot_y, 0])
                             # Then animate sliding in from left
                             animations.append(line_obj.animate.move_to(target_pos))
                             shown_lines.add(line_num)

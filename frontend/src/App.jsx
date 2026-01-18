@@ -216,6 +216,7 @@ function App() {
   const [syntaxColors, setSyntaxColors] = useState({ ...DEFAULT_SYNTAX_COLORS })
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [showUploadAnotherModal, setShowUploadAnotherModal] = useState(false)
+  const [orientation, setOrientation] = useState('landscape') // 'landscape' or 'portrait'
   const [animationTiming, setAnimationTiming] = useState({
     initialDelay: 1.5,
     lineSlideIn: 0.6,
@@ -378,6 +379,7 @@ function App() {
       startLine,
       endLine,
       includeComments,
+      orientation,
       lineGroups: lineGroups.map(group => {
         if (group === 'ALL_REMAINING') return 'ALL_REMAINING'
         if (typeof group === 'object' && group.type === 'SPLIT') return `SPLIT ${group.line}`
@@ -643,6 +645,40 @@ function App() {
                 </button>
               </motion.div>
 
+
+              {/* Video Orientation */}
+              <motion.div
+                className="form-section"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.4, delay: 0.28 }}
+              >
+                <h2>5. Video Orientation</h2>
+                <p className="help-text">
+                  Choose the aspect ratio for your video output.
+                </p>
+                <div className="orientation-toggle">
+                  <button
+                    type="button"
+                    className={`orientation-btn ${orientation === 'landscape' ? 'active' : ''}`}
+                    onClick={() => setOrientation('landscape')}
+                  >
+                    <span className="orientation-icon landscape-icon"></span>
+                    <span className="orientation-label">Landscape</span>
+                    <span className="orientation-size">1920×1080</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`orientation-btn ${orientation === 'portrait' ? 'active' : ''}`}
+                    onClick={() => setOrientation('portrait')}
+                  >
+                    <span className="orientation-icon portrait-icon"></span>
+                    <span className="orientation-label">Portrait</span>
+                    <span className="orientation-size">1080×1920</span>
+                  </button>
+                </div>
+              </motion.div>
 
               {/* Line Groups */}
               <motion.div

@@ -49,12 +49,16 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
                 # Count SVG files (text/code objects)
                 svg_files = sum(1 for _ in (media_dir / "Tex").rglob("*.svg") if (media_dir / "Tex").exists())
 
-                # Count PNG frames in partial_movie_files
-                partial_dir = media_dir / "videos" / "CodeAnimator" / "1080p60" / "partial_movie_files"
-                frame_files = sum(1 for _ in partial_dir.rglob("*.png") if partial_dir.exists()) if partial_dir.exists() else 0
-
-                # Check for final video
-                video_exists = any((media_dir / "videos" / "CodeAnimator" / "1080p60").rglob("*.mp4")) if (media_dir / "videos" / "CodeAnimator" / "1080p60").exists() else False
+                # Count PNG frames in partial_movie_files (check both landscape and portrait dirs)
+                frame_files = 0
+                video_exists = False
+                for quality_dir in ["1080p60", "1920p60"]:
+                    partial_dir = media_dir / "videos" / "CodeAnimator" / quality_dir / "partial_movie_files"
+                    if partial_dir.exists():
+                        frame_files += sum(1 for _ in partial_dir.rglob("*.png"))
+                    video_dir = media_dir / "videos" / "CodeAnimator" / quality_dir
+                    if video_dir.exists() and any(video_dir.rglob("*.mp4")):
+                        video_exists = True
 
                 total_files = svg_files + frame_files
 
@@ -134,6 +138,7 @@ async def create_animation(
         start_line = config_data["startLine"]
         end_line = config_data["endLine"]
         include_comments = config_data["includeComments"]
+        orientation = config_data.get("orientation", "landscape")  # 'landscape' or 'portrait'
         line_groups = config_data["lineGroups"]
         syntax_colors = config_data.get("syntaxColors", {})
 
@@ -158,6 +163,8 @@ async def create_animation(
             f.write(f"{include_comments}\n")
             # Write syntax colors as JSON on line 5
             f.write(f"{json.dumps(syntax_colors)}\n")
+            # Write orientation on line 6
+            f.write(f"{orientation}\n")
             for group in line_groups:
                 f.write(f"{group}\n")
 
@@ -174,10 +181,27 @@ async def create_animation(
         )
         progress_thread.start()
 
-        # Run Manim to generate animation at 1080p60 ALWAYS
-        print(f"Starting animation generation for {unique_filename}...")
-        result = subprocess.run(
-            [
+        # Build Manim command based on orientation
+        print(f"Starting animation generation for {unique_filename} ({orientation})...")
+
+        if orientation == "portrait":
+            # Portrait mode: 1080x1920 at 60fps
+            # Use -r for resolution (W,H format) - this sets non-16:9 aspect ratio
+            manim_cmd = [
+                "manim",
+                "-r", "1080,1920",
+                "--frame_rate", "60",
+                "-p",  # Preview (opens when done)
+                "--disable_caching",
+                "--flush_cache",
+                "-o", output_name,
+                str(ANIMATOR_SCRIPT),
+                "CodeAnimation"
+            ]
+            video_quality_dir = "1920p60"  # Manim names by height + framerate
+        else:
+            # Landscape mode: 1920x1080 at 60fps (default -qh)
+            manim_cmd = [
                 "manim",
                 "-pqh",  # High quality: 1080p60
                 "--disable_caching",
@@ -185,7 +209,11 @@ async def create_animation(
                 "-o", output_name,
                 str(ANIMATOR_SCRIPT),
                 "CodeAnimation"
-            ],
+            ]
+            video_quality_dir = "1080p60"
+
+        result = subprocess.run(
+            manim_cmd,
             capture_output=True,
             text=True,
             timeout=300  # 5 minute timeout
@@ -210,9 +238,9 @@ async def create_animation(
             progress_tracking[task_id] = {"progress": 95, "status": "finalizing"}
 
         # Find the generated video file
-        # Manim outputs to media/videos/CodeAnimator/1080p60/ (ALWAYS)
+        # Manim outputs to media/videos/CodeAnimator/{quality_dir}/
         video_filename = f"{output_name}.mp4"
-        video_path = BASE_DIR / "media" / "videos" / "CodeAnimator" / "1080p60" / video_filename
+        video_path = BASE_DIR / "media" / "videos" / "CodeAnimator" / video_quality_dir / video_filename
 
         if not video_path.exists():
             raise HTTPException(
