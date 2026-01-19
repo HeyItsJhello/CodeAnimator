@@ -54,7 +54,6 @@ class CodeAnimation(Scene):
             custom_colors = json.loads(lines[4]) if len(lines) > 4 and lines[4].strip().startswith('{') else {}
         except (json.JSONDecodeError, IndexError):
             custom_colors = {}
-
         # Parse orientation (line 6) - 'landscape' or 'portrait'
         orientation = "landscape"
         try:
