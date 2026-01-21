@@ -1,9 +1,10 @@
-from manim import *
-import sys
-import os
 import json
+import os
+import sys
+
+from manim import *
 from pygments import lex
-from pygments.lexers import get_lexer_for_filename, TextLexer
+from pygments.lexers import TextLexer, get_lexer_for_filename
 from pygments.token import Token
 
 # Check orientation from config before Scene initializes
@@ -11,7 +12,7 @@ _orientation = "landscape"
 try:
     with open("/tmp/anim_config.txt", "r") as f:
         lines = f.read().strip().split("\n")
-        if len(lines) > 5 and lines[5].strip() in ['landscape', 'portrait']:
+        if len(lines) > 5 and lines[5].strip() in ["landscape", "portrait"]:
             _orientation = lines[5].strip()
 except:
     pass
@@ -28,6 +29,7 @@ else:
     config.pixel_width = 1920
     config.pixel_height = 1080
 
+
 class CodeAnimation(Scene):
     def construct(self):
         self.renderer.skip_animations = False
@@ -42,7 +44,7 @@ class CodeAnimation(Scene):
             return
 
         print(f"DEBUG: Config loaded, {len(lines)} lines")
-        
+
         script_path = lines[0]
         start_line = int(lines[1])
         end_line = int(lines[2])
@@ -51,14 +53,18 @@ class CodeAnimation(Scene):
         # Parse custom syntax colors (line 5 is JSON)
         custom_colors = {}
         try:
-            custom_colors = json.loads(lines[4]) if len(lines) > 4 and lines[4].strip().startswith('{') else {}
+            custom_colors = (
+                json.loads(lines[4])
+                if len(lines) > 4 and lines[4].strip().startswith("{")
+                else {}
+            )
         except (json.JSONDecodeError, IndexError):
             custom_colors = {}
 
         # Parse orientation (line 6) - 'landscape' or 'portrait'
         orientation = "landscape"
         try:
-            if len(lines) > 5 and lines[5].strip() in ['landscape', 'portrait']:
+            if len(lines) > 5 and lines[5].strip() in ["landscape", "portrait"]:
                 orientation = lines[5].strip()
         except IndexError:
             orientation = "landscape"
@@ -72,7 +78,7 @@ class CodeAnimation(Scene):
         }
         animation_timing = default_timing.copy()
         try:
-            if len(lines) > 6 and lines[6].strip().startswith('{'):
+            if len(lines) > 6 and lines[6].strip().startswith("{"):
                 parsed_timings = json.loads(lines[6])
                 for key, default_val in default_timing.items():
                     try:
@@ -83,10 +89,21 @@ class CodeAnimation(Scene):
         except (json.JSONDecodeError, IndexError):
             animation_timing = default_timing.copy()
 
-        initial_delay = max(0.0, animation_timing.get("initialDelay", default_timing["initialDelay"]))
-        line_slide_in = max(0.05, animation_timing.get("lineSlideIn", default_timing["lineSlideIn"]))
-        pause_between_groups = max(0.0, animation_timing.get("pauseBetweenGroups", default_timing["pauseBetweenGroups"]))
-        final_pause = max(0.0, animation_timing.get("finalPause", default_timing["finalPause"]))
+        initial_delay = max(
+            0.0, animation_timing.get("initialDelay", default_timing["initialDelay"])
+        )
+        line_slide_in = max(
+            0.05, animation_timing.get("lineSlideIn", default_timing["lineSlideIn"])
+        )
+        pause_between_groups = max(
+            0.0,
+            animation_timing.get(
+                "pauseBetweenGroups", default_timing["pauseBetweenGroups"]
+            ),
+        )
+        final_pause = max(
+            0.0, animation_timing.get("finalPause", default_timing["finalPause"])
+        )
         scroll_duration = max(line_slide_in, 0.5)
 
         print(f"DEBUG: Custom colors: {custom_colors}")
@@ -113,7 +130,10 @@ class CodeAnimation(Scene):
         # Find the first line group entry (after line 5 which is colors, line 6 orientation, line 7 timing)
         start_idx = 6
         for i in range(6, len(lines)):
-            if lines[i].strip().startswith('{') or lines[i].strip() in ['landscape', 'portrait']:
+            if lines[i].strip().startswith("{") or lines[i].strip() in [
+                "landscape",
+                "portrait",
+            ]:
                 start_idx = i + 1
             else:
                 start_idx = i
@@ -129,42 +149,46 @@ class CodeAnimation(Scene):
                 else:
                     group = [int(x) for x in lines[i].split()]
                     line_groups.append(group)
-        
+
         # Opening the source file yippeeeeee
         with open(script_path, "r") as f:
             source_lines = f.readlines()
-        
+
         # Filter lines, for rendering purposes
         filtered_lines = []
         for i in range(start_line - 1, min(end_line, len(source_lines))):
             line = source_lines[i].rstrip()
-            
+
             # Filtering comments if requested
             if not include_comments:
                 stripped = line.strip()
                 if stripped.startswith("#") or stripped.startswith("//"):
                     continue
-            
+
             filtered_lines.append((i + 1, line))  # Store (line_number, content)
-        
+
         # Getting the correct line indexes from the file
-        line_to_index = {line_num: idx for idx, (line_num, _) in enumerate(filtered_lines)}
-        
+        line_to_index = {
+            line_num: idx for idx, (line_num, _) in enumerate(filtered_lines)
+        }
+
         print(f"DEBUG: Filtered {len(filtered_lines)} lines")
         print(f"DEBUG: Line groups: {line_groups}")
-        
+
         max_line_num = max(line_num for line_num, _ in filtered_lines)
         line_num_width = len(str(max_line_num))
-        
+
         # Create text objects for each line with syntax highlighting
         line_mobjects = []
         shown_lines = set()
-        
+
         num_lines = len(filtered_lines)
         frame_w = config.frame_width
         frame_h = config.frame_height
 
-        print(f"DEBUG: Manim frame dimensions AFTER setting: {frame_w:.2f}w x {frame_h:.2f}h")
+        print(
+            f"DEBUG: Manim frame dimensions AFTER setting: {frame_w:.2f}w x {frame_h:.2f}h"
+        )
         print(f"DEBUG: Pixel dimensions: {config.pixel_width}x{config.pixel_height}")
         print(f"DEBUG: Orientation setting: {orientation}")
 
@@ -182,8 +206,12 @@ class CodeAnimation(Scene):
         available_height = frame_h - top_margin - bottom_margin
         available_width = frame_w - left_margin - right_margin
 
-        print(f"DEBUG: Available space: {available_width:.2f}w x {available_height:.2f}h")
-        print(f"DEBUG: Margins - Top: {top_margin}, Bottom: {bottom_margin}, Left: {left_margin}, Right: {right_margin}")
+        print(
+            f"DEBUG: Available space: {available_width:.2f}w x {available_height:.2f}h"
+        )
+        print(
+            f"DEBUG: Margins - Top: {top_margin}, Bottom: {bottom_margin}, Left: {left_margin}, Right: {right_margin}"
+        )
 
         if orientation == "portrait":
             MIN_FONT_SIZE = 32
@@ -206,8 +234,12 @@ class CodeAnimation(Scene):
 
         total_height = num_lines * line_height
 
-        print(f"DEBUG: Font sizing params - MIN: {MIN_FONT_SIZE}, MAX: {MAX_FONT_SIZE}, Multiplier: {font_multiplier}")
-        print(f"DEBUG: Line height params - MIN: {MIN_LINE_HEIGHT}, MAX: {MAX_LINE_HEIGHT}")
+        print(
+            f"DEBUG: Font sizing params - MIN: {MIN_FONT_SIZE}, MAX: {MAX_FONT_SIZE}, Multiplier: {font_multiplier}"
+        )
+        print(
+            f"DEBUG: Line height params - MIN: {MIN_LINE_HEIGHT}, MAX: {MAX_LINE_HEIGHT}"
+        )
         print(f"DEBUG: Initial line_height: {line_height:.3f}")
         print(f"DEBUG: Initial font_size: {base_font_size}")
         print(f"DEBUG: Number of lines: {num_lines}")
@@ -232,16 +264,16 @@ class CodeAnimation(Scene):
                 font_multiplier = 55 if orientation == "portrait" else 45
                 base_font_size = int(line_height * font_multiplier)
                 base_font_size = max(MIN_FONT_SIZE, min(MAX_FONT_SIZE, base_font_size))
-        
+
         # Get colors from custom config or defaults
-        color_keywords = custom_colors.get('keywords', '#9b59b6')
-        color_types = custom_colors.get('types', '#3498db')
-        color_functions = custom_colors.get('functions', '#3498db')
-        color_strings = custom_colors.get('strings', '#2ecc71')
-        color_numbers = custom_colors.get('numbers', '#e67e22')
-        color_comments = custom_colors.get('comments', '#7f8c8d')
-        color_decorators = custom_colors.get('decorators', '#f1c40f')
-        color_default = custom_colors.get('default', '#ffffff')
+        color_keywords = custom_colors.get("keywords", "#9b59b6")
+        color_types = custom_colors.get("types", "#3498db")
+        color_functions = custom_colors.get("functions", "#3498db")
+        color_strings = custom_colors.get("strings", "#2ecc71")
+        color_numbers = custom_colors.get("numbers", "#e67e22")
+        color_comments = custom_colors.get("comments", "#7f8c8d")
+        color_decorators = custom_colors.get("decorators", "#f1c40f")
+        color_default = custom_colors.get("default", "#ffffff")
 
         TOKEN_COLORS = {
             Token.Comment.Multiline: color_comments,
@@ -293,7 +325,7 @@ class CodeAnimation(Scene):
         except Exception:
             lexer = TextLexer()
 
-        full_code_text = '\n'.join([content for _, content in filtered_lines])
+        full_code_text = "\n".join([content for _, content in filtered_lines])
         full_tokens = list(lex(full_code_text, lexer))
 
         # Build color map more efficiently - pre-compute token colors
@@ -310,10 +342,10 @@ class CodeAnimation(Scene):
                     if token_type in ttype:
                         token_color = tcolor
                         break
-            
+
             # Process token value and map positions to colors
             for char in token_value:
-                if char == '\n':
+                if char == "\n":
                     current_line += 1
                     current_char = 0
                 else:
@@ -324,30 +356,40 @@ class CodeAnimation(Scene):
         temp_lines = []
         max_line_width = 0
         for line_num, content in filtered_lines:
-            content_display = content.replace('\t', '    ')
+            content_display = content.replace("\t", "    ")
             full_line = f"{line_num:>{line_num_width}}  {content_display}"
             # Create and cache Text object in one pass to avoid recreating later
-            line_group = Text(full_line, font="Monospace", font_size=base_font_size, color=DEFAULT_COLOR, disable_ligatures=True)
+            line_group = Text(
+                full_line,
+                font="Menlo",
+                font_size=base_font_size,
+                color=DEFAULT_COLOR,
+                disable_ligatures=True,
+            )
             temp_lines.append((line_num, content, line_group, content_display))
             max_line_width = max(max_line_width, line_group.width)
-        
+
         width_scale = 1.0
         if max_line_width > available_width:
             width_scale = available_width / max_line_width
 
-        print(f"DEBUG: Max line width: {max_line_width:.3f}, Available width: {available_width:.2f}")
+        print(
+            f"DEBUG: Max line width: {max_line_width:.3f}, Available width: {available_width:.2f}"
+        )
         print(f"DEBUG: Width scale: {width_scale:.3f}")
 
         y_start = (num_lines * line_height / 2) - (line_height / 2)
 
-        for line_idx, (line_num, content, line_group, content_display) in enumerate(temp_lines):
+        for line_idx, (line_num, content, line_group, content_display) in enumerate(
+            temp_lines
+        ):
             display_char_idx = line_num_width + 2
             original_char_idx = 0
-            
+
             # Build color assignments once instead of char-by-char calls
             color_assignments = []
             for orig_char in content:
-                if orig_char == '\t':
+                if orig_char == "\t":
                     color = color_map.get((line_idx, original_char_idx), DEFAULT_COLOR)
                     for _ in range(4):
                         color_assignments.append((display_char_idx, color))
@@ -357,7 +399,7 @@ class CodeAnimation(Scene):
                     color_assignments.append((display_char_idx, color))
                     display_char_idx += 1
                 original_char_idx += 1
-            
+
             # Apply all color changes in batch
             for char_idx, color in color_assignments:
                 try:
@@ -394,15 +436,20 @@ class CodeAnimation(Scene):
 
             for group in line_groups:
                 if group == "ALL_REMAINING":
-                    remaining_indices = [(idx, line_num) for idx, (line_num, _) in enumerate(filtered_lines) 
-                                         if line_num not in shown_lines and idx < len(line_mobjects)]
+                    remaining_indices = [
+                        (idx, line_num)
+                        for idx, (line_num, _) in enumerate(filtered_lines)
+                        if line_num not in shown_lines and idx < len(line_mobjects)
+                    ]
 
                     while remaining_indices:
                         available_slots = chunk_size - current_visible_count
 
                         if available_slots <= 0:
-                            scroll_animations = [line_obj.animate.shift(UP * (available_height + 1)) 
-                                                for line_obj in currently_visible]
+                            scroll_animations = [
+                                line_obj.animate.shift(UP * (available_height + 1))
+                                for line_obj in currently_visible
+                            ]
                             self.play(*scroll_animations, run_time=scroll_duration)
                             currently_visible.clear()
                             current_visible_count = 0
@@ -434,13 +481,18 @@ class CodeAnimation(Scene):
                     if currently_visible:
                         scroll_animations = []
                         for line_obj in currently_visible:
-                            scroll_animations.append(line_obj.animate.shift(UP * (available_height + 1)))
+                            scroll_animations.append(
+                                line_obj.animate.shift(UP * (available_height + 1))
+                            )
                         self.play(*scroll_animations, run_time=scroll_duration)
                         currently_visible.clear()
                         current_visible_count = 0
 
                     # Now show the split line (if not already shown)
-                    if split_line_num in line_to_index and split_line_num not in shown_lines:
+                    if (
+                        split_line_num in line_to_index
+                        and split_line_num not in shown_lines
+                    ):
                         idx = line_to_index[split_line_num]
                         if idx < len(line_mobjects):
                             line_obj, original_final_pos = line_mobjects[idx]
@@ -449,24 +501,33 @@ class CodeAnimation(Scene):
                             # First, move to correct Y position while staying off-screen left
                             line_obj.move_to([-(frame_w + 2), slot_y, 0])
                             # Then animate sliding in from left
-                            self.play(line_obj.animate.move_to(target_pos), run_time=line_slide_in)
+                            self.play(
+                                line_obj.animate.move_to(target_pos),
+                                run_time=line_slide_in,
+                            )
                             shown_lines.add(split_line_num)
                             currently_visible.append(line_obj)
                             current_visible_count += 1
                             self.wait(pause_between_groups)
 
                 else:
-                    lines_to_show = [(line_to_index[line_num], line_num) for line_num in group 
-                                     if line_num in line_to_index and line_num not in shown_lines 
-                                     and line_to_index[line_num] < len(line_mobjects)]
+                    lines_to_show = [
+                        (line_to_index[line_num], line_num)
+                        for line_num in group
+                        if line_num in line_to_index
+                        and line_num not in shown_lines
+                        and line_to_index[line_num] < len(line_mobjects)
+                    ]
 
                     if lines_to_show:
                         lines_needed = len(lines_to_show)
                         available_slots = chunk_size - current_visible_count
 
                         if lines_needed > available_slots:
-                            scroll_animations = [line_obj.animate.shift(UP * (available_height + 1)) 
-                                                for line_obj in currently_visible]
+                            scroll_animations = [
+                                line_obj.animate.shift(UP * (available_height + 1))
+                                for line_obj in currently_visible
+                            ]
                             self.play(*scroll_animations, run_time=scroll_duration)
                             currently_visible.clear()
                             current_visible_count = 0
@@ -487,16 +548,25 @@ class CodeAnimation(Scene):
         else:
             for group in line_groups:
                 if group == "ALL_REMAINING":
-                    lines_to_show = [(idx, line_num) for idx, (line_num, _) in enumerate(filtered_lines) 
-                                     if line_num not in shown_lines and idx < len(line_mobjects)]
+                    lines_to_show = [
+                        (idx, line_num)
+                        for idx, (line_num, _) in enumerate(filtered_lines)
+                        if line_num not in shown_lines and idx < len(line_mobjects)
+                    ]
                 else:
-                    lines_to_show = [(line_to_index[line_num], line_num) for line_num in group 
-                                     if line_num in line_to_index and line_num not in shown_lines 
-                                     and line_to_index[line_num] < len(line_mobjects)]
+                    lines_to_show = [
+                        (line_to_index[line_num], line_num)
+                        for line_num in group
+                        if line_num in line_to_index
+                        and line_num not in shown_lines
+                        and line_to_index[line_num] < len(line_mobjects)
+                    ]
 
                 if lines_to_show:
-                    animations = [line_mobjects[idx][0].animate.move_to(line_mobjects[idx][1]) 
-                                 for idx, _ in lines_to_show]
+                    animations = [
+                        line_mobjects[idx][0].animate.move_to(line_mobjects[idx][1])
+                        for idx, _ in lines_to_show
+                    ]
                     for idx, line_num in lines_to_show:
                         shown_lines.add(line_num)
 
@@ -508,6 +578,7 @@ class CodeAnimation(Scene):
 
         # Clean up SVG cache files after rendering
         import shutil
+
         cache_dir = config.text_dir
         if os.path.exists(cache_dir):
             print(f"INFO: Cleaning up SVG cache at {cache_dir}")
@@ -521,10 +592,10 @@ class CodeAnimation(Scene):
 def get_input():
     """Interactive prompt to gather animation parameters"""
     print("\n=== Code Animation Script ===\n")
-    
+
     # Get script path
     script_path = input("Enter the path to the script file: ").strip()
-    
+
     # Validate file exists
     try:
         with open(script_path, "r") as f:
@@ -534,7 +605,7 @@ def get_input():
     except FileNotFoundError:
         print(f"✗ Error: File '{script_path}' not found")
         sys.exit(1)
-    
+
     # Get line range
     print("\n--- Line Range ---")
     while True:
@@ -545,7 +616,7 @@ def get_input():
             print(f"Please enter a line number between 1 and {total_lines}")
         except ValueError:
             print("Please enter a valid number")
-    
+
     while True:
         try:
             end_line = int(input("Ending line: ").strip())
@@ -554,29 +625,31 @@ def get_input():
             print(f"Please enter a line number between {start_line} and {total_lines}")
         except ValueError:
             print("Please enter a valid number")
-    
+
     # Ask about comments
-    include_comments = input("\nInclude comments in the video? (y/n): ").strip().lower() == 'y'
-    
+    include_comments = (
+        input("\nInclude comments in the video? (y/n): ").strip().lower() == "y"
+    )
+
     # Get line groups
     print("\n--- Line Groups ---")
     print("Enter line numbers for each group (space-separated)")
     print("Press Enter without input to show all remaining lines")
     print("Example: 21 38 34")
-    
+
     line_groups = []
     group_num = 1
     shown_lines = set()
-    
+
     while True:
         line_input = input(f"\nGroup {group_num} lines: ").strip()
-        
+
         # Empty input means "all remaining lines"
         if not line_input:
             line_groups.append("ALL_REMAINING")
             print("✓ Will show all remaining lines in this group")
             break
-        
+
         try:
             group = [int(x) for x in line_input.split()]
             # Validate line numbers
@@ -588,8 +661,10 @@ def get_input():
                     valid_group.append(line_num)
                     shown_lines.add(line_num)
                 else:
-                    print(f"Warning: Line {line_num} is outside range [{start_line}, {end_line}], skipping")
-            
+                    print(
+                        f"Warning: Line {line_num} is outside range [{start_line}, {end_line}], skipping"
+                    )
+
             if valid_group:
                 line_groups.append(valid_group)
                 group_num += 1
@@ -597,7 +672,7 @@ def get_input():
                 print("No valid line numbers in this group, try again")
         except ValueError:
             print("Invalid input. Please enter space-separated numbers")
-    
+
     # Save configuration
     with open("/tmp/anim_config.txt", "w") as f:
         f.write(f"{script_path}\n")
@@ -635,9 +710,13 @@ if __name__ == "__main__":
         output_name = f"{base_filename}_{start_line}-{end_line}"
 
         print("\nTo render the animation, run:")
-        print(f"manim -pql --disable_caching --flush_cache -o {output_name} {__file__} CodeAnimation")
+        print(
+            f"manim -pql --disable_caching --flush_cache -o {output_name} {__file__} CodeAnimation"
+        )
         print("\nOr for high quality:")
-        print(f"manim -pqh --disable_caching --flush_cache -o {output_name} {__file__} CodeAnimation")
+        print(
+            f"manim -pqh --disable_caching --flush_cache -o {output_name} {__file__} CodeAnimation"
+        )
         print("\nNote: --flush_cache will clean up SVG files after rendering")
     else:
         # This is being called by manim to render

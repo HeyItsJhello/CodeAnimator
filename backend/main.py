@@ -189,7 +189,6 @@ async def create_animation(
                 "manim",
                 "-r", "1080,1920",
                 "--frame_rate", "60",
-                "-p",  # Preview (opens when done)
                 "--disable_caching",
                 "--flush_cache",
                 "-o", output_name,
@@ -201,7 +200,7 @@ async def create_animation(
             # Landscape mode: 1920x1080 at 60fps (default -qh)
             manim_cmd = [
                 "manim",
-                "-pqh",  # High quality: 1080p60
+                "-qh",  # High quality: 1080p60
                 "--disable_caching",
                 "--flush_cache",
                 "-o", output_name,
@@ -288,11 +287,23 @@ async def create_animation(
             raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/stream/{video_id}")
+async def stream_video(video_id: str):
+    # Stream the video for preview (no cleanup - file stays for download)
+    video_path = OUTPUTS_DIR / video_id
+
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    return FileResponse(
+        path=video_path,
+        media_type="video/mp4",
+    )
+
+
 @app.get("/api/download/{video_id}")
 async def download_video(video_id: str, background_tasks: BackgroundTasks):
-    
     # Download the generated animation video and delete it after sending (PRIVACY)
-    
     video_path = OUTPUTS_DIR / video_id
 
     if not video_path.exists():
@@ -313,7 +324,8 @@ async def download_video(video_id: str, background_tasks: BackgroundTasks):
     return FileResponse(
         path=video_path,
         media_type="video/mp4",
-        filename=video_id.split("_", 1)[1]  # Remove timestamp prefix
+        filename=video_id.split("_", 1)[1],  # Remove timestamp prefix
+        headers={"Content-Disposition": f"attachment; filename={video_id.split('_', 1)[1]}"}
     )
 
 @app.delete("/api/videos/{video_id}")

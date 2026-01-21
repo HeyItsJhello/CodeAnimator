@@ -107,6 +107,7 @@ const getTokenPatterns = (fileExtension) => {
     go: /\b(int|int8|int16|int32|int64|uint|uint8|uint16|uint32|uint64|uintptr|float32|float64|complex64|complex128|byte|rune|string|bool|error|any|comparable)\b/g,
     rs: /\b(i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize|f32|f64|bool|char|str|String|Vec|Box|Rc|Arc|Cell|RefCell|Option|Result|HashMap|HashSet|BTreeMap|BTreeSet|VecDeque|LinkedList|BinaryHeap|Cow|Pin|PhantomData)\b/g,
     swift: /\b(Int|Int8|Int16|Int32|Int64|UInt|UInt8|UInt16|UInt32|UInt64|Float|Double|Bool|String|Character|Array|Dictionary|Set|Optional|Any|AnyObject|Void|Never|Error|Result|Sequence|Collection|IteratorProtocol|Comparable|Equatable|Hashable|Codable|Encodable|Decodable)\b/g,
+    gd: /\b(Node|Node2D|Node3D|Control|Camera2D|Camera3D|Sprite2D|Sprite3D|RigidBody2D|RigidBody3D|CharacterBody2D|CharacterBody3D|Area2D|Area3D|CollisionShape2D|CollisionShape3D|Timer|AnimationPlayer|AudioStreamPlayer|Vector2|Vector3|Vector4|Vector2i|Vector3i|Vector4i|Color|Rect2|Rect2i|Transform2D|Transform3D|Basis|Quaternion|AABB|Plane|Array|Dictionary|PackedByteArray|PackedInt32Array|PackedInt64Array|PackedFloat32Array|PackedFloat64Array|PackedStringArray|PackedVector2Array|PackedVector3Array|PackedColorArray|Resource|Texture|Texture2D|PackedScene|Script|Object|RefCounted|String|StringName|NodePath|int|float|bool)\b/g,
   }
 
   // Function patterns
@@ -117,15 +118,22 @@ const getTokenPatterns = (fileExtension) => {
     py: /@[a-zA-Z_][a-zA-Z0-9_.]*/g,
     java: /@[a-zA-Z_][a-zA-Z0-9_]*/g,
     kt: /@[a-zA-Z_][a-zA-Z0-9_]*/g,
+    gd: /@[a-zA-Z_][a-zA-Z0-9_]*/g,
+  }
+
+  // GDScript node reference patterns ($NodePath)
+  const nodeReferencePatterns = {
+    gd: /\$[a-zA-Z_][a-zA-Z0-9_]*/g,
   }
 
   return {
     base: basePatterns,
     preprocessor: preprocessorPatterns,
     keywords: keywordsByLang[lang] || keywordsByLang.cpp,
-    types: typesByLang[lang] || typesByLang.cpp,
+    types: typesByLang[lang] || null,
     functions: functionPattern,
     decorators: decoratorPatterns[lang] || null,
+    nodeReferences: nodeReferencePatterns[lang] || null,
   }
 }
 
@@ -163,6 +171,9 @@ const tokenizeLine = (line, patterns, colors) => {
 
   // Apply keywords
   if (patterns.keywords) applyPattern(patterns.keywords, 'keywords')
+
+  // Apply node references (GDScript $NodePath syntax) - color as types
+  if (patterns.nodeReferences) applyPattern(patterns.nodeReferences, 'types')
 
   // Apply functions (but not if already colored by keywords/types)
   if (patterns.functions) {
@@ -221,12 +232,15 @@ function App() {
   const [shownLines, setShownLines] = useState(new Set())
   const [isLoading, setIsLoading] = useState(false)
   const [loadingProgress, setLoadingProgress] = useState(0)
+  const [loadingStatus, setLoadingStatus] = useState('starting')
   const [showSplitModal, setShowSplitModal] = useState(false)
   const [splitLineInput, setSplitLineInput] = useState('')
   const [showColorModal, setShowColorModal] = useState(false)
   const [syntaxColors, setSyntaxColors] = useState({ ...DEFAULT_SYNTAX_COLORS })
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [showUploadAnotherModal, setShowUploadAnotherModal] = useState(false)
+  const [completedVideoUrl, setCompletedVideoUrl] = useState(null)
+  const [completedVideoFilename, setCompletedVideoFilename] = useState('')
   const [orientation, setOrientation] = useState('landscape') // 'landscape' or 'portrait'
   const [animationTiming, setAnimationTiming] = useState({ ...DEFAULT_TIMING_STR })
 
@@ -331,6 +345,29 @@ function App() {
     setCurrentGroup('')
     setShownLines(new Set())
     setShowUploadAnotherModal(false)
+    setCompletedVideoUrl(null)
+    setCompletedVideoFilename('')
+    window._videoDownloadUrl = null
+  }
+
+  const handleDownloadVideo = () => {
+    // Use the download URL (not the stream URL used for preview)
+    const downloadUrl = window._videoDownloadUrl
+    if (downloadUrl) {
+      const a = document.createElement('a')
+      a.href = downloadUrl
+      a.download = completedVideoFilename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+  }
+
+  const handleCloseVideoModal = () => {
+    setShowUploadAnotherModal(false)
+    setCompletedVideoUrl(null)
+    setCompletedVideoFilename('')
+    window._videoDownloadUrl = null
   }
 
   const clearAllGroups = () => {
@@ -426,6 +463,7 @@ function App() {
       // Show loading modal
       setIsLoading(true)
       setLoadingProgress(0)
+      setLoadingStatus('starting')
 
       // Send request to backend
       const response = await fetch('http://localhost:8000/api/animate', {
@@ -447,6 +485,7 @@ function App() {
           if (progressResponse.ok) {
             const progressData = await progressResponse.json()
             setLoadingProgress(progressData.progress)
+            setLoadingStatus(progressData.status || 'processing')
 
             // Stop polling when complete
             if (progressData.status === 'complete' || progressData.progress >= 100) {
@@ -480,16 +519,15 @@ function App() {
 
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      // Trigger download
+      // Store video URLs - stream for preview, download for saving
+      const streamUrl = `http://localhost:8000/api/stream/${result.videoId}`
       const downloadUrl = `http://localhost:8000/api/download/${result.videoId}`
-      const a = document.createElement('a')
-      a.href = downloadUrl
-      a.download = result.filename
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+      setCompletedVideoUrl(streamUrl)
+      setCompletedVideoFilename(result.filename)
+      // Store download URL separately for the download button
+      window._videoDownloadUrl = downloadUrl
 
-      // Hide loading modal and show upload another modal
+      // Hide loading modal and show upload another modal with video preview
       setIsLoading(false)
       setLoadingProgress(0)
       setShowUploadAnotherModal(true)
@@ -1003,6 +1041,14 @@ function App() {
               <h3 className="loading-text">Generating Animation...</h3>
               <p className="loading-subtext">Please wait while we render your code animation</p>
               <div className="progress-bar-container">
+                <div className="progress-status">
+                  {loadingStatus === 'starting' && 'Starting...'}
+                  {loadingStatus === 'generating SVGs' && 'Generating text elements...'}
+                  {loadingStatus === 'rendering frames' && 'Rendering frames...'}
+                  {loadingStatus === 'compiling video' && 'Compiling video...'}
+                  {loadingStatus === 'finalizing' && 'Finalizing...'}
+                  {loadingStatus === 'complete' && 'Complete!'}
+                </div>
                 <div className="progress-bar-bg">
                   <motion.div
                     className="progress-bar-fill"
@@ -1222,7 +1268,7 @@ function App() {
       )}
       </AnimatePresence>
 
-      {/* Upload Another Modal */}
+      {/* Video Complete Modal with Preview */}
       <AnimatePresence>
       {showUploadAnotherModal && (
         <motion.div
@@ -1233,7 +1279,7 @@ function App() {
           transition={{ duration: 0.2 }}
         >
           <motion.div
-            className="upload-another-modal"
+            className="upload-another-modal video-complete-modal"
             initial={{ scale: 0.8, opacity: 0, y: -50 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: -50 }}
@@ -1244,12 +1290,23 @@ function App() {
               <span className="upload-another-title">Video Complete!</span>
             </div>
             <div className="upload-another-body">
-              <div className="upload-another-icon"><img src="/Check.png" alt="" className="icon-sprite" /></div>
-              <h3 className="upload-another-text">Your animation is downloading!</h3>
-              <p className="upload-another-subtext">Would you like to animate another file?</p>
+              {completedVideoUrl && (
+                <div className="video-preview-container">
+                  <video
+                    src={completedVideoUrl}
+                    controls
+                    autoPlay
+                    loop
+                    className="video-preview"
+                  />
+                </div>
+              )}
               <div className="upload-another-buttons">
-                <button type="button" className="btn-cancel" onClick={() => setShowUploadAnotherModal(false)}>
-                  Stay Here
+                <button type="button" className="btn-cancel" onClick={handleCloseVideoModal}>
+                  Close
+                </button>
+                <button type="button" className="btn-confirm" onClick={handleDownloadVideo}>
+                  Download Video
                 </button>
                 <button type="button" className="btn-confirm" onClick={resetForNewFile}>
                   Upload New File
