@@ -17,6 +17,9 @@ This was originally created to help with some Godot / Xogot showcases for my cod
 ---
 ## Getting Started 🚀
 
+### 0.5. The Itch.io Deployment
+
+We have a download and deployment in the browser through Itch.io! Check it out here: https://jhello.itch.io/code-animator
 ### 1. Clone the Repository
 
 ```bash
