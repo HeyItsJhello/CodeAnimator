@@ -295,6 +295,7 @@ class CodeAnimation(Scene):
             Token.Name.Function.Magic: color_functions,
             Token.Name.Class: color_types,
             Token.Name.Decorator: color_decorators,
+            Token.Name.Variable: color_types,  # For GDScript $node_refs
             Token.Name.Constant: color_numbers,
             Token.String.Doc: color_strings,
             Token.String.Single: color_strings,
@@ -327,6 +328,49 @@ class CodeAnimation(Scene):
 
         full_code_text = "\n".join([content for _, content in filtered_lines])
         full_tokens = list(lex(full_code_text, lexer))
+
+        # GDScript-specific token fixes for Godot 4 syntax
+        if script_path.endswith(".gd"):
+            fixed_tokens = []
+            i = 0
+            while i < len(full_tokens):
+                token_type, token_value = full_tokens[i]
+
+                # Fix @annotations: Token.Error('@') + Token.Keyword -> Token.Name.Decorator
+                if token_type == Token.Error and token_value == "@":
+                    if i + 1 < len(full_tokens):
+                        next_type, next_value = full_tokens[i + 1]
+                        if next_type in Token.Keyword:
+                            fixed_tokens.append((Token.Name.Decorator, "@" + next_value))
+                            i += 2
+                            continue
+
+                # Fix $node_refs: Token.Operator('$') + Token.Name (+ '/' + Token.Name)* -> Token.Name.Variable
+                # Handles paths like $StaticBody2D/CollisionShape2D
+                if token_type == Token.Operator and token_value == "$":
+                    if i + 1 < len(full_tokens):
+                        next_type, next_value = full_tokens[i + 1]
+                        if next_type == Token.Name:
+                            node_path = "$" + next_value
+                            j = i + 2
+                            # Continue consuming /Name pairs
+                            while j + 1 < len(full_tokens):
+                                slash_type, slash_value = full_tokens[j]
+                                if slash_type == Token.Operator and slash_value == "/":
+                                    name_type, name_value = full_tokens[j + 1]
+                                    if name_type == Token.Name:
+                                        node_path += "/" + name_value
+                                        j += 2
+                                        continue
+                                break
+                            fixed_tokens.append((Token.Name.Variable, node_path))
+                            i = j
+                            continue
+
+                fixed_tokens.append((token_type, token_value))
+                i += 1
+
+            full_tokens = fixed_tokens
 
         # Build color map more efficiently - pre-compute token colors
         color_map = {}
