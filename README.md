@@ -15,7 +15,7 @@ This was originally created to help with some Godot / Xogot showcases for my cod
 ![GitHub Stars](https://img.shields.io/github/stars/HeyItsJhello/CodeAnimator?style=for-the-badge)
 
 ---
-## Getting Started 🚀
+## Getting Started
 
 ### 0.5. The Itch.io Deployment
 
@@ -37,27 +37,27 @@ See the sections below for setup instructions for each option.
 
 ---
 
-## Features ✨
+## Features
 
-- 🌐 **Web Interface**: Easy-to-use browser-based UI with live code preview
-- 💻 **CLI Tool**: Traditional command-line interface for local use
-- 📝 Animate any code file (Python, JavaScript, Java, C++, GDScript, and more)
-- 🎯 Choose specific line ranges to animate
-- 🎨 Group lines to appear together in sequences
-- 💬 Option to include/exclude comments
-- 🎥 Customizable syntax highlighting with line numbers
-- 🔒 **Privacy-focused**: Uploaded files are automatically deleted after processing
-- 📺 **High Quality**: All videos rendered at 1080p60
+- **Web Interface**: Easy-to-use browser-based UI with live code preview
+- **CLI Tool**: Traditional command-line interface for local use
+- Animate any code file (Python, JavaScript, Java, C++, GDScript, and more)
+- Choose specific line ranges to animate
+- Group lines to appear together in sequences
+- Option to include/exclude comments
+- Customizable syntax highlighting with line numbers
+- **Privacy-focused**: Uploaded files are automatically deleted after processing
+- **High Quality**: All videos rendered at 1080p60
 
 ---
 
-## Example 🎥
+## Example
 
 https://github.com/user-attachments/assets/ed7b0d6c-e840-499b-a7b9-a5f8b1194bd0
 
 ---
 
-## 🌐 Web Application (Recommended)
+## Web Application (Recommended)
 
 ### Prerequisites
 
@@ -103,7 +103,7 @@ npm run dev
 3.5. **EXAMPLE**:
 <img width="1773" height="1105" alt="Screenshot 2026-01-13 at 11 15 25 PM" src="https://github.com/user-attachments/assets/17c2e873-e9a0-4566-90ed-b6611202ba86" />
 
-### Privacy & Security 🔒
+### Privacy & Security
 
 The web application is designed with privacy in mind:
 - Uploaded code files are deleted immediately after video generation
@@ -128,7 +128,7 @@ The web application is designed with privacy in mind:
 
 ---
 
-## 💻 Command-Line Tool
+## Command-Line Tool
 
 - If you want to use this for a class or something (I have no clue sometimes)
 
@@ -189,7 +189,7 @@ High quality (production):
 manim -pqh --disable_caching --flush_cache -o example_6-20 CodeAnimator.py CodeAnimation
 ```
 
-### CLI Usage Examples 💡
+### CLI Usage Examples
 
 <img width="1191" height="596" alt="Screenshot 2026-01-13 at 11 16 48 PM" src="https://github.com/user-attachments/assets/e97c3201-86b2-411e-b9ad-2c8a139a9849" />
 
@@ -221,7 +221,7 @@ Group 4: [press enter]  # All remaining lines
 
 ---
 
-## How It Works 🔧
+## How It Works 
 
 ### Web Application
 1. **Upload**: User uploads code file through web interface
@@ -239,7 +239,7 @@ Group 4: [press enter]  # All remaining lines
 
 ---
 
-## Line Grouping Tips 💭
+## Line Grouping Tips 
 
 - **Logical blocks**: Group lines that form a complete thought
 - **Related operations**: Lines that work together
@@ -255,7 +255,7 @@ Example grouping strategies:
 
 ---
 
-## Manim Quality Flags 🎛️
+## Manim Quality Flags 
 
 - `-ql`: Low quality (480p15, faster rendering)
 - `-qm`: Medium quality (720p30)
@@ -269,7 +269,7 @@ Additional flags:
 
 ---
 
-## Troubleshooting 🔍
+## Troubleshooting 
 
 ### Web Application
 
@@ -298,7 +298,7 @@ Additional flags:
 
 ---
 
-## API Endpoints 🔌
+## API Endpoints 
 
 For those who want to integrate programmatically:
 
@@ -309,7 +309,7 @@ For those who want to integrate programmatically:
 
 ---
 
-## Project Structure 📁
+## Project Structure 
 
 ```
 CodeAnimator/
@@ -331,7 +331,7 @@ CodeAnimator/
 
 ---
 
-## Video Output 🎬
+## Video Output 
 
 **Web Application:**
 - Videos are automatically downloaded to your browser's download folder
@@ -344,13 +344,13 @@ CodeAnimator/
 
 ---
 
-## License 📄
+## License 
 
 This project is licensed under the **MIT License** 
 ### MIT License
 
 
-## Contributing 🤝
+## Contributing 
 
 Contributions are welcome! Feel free to:
 - Report bugs or issues
@@ -362,4 +362,4 @@ Visit the [GitHub repository](https://github.com/HeyItsJhello/CodeAnimator) to c
 
 ---
 
-**Happy Animating! 🎉**
+**Happy Animating!**
