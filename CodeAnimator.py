@@ -3,13 +3,8 @@ import os
 import platform
 import shutil
 import sys
-import platform
 
 from manim import *
-
-# Use platform-appropriate monospace font
-# Menlo is macOS-only, Liberation Mono is available in Linux/Docker
-MONOSPACE_FONT = "Menlo" if platform.system() == "Darwin" else "Liberation Mono"
 from pygments import lex
 from pygments.lexers import TextLexer, get_lexer_for_filename
 from pygments.token import Token
@@ -376,7 +371,11 @@ class CodeAnimation(Scene):
                 token_type, token_value = full_tokens[i]
 
                 # Fix @annotations: Token.Error('@') + Token.Keyword -> Token.Name.Decorator
-                if token_type == Token.Error and token_value == "@" and i + 1 < num_tokens:
+                if (
+                    token_type == Token.Error
+                    and token_value == "@"
+                    and i + 1 < num_tokens
+                ):
                     next_type, next_value = full_tokens[i + 1]
                     if next_type in Token.Keyword:
                         fixed_tokens.append((Token.Name.Decorator, "@" + next_value))
@@ -384,7 +383,11 @@ class CodeAnimation(Scene):
                         continue
 
                 # Fix $node_refs: Token.Operator('$') + Token.Name (+ '/' + Token.Name)* -> Token.Name.Variable
-                if token_type == Token.Operator and token_value == "$" and i + 1 < num_tokens:
+                if (
+                    token_type == Token.Operator
+                    and token_value == "$"
+                    and i + 1 < num_tokens
+                ):
                     next_type, next_value = full_tokens[i + 1]
                     if next_type == Token.Name:
                         node_path = "$" + next_value
@@ -425,7 +428,9 @@ class CodeAnimation(Scene):
                     current_char = 0
                 else:
                     # Extend list if needed and set color
-                    line_colors = color_map[current_line] if current_line < num_filtered else None
+                    line_colors = (
+                        color_map[current_line] if current_line < num_filtered else None
+                    )
                     if line_colors is not None:
                         # Extend to reach current_char if needed
                         while len(line_colors) <= current_char:
@@ -438,7 +443,9 @@ class CodeAnimation(Scene):
         temp_lines = []
         max_line_width = 0
         for line_num, content in filtered_lines:
-            full_line = f"{line_num:>{line_num_width}}  {content.replace(chr(9), '    ')}"
+            full_line = (
+                f"{line_num:>{line_num_width}}  {content.replace(chr(9), '    ')}"
+            )
             # Create and cache Text object in one pass to avoid recreating later
             line_group = Text(
                 full_line,
@@ -475,14 +482,23 @@ class CodeAnimation(Scene):
 
             for orig_char in content:
                 # Get color from pre-computed list (O(1) vs dict hash)
-                color = line_colors[original_char_idx] if original_char_idx < len(line_colors) else DEFAULT_COLOR
+                color = (
+                    line_colors[original_char_idx]
+                    if original_char_idx < len(line_colors)
+                    else DEFAULT_COLOR
+                )
 
                 char_count = 4 if orig_char == "\t" else 1
 
                 if color != current_run_color:
                     # Save previous run if exists
-                    if current_run_color is not None and current_run_color != DEFAULT_COLOR:
-                        color_runs.append((current_run_start, display_char_idx, current_run_color))
+                    if (
+                        current_run_color is not None
+                        and current_run_color != DEFAULT_COLOR
+                    ):
+                        color_runs.append(
+                            (current_run_start, display_char_idx, current_run_color)
+                        )
                     current_run_start = display_char_idx
                     current_run_color = color
 
@@ -491,7 +507,9 @@ class CodeAnimation(Scene):
 
             # Don't forget the last run
             if current_run_color is not None and current_run_color != DEFAULT_COLOR:
-                color_runs.append((current_run_start, display_char_idx, current_run_color))
+                color_runs.append(
+                    (current_run_start, display_char_idx, current_run_color)
+                )
 
             # Apply color runs - much fewer set_color calls than char-by-char
             for start_idx, end_idx, color in color_runs:
@@ -542,7 +560,12 @@ class CodeAnimation(Scene):
                         if available_slots <= 0:
                             # Use VGroup for more efficient scroll animation
                             visible_group = VGroup(*currently_visible)
-                            self.play(visible_group.animate.shift(UP * (available_height + 1)), run_time=scroll_duration)
+                            self.play(
+                                visible_group.animate.shift(
+                                    UP * (available_height + 1)
+                                ),
+                                run_time=scroll_duration,
+                            )
                             currently_visible.clear()
                             current_visible_count = 0
                             available_slots = chunk_size
@@ -572,7 +595,10 @@ class CodeAnimation(Scene):
                     # Scroll all currently visible lines off screen using VGroup
                     if currently_visible:
                         visible_group = VGroup(*currently_visible)
-                        self.play(visible_group.animate.shift(UP * (available_height + 1)), run_time=scroll_duration)
+                        self.play(
+                            visible_group.animate.shift(UP * (available_height + 1)),
+                            run_time=scroll_duration,
+                        )
                         currently_visible.clear()
                         current_visible_count = 0
 
@@ -614,7 +640,12 @@ class CodeAnimation(Scene):
                         if lines_needed > available_slots:
                             # Use VGroup for more efficient scroll animation
                             visible_group = VGroup(*currently_visible)
-                            self.play(visible_group.animate.shift(UP * (available_height + 1)), run_time=scroll_duration)
+                            self.play(
+                                visible_group.animate.shift(
+                                    UP * (available_height + 1)
+                                ),
+                                run_time=scroll_duration,
+                            )
                             currently_visible.clear()
                             current_visible_count = 0
 
