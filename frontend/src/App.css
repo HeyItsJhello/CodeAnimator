@@ -1714,3 +1714,75 @@ h3 {
     width: 100%;
   }
 }
+
+/* API Status Banner */
+.api-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border: 3px solid #333;
+  font-size: 1rem;
+  overflow: hidden;
+}
+
+.api-status-banner.checking,
+.api-status-banner.waking {
+  background: #fff3cd;
+  color: #856404;
+  border-color: #856404;
+}
+
+.api-status-banner.error {
+  background: #f8d7da;
+  color: #721c24;
+  border-color: #721c24;
+}
+
+.status-spinner {
+  width: 16px;
+  height: 16px;
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.retry-btn {
+  background: #721c24;
+  color: white;
+  border: 2px solid #333;
+  padding: 0.25rem 0.75rem;
+  font-family: 'Jersey 15', monospace;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.retry-btn:hover {
+  background: #a71d2a;
+}
+
+.retry-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.btn-submit:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.btn-submit:disabled:hover {
+  background: #ccc;
+  transform: none;
+}

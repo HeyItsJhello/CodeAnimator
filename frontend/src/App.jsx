@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './App.css'
 
@@ -246,6 +246,42 @@ function App() {
   const [completedVideoFilename, setCompletedVideoFilename] = useState('')
   const [orientation, setOrientation] = useState('landscape') // 'landscape' or 'portrait'
   const [animationTiming, setAnimationTiming] = useState({ ...DEFAULT_TIMING_STR })
+  const [apiStatus, setApiStatus] = useState('checking') // 'checking', 'awake', 'waking', 'error'
+
+  // Check if the API is awake on page load
+  const checkApiStatus = useCallback(async () => {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout
+
+      const response = await fetch(`${API_URL}/`, {
+        signal: controller.signal,
+        method: 'GET'
+      })
+      clearTimeout(timeoutId)
+
+      if (response.ok) {
+        setApiStatus('awake')
+      } else {
+        setApiStatus('error')
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        // Timeout - API is probably waking up
+        setApiStatus('waking')
+        // Retry after a delay
+        setTimeout(checkApiStatus, 3000)
+      } else {
+        // Network error - API might be sleeping, try to wake it
+        setApiStatus('waking')
+        setTimeout(checkApiStatus, 3000)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    checkApiStatus()
+  }, [checkApiStatus])
 
   const handleFileUpload = (e) => {
     const uploadedFile = e.target.files[0]
@@ -635,6 +671,38 @@ function App() {
             Create an automatic showcase of your code! (Animated using Manim)
           </motion.p>
 
+          {/* API Status Banner */}
+          <AnimatePresence>
+            {apiStatus !== 'awake' && (
+              <motion.div
+                className={`api-status-banner ${apiStatus}`}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {apiStatus === 'checking' && (
+                  <>
+                    <span className="status-spinner"></span>
+                    <span>Connecting to server...</span>
+                  </>
+                )}
+                {apiStatus === 'waking' && (
+                  <>
+                    <span className="status-spinner"></span>
+                    <span>Server is waking up... (this may take up to a minute)</span>
+                  </>
+                )}
+                {apiStatus === 'error' && (
+                  <>
+                    <span>Server unavailable. </span>
+                    <button type="button" onClick={checkApiStatus} className="retry-btn">Retry</button>
+                  </>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <form onSubmit={handleSubmit}>
           {/* File Upload */}
           <motion.div
@@ -954,8 +1022,8 @@ function App() {
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.4, delay: 0.4 }}
               >
-                <button type="submit" className="btn-submit">
-                  Generate Animation
+                <button type="submit" className="btn-submit" disabled={apiStatus !== 'awake'}>
+                  {apiStatus !== 'awake' ? 'Waiting for server...' : 'Generate Animation'}
                 </button>
               </motion.div>
             </>
