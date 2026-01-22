@@ -83,6 +83,91 @@ h1 {
   font-weight: bold;
 }
 
+/* Submit Section */
+.submit-section {
+  text-align: center;
+}
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+/* Support Button */
+.support-btn {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  line-height: 1;
+  background: #ff5e5b;
+  color: white;
+  border: 3px solid #333;
+  box-shadow:
+    3px 3px 0 #333,
+    5px 5px 0 rgba(0, 0, 0, 0.1);
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: 'Jersey 15', monospace;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.support-btn:hover {
+  background: #ff4744;
+  transform: translate(-2px, -2px);
+  box-shadow:
+    5px 5px 0 #333,
+    7px 7px 0 rgba(0, 0, 0, 0.1);
+}
+
+.support-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow:
+    0 0 0 #333,
+    2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Feedback Button */
+.feedback-btn {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  background: #3498db;
+  color: white;
+  border: 3px solid #333;
+  box-shadow:
+    3px 3px 0 #333,
+    5px 5px 0 rgba(0, 0, 0, 0.1);
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: 'Jersey 15', monospace;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  line-height: 1;
+}
+
+.feedback-btn:hover {
+  background: #2980b9;
+  transform: translate(-2px, -2px);
+  box-shadow:
+    5px 5px 0 #333,
+    7px 7px 0 rgba(0, 0, 0, 0.1);
+}
+
+.feedback-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow:
+    0 0 0 #333,
+    2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
 .form-section {
   margin-bottom: 2.5rem;
   padding-bottom: 2rem;
@@ -1119,6 +1204,74 @@ h3 {
   opacity: 0.7;
 }
 
+/* Quality Toggle */
+.quality-toggle {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.quality-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 1rem 0.75rem;
+  background: white;
+  border: 4px solid #333;
+  color: #333;
+  cursor: pointer;
+  font-family: 'Jersey 15', monospace;
+  font-weight: bold;
+  transition: all 0.1s ease;
+  box-shadow:
+    4px 4px 0 #333,
+    6px 6px 0 rgba(0, 0, 0, 0.1);
+}
+
+.quality-btn:hover {
+  background: #f0f0f0;
+}
+
+.quality-btn:not(.active) {
+  color: #333 !important;
+}
+
+.quality-btn.active {
+  background: #e63946;
+  color: white;
+  border-color: #333;
+}
+
+.quality-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow:
+    2px 2px 0 #333,
+    4px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.quality-label {
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.quality-size {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+  .quality-toggle {
+    flex-direction: column;
+  }
+
+  .quality-btn {
+    padding: 0.75rem;
+  }
+}
+
 /* Color Modal */
 .color-modal {
   background: white;
@@ -1713,4 +1866,76 @@ h3 {
   .upload-another-buttons .btn-confirm {
     width: 100%;
   }
+}
+
+/* API Status Banner */
+.api-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border: 3px solid #333;
+  font-size: 1rem;
+  overflow: hidden;
+}
+
+.api-status-banner.checking,
+.api-status-banner.waking {
+  background: #fff3cd;
+  color: #856404;
+  border-color: #856404;
+}
+
+.api-status-banner.error {
+  background: #f8d7da;
+  color: #721c24;
+  border-color: #721c24;
+}
+
+.status-spinner {
+  width: 16px;
+  height: 16px;
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.retry-btn {
+  background: #721c24;
+  color: white;
+  border: 2px solid #333;
+  padding: 0.25rem 0.75rem;
+  font-family: 'Jersey 15', monospace;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.retry-btn:hover {
+  background: #a71d2a;
+}
+
+.retry-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.btn-submit:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.btn-submit:disabled:hover {
+  background: #ccc;
+  transform: none;
 }
