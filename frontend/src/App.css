@@ -83,6 +83,47 @@ h1 {
   font-weight: bold;
 }
 
+/* Submit Section */
+.submit-section {
+  text-align: center;
+}
+
+/* Support Button */
+.support-btn {
+  display: inline-block;
+  margin: 1.5rem auto 0 auto;
+  padding: 0.6rem 1.2rem;
+  background: #ff5e5b;
+  color: white;
+  border: 3px solid #333;
+  box-shadow:
+    3px 3px 0 #333,
+    5px 5px 0 rgba(0, 0, 0, 0.1);
+  font-size: 1rem;
+  font-weight: bold;
+  font-family: 'Jersey 15', monospace;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.support-btn:hover {
+  background: #ff4744;
+  transform: translate(-2px, -2px);
+  box-shadow:
+    5px 5px 0 #333,
+    7px 7px 0 rgba(0, 0, 0, 0.1);
+}
+
+.support-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow:
+    0 0 0 #333,
+    2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
 .form-section {
   margin-bottom: 2.5rem;
   padding-bottom: 2rem;
