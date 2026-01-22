@@ -8,13 +8,23 @@ import shutil
 from datetime import datetime
 import threading
 import time
+import os
 
 app = FastAPI(title="Code Animator API")
 
-# Configure CORS
+# Configure CORS - allow local development and production frontend
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    os.getenv("FRONTEND_URL", ""),
+    # Add your Vercel domain when deployed
+]
+# Filter empty strings
+origins = [o for o in origins if o]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Where our frontend is yipeee
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -344,4 +354,4 @@ async def delete_video(video_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=7860)  # HF Spaces uses port 7860

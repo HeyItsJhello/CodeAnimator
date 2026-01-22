@@ -2,6 +2,9 @@ import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './App.css'
 
+// API URL - uses environment variable in production, localhost in development
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 // Default syntax highlighting colors (Manim color names)
 const DEFAULT_SYNTAX_COLORS = {
   keywords: '#9b59b6',      // PURPLE
@@ -466,7 +469,7 @@ function App() {
       setLoadingStatus('starting')
 
       // Send request to backend
-      const response = await fetch('http://localhost:8000/api/animate', {
+      const response = await fetch(`${API_URL}/api/animate`, {
         method: 'POST',
         body: formData
       })
@@ -481,7 +484,7 @@ function App() {
       const taskId = result.taskId
       const progressInterval = setInterval(async () => {
         try {
-          const progressResponse = await fetch(`http://localhost:8000/api/progress/${taskId}`)
+          const progressResponse = await fetch(`${API_URL}/api/progress/${taskId}`)
           if (progressResponse.ok) {
             const progressData = await progressResponse.json()
             setLoadingProgress(progressData.progress)
@@ -501,7 +504,7 @@ function App() {
       await new Promise(resolve => {
         const checkComplete = setInterval(async () => {
           try {
-            const progressResponse = await fetch(`http://localhost:8000/api/progress/${taskId}`)
+            const progressResponse = await fetch(`${API_URL}/api/progress/${taskId}`)
             if (progressResponse.ok) {
               const progressData = await progressResponse.json()
               if (progressData.status === 'complete' || progressData.progress >= 100) {
@@ -520,8 +523,8 @@ function App() {
       await new Promise(resolve => setTimeout(resolve, 500))
 
       // Store video URLs - stream for preview, download for saving
-      const streamUrl = `http://localhost:8000/api/stream/${result.videoId}`
-      const downloadUrl = `http://localhost:8000/api/download/${result.videoId}`
+      const streamUrl = `${API_URL}/api/stream/${result.videoId}`
+      const downloadUrl = `${API_URL}/api/download/${result.videoId}`
       setCompletedVideoUrl(streamUrl)
       setCompletedVideoFilename(result.filename)
       // Store download URL separately for the download button
