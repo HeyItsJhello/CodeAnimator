@@ -274,7 +274,7 @@ function App() {
   const [animationTiming, setAnimationTiming] = useState({
     ...DEFAULT_TIMING_STR,
   });
-  const [apiStatus, setApiStatus] = useState("awake"); // 'checking', 'awake', 'waking', 'error' - default to 'awake' for local dev
+  const [apiStatus, setApiStatus] = useState("checking"); // 'checking', 'awake', 'waking', 'error'
 
   // Check if the API is awake on page load
   const checkApiStatus = useCallback(async () => {
