@@ -12,7 +12,11 @@ RUN apt-get update && apt-get install -y \
     texlive-fonts-recommended \
     texlive-latex-extra \
     fonts-dejavu \
-    && rm -rf /var/lib/apt/lists/*
+    fonts-liberation \
+    fonts-firacode \
+    fontconfig \
+    && rm -rf /var/lib/apt/lists/* \
+    && fc-cache -fv
 
 WORKDIR /app
 

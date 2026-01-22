@@ -1,8 +1,13 @@
 import json
 import os
 import sys
+import platform
 
 from manim import *
+
+# Use platform-appropriate monospace font
+# Menlo is macOS-only, Liberation Mono is available in Linux/Docker
+MONOSPACE_FONT = "Menlo" if platform.system() == "Darwin" else "Liberation Mono"
 from pygments import lex
 from pygments.lexers import TextLexer, get_lexer_for_filename
 from pygments.token import Token
@@ -405,7 +410,7 @@ class CodeAnimation(Scene):
             # Create and cache Text object in one pass to avoid recreating later
             line_group = Text(
                 full_line,
-                font="Menlo",
+                font=MONOSPACE_FONT,
                 font_size=base_font_size,
                 color=DEFAULT_COLOR,
                 disable_ligatures=True,
