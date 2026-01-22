@@ -19,8 +19,8 @@ const DEFAULT_SYNTAX_COLORS = {
 
 const DEFAULT_TIMING = {
   initialDelay: 1.5,
-  lineSlideIn: 0.6,
-  pauseBetweenGroups: 0.3,
+  lineSlideIn: 0.4,
+  pauseBetweenGroups: 0.2,
   finalPause: 2.0,
 };
 
@@ -270,10 +270,11 @@ function App() {
   const [completedVideoUrl, setCompletedVideoUrl] = useState(null);
   const [completedVideoFilename, setCompletedVideoFilename] = useState("");
   const [orientation, setOrientation] = useState("landscape"); // 'landscape' or 'portrait'
+  const [quality, setQuality] = useState("standard"); // 'fast', 'standard', 'high'
   const [animationTiming, setAnimationTiming] = useState({
     ...DEFAULT_TIMING_STR,
   });
-  const [apiStatus, setApiStatus] = useState("checking"); // 'checking', 'awake', 'waking', 'error'
+  const [apiStatus, setApiStatus] = useState("awake"); // 'checking', 'awake', 'waking', 'error' - default to 'awake' for local dev
 
   // Check if the API is awake on page load
   const checkApiStatus = useCallback(async () => {
@@ -418,6 +419,7 @@ function App() {
     setShowUploadAnotherModal(false);
     setCompletedVideoUrl(null);
     setCompletedVideoFilename("");
+    setQuality("standard");
     window._videoDownloadUrl = null;
   };
 
@@ -528,6 +530,7 @@ function App() {
       endLine,
       includeComments,
       orientation,
+      quality,
       lineGroups: lineGroups.map((group) => {
         if (group === "ALL_REMAINING") return "ALL_REMAINING";
         if (typeof group === "object" && group.type === "SPLIT")
@@ -929,7 +932,7 @@ function App() {
                     </div>
                   </motion.div>
 
-                  {/* Animation Timing */}
+                  {/* Quality Preset */}
                   <motion.div
                     className="form-section"
                     initial={{ opacity: 0, x: -20 }}
@@ -937,7 +940,47 @@ function App() {
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.4, delay: 0.29 }}
                   >
-                    <h2>6. Animation Timing</h2>
+                    <h2>6. Quality Preset</h2>
+                    <p className="help-text">
+                      Choose rendering quality. Lower quality renders faster.
+                    </p>
+                    <div className="quality-toggle">
+                      <button
+                        type="button"
+                        className={`quality-btn ${quality === "fast" ? "active" : ""}`}
+                        onClick={() => setQuality("fast")}
+                      >
+                        <span className="quality-label">Fast</span>
+                        <span className="quality-size">480p @ 60fps</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`quality-btn ${quality === "standard" ? "active" : ""}`}
+                        onClick={() => setQuality("standard")}
+                      >
+                        <span className="quality-label">Standard</span>
+                        <span className="quality-size">720p @ 60fps</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`quality-btn ${quality === "high" ? "active" : ""}`}
+                        onClick={() => setQuality("high")}
+                      >
+                        <span className="quality-label">High</span>
+                        <span className="quality-size">1080p @ 60fps</span>
+                      </button>
+                    </div>
+                  </motion.div>
+
+                  {/* Animation Timing */}
+                  <motion.div
+                    className="form-section"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.4, delay: 0.30 }}
+                  >
+                    <h2>7. Animation Timing</h2>
                     <p className="help-text">
                       Fine-tune how long each part of the animation lasts
                       (seconds).
@@ -1024,7 +1067,7 @@ function App() {
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ duration: 0.4, delay: 0.3 }}
                   >
-                    <h2>7. Define Line Groups</h2>
+                    <h2>8. Define Line Groups</h2>
                     <p className="help-text">
                       Enter line numbers for each animation group
                       (space-separated). Leave empty and click "Add Group" to
@@ -1140,14 +1183,24 @@ function App() {
                         ? "Waiting for server..."
                         : "Generate Animation"}
                     </button>
-                    <a
-                      href="https://ko-fi.com/heyitsjhello"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="support-btn"
-                    >
-                      ♥ Support this project
-                    </a>
+                    <div className="footer-links">
+                      <a
+                        href="https://ko-fi.com/heyitsjhello"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="support-btn"
+                      >
+                        ♥ Support this project
+                      </a>
+                      <a
+                        href="https://github.com/HeyItsJhello/CodeAnimator/issues"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="feedback-btn"
+                      >
+                        ? Send Feedback
+                      </a>
+                    </div>
                   </motion.div>
                 </>
               )}

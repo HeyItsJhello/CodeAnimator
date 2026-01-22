@@ -38,6 +38,25 @@ ANIMATOR_SCRIPT = BASE_DIR.parent / "CodeAnimator.py"
 UPLOADS_DIR.mkdir(exist_ok=True)
 OUTPUTS_DIR.mkdir(exist_ok=True)
 
+# Quality presets for different render speeds/quality tradeoffs
+QUALITY_PRESETS = {
+    "fast": {
+        "landscape": ["-ql", "--frame_rate", "60"],      # 480p60
+        "portrait": ["-r", "540,960", "--frame_rate", "60"],
+        "video_dir": "480p60"
+    },
+    "standard": {
+        "landscape": ["-qm", "--frame_rate", "60"],      # 720p60
+        "portrait": ["-r", "720,1280", "--frame_rate", "60"],
+        "video_dir": "720p60"
+    },
+    "high": {
+        "landscape": ["-qh", "--frame_rate", "60"],      # 1080p60
+        "portrait": ["-r", "1080,1920", "--frame_rate", "60"],
+        "video_dir": "1080p60"
+    }
+}
+
 progress_tracking = {}
 
 
@@ -63,7 +82,8 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
                 # Count PNG frames more efficiently - consolidate directory checks
                 frame_files = 0
                 video_exists = False
-                for quality_dir in ["1080p60", "1920p60"]:
+                # Check all possible quality directories
+                for quality_dir in ["480p24", "720p30", "1080p30", "1080p60", "1920p60", "960p24", "1280p30", "1920p30"]:
                     partial_dir = media_dir / "videos" / "CodeAnimator" / quality_dir / "partial_movie_files"
                     if partial_dir.exists():
                         # Count files with list comprehension (more efficient than generator with sum)
@@ -149,6 +169,8 @@ async def create_animation(
         end_line = config_data["endLine"]
         include_comments = config_data["includeComments"]
         orientation = config_data.get("orientation", "landscape")  # 'landscape' or 'portrait'
+        quality = config_data.get("quality", "standard")  # 'fast', 'standard', or 'high'
+        preset = QUALITY_PRESETS.get(quality, QUALITY_PRESETS["standard"])
         line_groups = config_data["lineGroups"]
         syntax_colors = config_data.get("syntaxColors", {})
         animation_timing = config_data.get("animationTiming", {})
@@ -173,7 +195,8 @@ async def create_animation(
             str(include_comments),
             json.dumps(syntax_colors),
             orientation,
-            json.dumps(animation_timing)
+            json.dumps(animation_timing),
+            quality
         ]
         config_lines.extend(line_groups)
         Path(config_path).write_text('\n'.join(config_lines))
@@ -191,33 +214,18 @@ async def create_animation(
         )
         progress_thread.start()
 
-        # Build Manim command based on orientation
-        if orientation == "portrait":
-            # Portrait mode: 1080x1920 at 60fps
-            # Use -r for resolution (W,H format) - this sets non-16:9 aspect ratio
-            manim_cmd = [
-                "manim",
-                "-r", "1080,1920",
-                "--frame_rate", "60",
-                "--disable_caching",
-                "--flush_cache",
-                "-o", output_name,
-                str(ANIMATOR_SCRIPT),
-                "CodeAnimation"
-            ]
-            video_quality_dir = "1920p60"  # Manim names by height + framerate
-        else:
-            # Landscape mode: 1920x1080 at 60fps (default -qh)
-            manim_cmd = [
-                "manim",
-                "-qh",  # High quality: 1080p60
-                "--disable_caching",
-                "--flush_cache",
-                "-o", output_name,
-                str(ANIMATOR_SCRIPT),
-                "CodeAnimation"
-            ]
-            video_quality_dir = "1080p60"
+        # Build Manim command based on orientation and quality preset
+        quality_flags = preset["portrait"] if orientation == "portrait" else preset["landscape"]
+        video_quality_dir = preset["video_dir"]
+
+        manim_cmd = [
+            "manim",
+            *quality_flags,
+            "--flush_cache",
+            "-o", output_name,
+            str(ANIMATOR_SCRIPT),
+            "CodeAnimation"
+        ]
 
         result = subprocess.run(
             manim_cmd,
@@ -245,14 +253,24 @@ async def create_animation(
             progress_tracking[task_id] = {"progress": 95, "status": "finalizing"}
 
         # Find the generated video file
-        # Manim outputs to media/videos/CodeAnimator/{quality_dir}/
+        # Manim outputs to media/videos/CodeAnimator/{quality_dir}/ but dir name varies
         video_filename = f"{output_name}.mp4"
-        video_path = BASE_DIR / "media" / "videos" / "CodeAnimator" / video_quality_dir / video_filename
+        videos_base = BASE_DIR / "media" / "videos" / "CodeAnimator"
 
-        if not video_path.exists():
+        # Search for the video in any quality subdirectory
+        video_path = None
+        if videos_base.exists():
+            for quality_subdir in videos_base.iterdir():
+                if quality_subdir.is_dir():
+                    candidate = quality_subdir / video_filename
+                    if candidate.exists():
+                        video_path = candidate
+                        break
+
+        if video_path is None or not video_path.exists():
             raise HTTPException(
                 status_code=500,
-                detail=f"Generated video not found at expected location: {video_path}"
+                detail=f"Generated video not found in {videos_base}"
             )
 
         # Copy video to outputs directory

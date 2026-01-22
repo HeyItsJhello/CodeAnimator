@@ -1,5 +1,7 @@
 import json
 import os
+import platform
+import shutil
 import sys
 import platform
 
@@ -11,6 +13,10 @@ MONOSPACE_FONT = "Menlo" if platform.system() == "Darwin" else "Liberation Mono"
 from pygments import lex
 from pygments.lexers import TextLexer, get_lexer_for_filename
 from pygments.token import Token
+
+# Use platform-appropriate monospace font
+# Menlo is macOS-only, Liberation Mono is available in Linux/Docker
+MONOSPACE_FONT = "Menlo" if platform.system() == "Darwin" else "Liberation Mono"
 
 # Check orientation from config before Scene initializes
 _orientation = "landscape"
@@ -77,10 +83,11 @@ class CodeAnimation(Scene):
         # Parse animation timing (line 7) - JSON with optional overrides
         default_timing = {
             "initialDelay": 1.5,
-            "lineSlideIn": 0.6,
-            "pauseBetweenGroups": 0.3,
+            "lineSlideIn": 0.4,
+            "pauseBetweenGroups": 0.2,
             "finalPause": 2.0,
         }
+
         animation_timing = default_timing.copy()
         try:
             if len(lines) > 6 and lines[6].strip().startswith("{"):
@@ -130,14 +137,17 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Lines {start_line}-{end_line}")
         print(f"DEBUG: Include comments: {include_comments}")
 
-        # Reading line groups (start after colors JSON, orientation, and timing lines)
+        # Reading line groups (start after colors JSON, orientation, timing, and quality lines)
         line_groups = []
-        # Find the first line group entry (after line 5 which is colors, line 6 orientation, line 7 timing)
+        # Find the first line group entry (after line 5 which is colors, line 6 orientation, line 7 timing, line 8 quality)
         start_idx = 6
         for i in range(6, len(lines)):
             if lines[i].strip().startswith("{") or lines[i].strip() in [
                 "landscape",
                 "portrait",
+                "fast",
+                "standard",
+                "high",
             ]:
                 start_idx = i + 1
             else:
@@ -325,72 +335,88 @@ class CodeAnimation(Scene):
 
         DEFAULT_COLOR = color_default
 
+        # Pre-compute token type inheritance lookup for O(1) color resolution
+        # This avoids repeated inheritance checks during tokenization
+        _token_color_cache = {}
+
+        def get_token_color(token_type):
+            """Get color for token type with caching for inheritance lookup"""
+            if token_type in _token_color_cache:
+                return _token_color_cache[token_type]
+
+            # Direct lookup first
+            if token_type in TOKEN_COLORS:
+                _token_color_cache[token_type] = TOKEN_COLORS[token_type]
+                return TOKEN_COLORS[token_type]
+
+            # Check inheritance (token_type in parent_type)
+            for ttype, tcolor in TOKEN_COLORS.items():
+                if token_type in ttype:
+                    _token_color_cache[token_type] = tcolor
+                    return tcolor
+
+            _token_color_cache[token_type] = DEFAULT_COLOR
+            return DEFAULT_COLOR
+
         # Cache lexer to avoid repeated file detection
         try:
             lexer = get_lexer_for_filename(script_path)
         except Exception:
             lexer = TextLexer()
 
-        full_code_text = "\n".join([content for _, content in filtered_lines])
+        full_code_text = "\n".join(content for _, content in filtered_lines)
         full_tokens = list(lex(full_code_text, lexer))
 
         # GDScript-specific token fixes for Godot 4 syntax
         if script_path.endswith(".gd"):
             fixed_tokens = []
             i = 0
-            while i < len(full_tokens):
+            num_tokens = len(full_tokens)
+            while i < num_tokens:
                 token_type, token_value = full_tokens[i]
 
                 # Fix @annotations: Token.Error('@') + Token.Keyword -> Token.Name.Decorator
-                if token_type == Token.Error and token_value == "@":
-                    if i + 1 < len(full_tokens):
-                        next_type, next_value = full_tokens[i + 1]
-                        if next_type in Token.Keyword:
-                            fixed_tokens.append((Token.Name.Decorator, "@" + next_value))
-                            i += 2
-                            continue
+                if token_type == Token.Error and token_value == "@" and i + 1 < num_tokens:
+                    next_type, next_value = full_tokens[i + 1]
+                    if next_type in Token.Keyword:
+                        fixed_tokens.append((Token.Name.Decorator, "@" + next_value))
+                        i += 2
+                        continue
 
                 # Fix $node_refs: Token.Operator('$') + Token.Name (+ '/' + Token.Name)* -> Token.Name.Variable
-                # Handles paths like $StaticBody2D/CollisionShape2D
-                if token_type == Token.Operator and token_value == "$":
-                    if i + 1 < len(full_tokens):
-                        next_type, next_value = full_tokens[i + 1]
-                        if next_type == Token.Name:
-                            node_path = "$" + next_value
-                            j = i + 2
-                            # Continue consuming /Name pairs
-                            while j + 1 < len(full_tokens):
-                                slash_type, slash_value = full_tokens[j]
-                                if slash_type == Token.Operator and slash_value == "/":
-                                    name_type, name_value = full_tokens[j + 1]
-                                    if name_type == Token.Name:
-                                        node_path += "/" + name_value
-                                        j += 2
-                                        continue
-                                break
-                            fixed_tokens.append((Token.Name.Variable, node_path))
-                            i = j
-                            continue
+                if token_type == Token.Operator and token_value == "$" and i + 1 < num_tokens:
+                    next_type, next_value = full_tokens[i + 1]
+                    if next_type == Token.Name:
+                        node_path = "$" + next_value
+                        j = i + 2
+                        # Continue consuming /Name pairs
+                        while j + 1 < num_tokens:
+                            slash_type, slash_value = full_tokens[j]
+                            if slash_type == Token.Operator and slash_value == "/":
+                                name_type, name_value = full_tokens[j + 1]
+                                if name_type == Token.Name:
+                                    node_path += "/" + name_value
+                                    j += 2
+                                    continue
+                            break
+                        fixed_tokens.append((Token.Name.Variable, node_path))
+                        i = j
+                        continue
 
                 fixed_tokens.append((token_type, token_value))
                 i += 1
 
             full_tokens = fixed_tokens
 
-        # Build color map more efficiently - pre-compute token colors
-        color_map = {}
+        # Build color map using list of lists for O(1) access (vs dict hashing)
+        # Pre-allocate based on line count for better memory efficiency
+        num_filtered = len(filtered_lines)
+        color_map = [[] for _ in range(num_filtered)]
         current_line = 0
         current_char = 0
 
         for token_type, token_value in full_tokens:
-            # Optimize token color lookup with early exit
-            token_color = TOKEN_COLORS.get(token_type, DEFAULT_COLOR)
-            if token_color == DEFAULT_COLOR and token_type not in TOKEN_COLORS:
-                # Only iterate through inherited types if not found directly
-                for ttype, tcolor in TOKEN_COLORS.items():
-                    if token_type in ttype:
-                        token_color = tcolor
-                        break
+            token_color = get_token_color(token_type)
 
             # Process token value and map positions to colors
             for char in token_value:
@@ -398,15 +424,21 @@ class CodeAnimation(Scene):
                     current_line += 1
                     current_char = 0
                 else:
-                    color_map[(current_line, current_char)] = token_color
+                    # Extend list if needed and set color
+                    line_colors = color_map[current_line] if current_line < num_filtered else None
+                    if line_colors is not None:
+                        # Extend to reach current_char if needed
+                        while len(line_colors) <= current_char:
+                            line_colors.append(DEFAULT_COLOR)
+                        line_colors[current_char] = token_color
                     current_char += 1
 
         # Measure max line width for scaling - create text objects once
+        # Only store (line_num, content, line_group) - content_display not needed after Text creation
         temp_lines = []
         max_line_width = 0
         for line_num, content in filtered_lines:
-            content_display = content.replace("\t", "    ")
-            full_line = f"{line_num:>{line_num_width}}  {content_display}"
+            full_line = f"{line_num:>{line_num_width}}  {content.replace(chr(9), '    ')}"
             # Create and cache Text object in one pass to avoid recreating later
             line_group = Text(
                 full_line,
@@ -415,8 +447,9 @@ class CodeAnimation(Scene):
                 color=DEFAULT_COLOR,
                 disable_ligatures=True,
             )
-            temp_lines.append((line_num, content, line_group, content_display))
-            max_line_width = max(max_line_width, line_group.width)
+            temp_lines.append((line_num, content, line_group))
+            if line_group.width > max_line_width:
+                max_line_width = line_group.width
 
         width_scale = 1.0
         if max_line_width > available_width:
@@ -429,32 +462,44 @@ class CodeAnimation(Scene):
 
         y_start = (num_lines * line_height / 2) - (line_height / 2)
 
-        for line_idx, (line_num, content, line_group, content_display) in enumerate(
-            temp_lines
-        ):
+        for line_idx, (line_num, content, line_group) in enumerate(temp_lines):
             display_char_idx = line_num_width + 2
             original_char_idx = 0
+            line_colors = color_map[line_idx] if line_idx < len(color_map) else []
 
-            # Build color assignments once instead of char-by-char calls
-            color_assignments = []
+            # Build color runs (consecutive chars with same color) for batch application
+            # This reduces set_color calls significantly
+            color_runs = []  # [(start_idx, end_idx, color), ...]
+            current_run_start = display_char_idx
+            current_run_color = None
+
             for orig_char in content:
-                if orig_char == "\t":
-                    color = color_map.get((line_idx, original_char_idx), DEFAULT_COLOR)
-                    for _ in range(4):
-                        color_assignments.append((display_char_idx, color))
-                        display_char_idx += 1
-                else:
-                    color = color_map.get((line_idx, original_char_idx), DEFAULT_COLOR)
-                    color_assignments.append((display_char_idx, color))
-                    display_char_idx += 1
+                # Get color from pre-computed list (O(1) vs dict hash)
+                color = line_colors[original_char_idx] if original_char_idx < len(line_colors) else DEFAULT_COLOR
+
+                char_count = 4 if orig_char == "\t" else 1
+
+                if color != current_run_color:
+                    # Save previous run if exists
+                    if current_run_color is not None and current_run_color != DEFAULT_COLOR:
+                        color_runs.append((current_run_start, display_char_idx, current_run_color))
+                    current_run_start = display_char_idx
+                    current_run_color = color
+
+                display_char_idx += char_count
                 original_char_idx += 1
 
-            # Apply all color changes in batch
-            for char_idx, color in color_assignments:
-                try:
-                    line_group[char_idx].set_color(color)
-                except:
-                    pass
+            # Don't forget the last run
+            if current_run_color is not None and current_run_color != DEFAULT_COLOR:
+                color_runs.append((current_run_start, display_char_idx, current_run_color))
+
+            # Apply color runs - much fewer set_color calls than char-by-char
+            for start_idx, end_idx, color in color_runs:
+                for char_idx in range(start_idx, end_idx):
+                    try:
+                        line_group[char_idx].set_color(color)
+                    except IndexError:
+                        break
 
             y_pos = y_start - (line_idx * line_height)
             line_group.move_to([0, y_pos, 0])
@@ -495,11 +540,9 @@ class CodeAnimation(Scene):
                         available_slots = chunk_size - current_visible_count
 
                         if available_slots <= 0:
-                            scroll_animations = [
-                                line_obj.animate.shift(UP * (available_height + 1))
-                                for line_obj in currently_visible
-                            ]
-                            self.play(*scroll_animations, run_time=scroll_duration)
+                            # Use VGroup for more efficient scroll animation
+                            visible_group = VGroup(*currently_visible)
+                            self.play(visible_group.animate.shift(UP * (available_height + 1)), run_time=scroll_duration)
                             currently_visible.clear()
                             current_visible_count = 0
                             available_slots = chunk_size
@@ -526,14 +569,10 @@ class CodeAnimation(Scene):
                     # SPLIT command: scroll current content off, then show from the split line
                     split_line_num = group[1]
 
-                    # Scroll all currently visible lines off screen
+                    # Scroll all currently visible lines off screen using VGroup
                     if currently_visible:
-                        scroll_animations = []
-                        for line_obj in currently_visible:
-                            scroll_animations.append(
-                                line_obj.animate.shift(UP * (available_height + 1))
-                            )
-                        self.play(*scroll_animations, run_time=scroll_duration)
+                        visible_group = VGroup(*currently_visible)
+                        self.play(visible_group.animate.shift(UP * (available_height + 1)), run_time=scroll_duration)
                         currently_visible.clear()
                         current_visible_count = 0
 
@@ -573,11 +612,9 @@ class CodeAnimation(Scene):
                         available_slots = chunk_size - current_visible_count
 
                         if lines_needed > available_slots:
-                            scroll_animations = [
-                                line_obj.animate.shift(UP * (available_height + 1))
-                                for line_obj in currently_visible
-                            ]
-                            self.play(*scroll_animations, run_time=scroll_duration)
+                            # Use VGroup for more efficient scroll animation
+                            visible_group = VGroup(*currently_visible)
+                            self.play(visible_group.animate.shift(UP * (available_height + 1)), run_time=scroll_duration)
                             currently_visible.clear()
                             current_visible_count = 0
 
@@ -626,8 +663,6 @@ class CodeAnimation(Scene):
         self.wait(final_pause)
 
         # Clean up SVG cache files after rendering
-        import shutil
-
         cache_dir = config.text_dir
         if os.path.exists(cache_dir):
             print(f"INFO: Cleaning up SVG cache at {cache_dir}")
@@ -639,7 +674,6 @@ class CodeAnimation(Scene):
 
 
 def get_input():
-    """Interactive prompt to gather animation parameters"""
     print("\n=== Code Animation Script ===\n")
 
     # Get script path
