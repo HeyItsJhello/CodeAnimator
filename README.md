@@ -15,11 +15,16 @@ This was originally created to help with some Godot / Xogot showcases for my cod
 ![GitHub Stars](https://img.shields.io/github/stars/HeyItsJhello/CodeAnimator?style=for-the-badge)
 
 ---
+# Deployment
+
+You can find Code Animator deployed at https://codemation.dev/
+
+This was achieved through a Hugging Face Space for the backend, so that we can have a server to communicate with the Frontend Deployment on Vercel.
+Give it a try and see how you like it!
+
+---
 ## Getting Started
 
-### 0.5. The Itch.io Deployment
-
-We have a download and deployment in the browser through Itch.io! Check it out here: https://jhello.itch.io/code-animator
 ### 1. Clone the Repository
 
 ```bash
