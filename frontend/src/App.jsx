@@ -295,12 +295,6 @@ function App() {
       }
     } catch (error) {
       if (error.name === "AbortError") {
-        // Timeout - API is probably waking up
-        setApiStatus("waking");
-        // Retry after a delay
-        setTimeout(checkApiStatus, 3000);
-      } else {
-        // Network error - API might be sleeping, try to wake it
         setApiStatus("waking");
         setTimeout(checkApiStatus, 3000);
       }
@@ -321,8 +315,7 @@ function App() {
       reader.onload = (event) => {
         const content = event.target.result;
         setFileContent(content);
-        const lines = content.split("\n");
-        const lineCount = lines.length;
+        const lineCount = content.split("\n").length;
         setTotalLines(lineCount);
         setStartLine(1);
         setEndLine(lineCount);
@@ -331,6 +324,34 @@ function App() {
     }
   };
 
+  const parseLineToken = (token) => {
+    if (token.includes("-") && !token.match(/^-?\d+$/)) {
+      const parts = token.split("-");
+
+      if (parts.length != 2) return [];
+
+      const start = parseInt(parts[0]);
+      const end = parseInt(parts[1]);
+
+      // Make sure both parts are ints so everything works | Test cases would be like a-5
+      if (isNaN(start) || isNaN(end)) return [];
+
+      // Correct ordering in case like 5-1
+      const min = Math.min(start, end);
+      const max = Math.max(start, end);
+      const result = [];
+
+      // now to push to the results, since it is just an incrementing loop going to the maxLineNum
+      for (let i = min; i <= max; i++) {
+        result.push(i);
+      }
+      return result;
+    }
+
+    // Single number case
+    const num = parseInt(token);
+    return isNaN(num) ? [] : [num];
+  };
   const addLineGroup = () => {
     if (!currentGroup.trim()) {
       setLineGroups([...lineGroups, "ALL_REMAINING"]);
@@ -346,10 +367,7 @@ function App() {
     }
 
     try {
-      const lines = currentGroup
-        .trim()
-        .split(/\s+/)
-        .map((num) => parseInt(num));
+      const lines = currentGroup.trim().split(/\s+/).flatMap(parseLineToken);
 
       // Validate line numbers
       const validLines = lines.filter((lineNum) => {
@@ -978,7 +996,7 @@ function App() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.4, delay: 0.30 }}
+                    transition={{ duration: 0.4, delay: 0.3 }}
                   >
                     <h2>7. Animation Timing</h2>
                     <p className="help-text">
@@ -1073,7 +1091,9 @@ function App() {
                       (space-separated). Leave empty and click "Add Group" to
                       show all remaining lines.
                     </p>
-                    <p className="help-text example">Example: 21 38 34</p>
+                    <p className="help-text example">
+                      Example: 21 38 34 or 1-5 15-23 9-13
+                    </p>
 
                     <div className="line-group-input">
                       <input
