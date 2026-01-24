@@ -13,15 +13,18 @@ from pygments.token import Token
 # Menlo is macOS-only, Liberation Mono is available in Linux/Docker
 MONOSPACE_FONT = "Menlo" if platform.system() == "Darwin" else "Liberation Mono"
 
-# Check orientation from config before Scene initializes
-_orientation = "landscape"
-try:
-    with open("/tmp/anim_config.txt", "r") as f:
-        lines = f.read().strip().split("\n")
-        if len(lines) > 5 and lines[5].strip() in ["landscape", "portrait"]:
-            _orientation = lines[5].strip()
-except:
-    pass
+# Check orientation from environment variable (set by backend)
+# Falls back to config file for manual/interactive testing
+_orientation = os.environ.get("ANIM_ORIENTATION", "").strip()
+if _orientation not in ["landscape", "portrait"]:
+    _orientation = "landscape"
+    try:
+        with open("/tmp/anim_config.txt", "r") as f:
+            lines = f.read().strip().split("\n")
+            if len(lines) > 5 and lines[5].strip() in ["landscape", "portrait"]:
+                _orientation = lines[5].strip()
+    except:
+        pass
 
 # Set frame dimensions based on orientation
 if _orientation == "portrait":
@@ -36,66 +39,204 @@ else:
     config.pixel_height = 1080
 
 
-class CodeAnimation(Scene):
-    def construct(self):
-        self.renderer.skip_animations = False
+# To Optimize we are creating Lazy Text, like Minecrafts lazy chunk!
+class LazyTextGeneration:
+    __slots__ = ('filtered_lines', 'color_map', 'font', 'font_size', 
+                 'line_height', 'num_gutter', 'content_start_x', 'start_y', '_cache')
+    
+    def __init__(
+        self,
+        filtered_lines,
+        color_map,
+        font,
+        font_size,
+        line_height,
+        num_gutter,
+        content_start_x,
+        start_y,
+    ) -> None:
+        self.filtered_lines = filtered_lines
+        self.color_map = color_map
+        self.font = font
+        self.font_size = font_size
+        self.line_height = line_height
+        self.num_gutter = num_gutter
+        self.content_start_x = content_start_x
+        self.start_y = start_y
+        self._cache = {}
 
-        # Going to read the conf file yeu
+    def get_line(self, idx):
+        if idx in self._cache:
+            return self._cache[idx]
+
+        line_num, content = self.filtered_lines[idx]
+
+        # Creating the objects
+
+        display_text = f"{line_num:>{self.num_gutter}} {content}"
+        line_group = Text(
+            display_text,
+            font=self.font,
+            font_size=self.font_size,
+            disable_ligatures=True,
+        )
+
+        # Apply colors now
+        offset = self.num_gutter + 2
+        color_runs = self.color_map[idx]
+        for start_idx, end_idx, color in color_runs:
+            actual_start = offset + start_idx
+            actual_end = offset + end_idx
+            for char in line_group[actual_start:actual_end]:
+                char.set_color(color)
+
+        # Positioning
+        y_pos = self.start_y - idx * self.line_height
+        line_group.move_to([self.content_start_x, y_pos, 0], aligned_edge=LEFT)
+
+        self._cache[idx] = line_group
+        return line_group
+
+
+class CodeAnimation(Scene):
+    def _load_config(self):
+        # Try stdin first (passed by backend via subprocess)
+        if not sys.stdin.isatty():
+            try:
+                anim_config = json.load(sys.stdin)
+                print("DEBUG: Config loaded from stdin")
+                # Parse line_groups from JSON format
+                anim_config["line_groups"] = self._parse_line_groups(
+                    anim_config.get("line_groups", [])
+                )
+                return anim_config
+            except json.JSONDecodeError as e:
+                print(f"ERROR: Invalid JSON from stdin: {e}")
+                return None
+
+        # Fallback to config file for manual/interactive testing
         try:
             with open("/tmp/anim_config.txt", "r") as f:
-                lines = f.read().strip().split("\n")
+                content = f.read()
+            print("DEBUG: Config loaded from file (fallback)")
+            return self._parse_legacy_config(content)
         except FileNotFoundError:
             print("ERROR: Config file not found at /tmp/anim_config.txt")
             print("Make sure to run the interactive setup first!")
-            return
+            return None
 
-        print(f"DEBUG: Config loaded, {len(lines)} lines")
+    def _parse_line_groups(self, groups_list):
+        """Parse line groups from JSON list format."""
+        parsed = []
+        for group in groups_list:
+            if group == "ALL_REMAINING":
+                parsed.append("ALL_REMAINING")
+            elif isinstance(group, str) and group.startswith("SPLIT "):
+                split_line = int(group.split()[1])
+                parsed.append(("SPLIT", split_line))
+            elif isinstance(group, str):
+                # Space-separated line numbers or range like "1-5"
+                parsed.append(self._parse_line_spec(group))
+            elif isinstance(group, list):
+                parsed.append(group)
+        return parsed
 
-        script_path = lines[0]
-        start_line = int(lines[1])
-        end_line = int(lines[2])
-        include_comments = lines[3].lower() == "true"
+    def _parse_line_spec(self, spec):
+        result = []
+        for part in spec.split():
+            result.append(int(part))
+        return result
+
+    def _parse_legacy_config(self, content):
+        lines = content.strip().split("\n")
 
         # Parse custom syntax colors (line 5 is JSON)
-        custom_colors = {}
+        syntax_colors = {}
         try:
-            custom_colors = (
-                json.loads(lines[4])
-                if len(lines) > 4 and lines[4].strip().startswith("{")
-                else {}
-            )
+            if len(lines) > 4 and lines[4].strip().startswith("{"):
+                syntax_colors = json.loads(lines[4])
         except (json.JSONDecodeError, IndexError):
-            custom_colors = {}
+            pass
 
-        # Parse orientation (line 6) - 'landscape' or 'portrait'
+        # Parse orientation (line 6)
         orientation = "landscape"
         try:
             if len(lines) > 5 and lines[5].strip() in ["landscape", "portrait"]:
                 orientation = lines[5].strip()
         except IndexError:
-            orientation = "landscape"
+            pass
 
-        # Parse animation timing (line 7) - JSON with optional overrides
+        # Parse animation timing (line 7)
+        animation_timing = {}
+        try:
+            if len(lines) > 6 and lines[6].strip().startswith("{"):
+                animation_timing = json.loads(lines[6])
+        except (json.JSONDecodeError, IndexError):
+            pass
+
+        # Parse line groups (starting after metadata lines)
+        line_groups = []
+        start_idx = 6
+        for i in range(6, len(lines)):
+            if lines[i].strip().startswith("{") or lines[i].strip() in [
+                "landscape",
+                "portrait",
+                "fast",
+                "standard",
+                "high",
+            ]:
+                start_idx = i + 1
+            else:
+                start_idx = i
+                break
+
+        for i in range(start_idx, len(lines)):
+            line = lines[i].strip()
+            if line:
+                if line == "ALL_REMAINING":
+                    line_groups.append("ALL_REMAINING")
+                elif line.startswith("SPLIT "):
+                    split_line = int(line.split()[1])
+                    line_groups.append(("SPLIT", split_line))
+                else:
+                    group = [int(x) for x in line.split()]
+                    line_groups.append(group)
+
+        return {
+            "script_path": lines[0] if len(lines) > 0 else "",
+            "start_line": int(lines[1]) if len(lines) > 1 else 1,
+            "end_line": int(lines[2]) if len(lines) > 2 else 100,
+            "include_comments": lines[3].lower() == "true" if len(lines) > 3 else True,
+            "syntax_colors": syntax_colors,
+            "orientation": orientation,
+            "animation_timing": animation_timing,
+            "line_groups": line_groups,
+        }
+
+    def construct(self):
+        self.renderer.skip_animations = False
+
+        # Read config from stdin (backend) or file (manual testing)
+        anim_config = self._load_config()
+        if anim_config is None:
+            return
+
+        script_path = anim_config["script_path"]
+        start_line = anim_config["start_line"]
+        end_line = anim_config["end_line"]
+        include_comments = anim_config["include_comments"]
+        custom_colors = anim_config["syntax_colors"]
+        orientation = anim_config["orientation"]
+        animation_timing = anim_config["animation_timing"]
+        line_groups = anim_config["line_groups"]
+
+        # Apply timing values with defaults
         default_timing = {
             "initialDelay": 1.5,
             "lineSlideIn": 0.4,
             "pauseBetweenGroups": 0.2,
             "finalPause": 2.0,
         }
-
-        animation_timing = default_timing.copy()
-        try:
-            if len(lines) > 6 and lines[6].strip().startswith("{"):
-                parsed_timings = json.loads(lines[6])
-                for key, default_val in default_timing.items():
-                    try:
-                        if key in parsed_timings:
-                            animation_timing[key] = float(parsed_timings[key])
-                    except (TypeError, ValueError):
-                        pass
-        except (json.JSONDecodeError, IndexError):
-            animation_timing = default_timing.copy()
-
         initial_delay = max(
             0.0, animation_timing.get("initialDelay", default_timing["initialDelay"])
         )
@@ -131,34 +272,6 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Script: {script_path}")
         print(f"DEBUG: Lines {start_line}-{end_line}")
         print(f"DEBUG: Include comments: {include_comments}")
-
-        # Reading line groups (start after colors JSON, orientation, timing, and quality lines)
-        line_groups = []
-        # Find the first line group entry (after line 5 which is colors, line 6 orientation, line 7 timing, line 8 quality)
-        start_idx = 6
-        for i in range(6, len(lines)):
-            if lines[i].strip().startswith("{") or lines[i].strip() in [
-                "landscape",
-                "portrait",
-                "fast",
-                "standard",
-                "high",
-            ]:
-                start_idx = i + 1
-            else:
-                start_idx = i
-                break
-        for i in range(start_idx, len(lines)):
-            if lines[i].strip():
-                if lines[i].strip() == "ALL_REMAINING":
-                    line_groups.append("ALL_REMAINING")
-                elif lines[i].strip().startswith("SPLIT "):
-                    # SPLIT X means: scroll current content, then start fresh with line X at top
-                    split_line = int(lines[i].strip().split()[1])
-                    line_groups.append(("SPLIT", split_line))
-                else:
-                    group = [int(x) for x in lines[i].split()]
-                    line_groups.append(group)
 
         # Opening the source file yippeeeeee
         with open(script_path, "r") as f:
@@ -330,8 +443,9 @@ class CodeAnimation(Scene):
 
         DEFAULT_COLOR = color_default
 
-        # Pre-compute token type inheritance lookup for O(1) color resolution
-        # This avoids repeated inheritance checks during tokenization
+        # Pre-build inheritance lookup as tuple for faster iteration
+        # Order matters: more specific types first (longer tuples checked first)
+        _token_parents = tuple(sorted(TOKEN_COLORS.items(), key=lambda x: -len(x[0])))
         _token_color_cache = {}
 
         def get_token_color(token_type):
@@ -339,13 +453,13 @@ class CodeAnimation(Scene):
             if token_type in _token_color_cache:
                 return _token_color_cache[token_type]
 
-            # Direct lookup first
+            # Direct lookup first (O(1) dict access)
             if token_type in TOKEN_COLORS:
                 _token_color_cache[token_type] = TOKEN_COLORS[token_type]
                 return TOKEN_COLORS[token_type]
 
-            # Check inheritance (token_type in parent_type)
-            for ttype, tcolor in TOKEN_COLORS.items():
+            # Check inheritance using pre-sorted tuple (most specific first)
+            for ttype, tcolor in _token_parents:
                 if token_type in ttype:
                     _token_color_cache[token_type] = tcolor
                     return tcolor
@@ -412,9 +526,11 @@ class CodeAnimation(Scene):
             full_tokens = fixed_tokens
 
         # Build color map using list of lists for O(1) access (vs dict hashing)
-        # Pre-allocate based on line count for better memory efficiency
+        # Pre-allocate each line's color array based on line length for O(1) assignment
         num_filtered = len(filtered_lines)
-        color_map = [[] for _ in range(num_filtered)]
+        color_map = [
+            [DEFAULT_COLOR] * len(content) for _, content in filtered_lines
+        ]
         current_line = 0
         current_char = 0
 
@@ -427,15 +543,11 @@ class CodeAnimation(Scene):
                     current_line += 1
                     current_char = 0
                 else:
-                    # Extend list if needed and set color
-                    line_colors = (
-                        color_map[current_line] if current_line < num_filtered else None
-                    )
-                    if line_colors is not None:
-                        # Extend to reach current_char if needed
-                        while len(line_colors) <= current_char:
-                            line_colors.append(DEFAULT_COLOR)
-                        line_colors[current_char] = token_color
+                    # Direct assignment - array already pre-allocated
+                    if current_line < num_filtered:
+                        line_colors = color_map[current_line]
+                        if current_char < len(line_colors):
+                            line_colors[current_char] = token_color
                     current_char += 1
 
         # Measure max line width for scaling - create text objects once
@@ -513,11 +625,11 @@ class CodeAnimation(Scene):
 
             # Apply color runs - much fewer set_color calls than char-by-char
             for start_idx, end_idx, color in color_runs:
-                for char_idx in range(start_idx, end_idx):
-                    try:
-                        line_group[char_idx].set_color(color)
-                    except IndexError:
-                        break
+                try:
+                    for char in line_group[start_idx:end_idx]:
+                        char.set_color(color)
+                except IndexError:
+                    break
 
             y_pos = y_start - (line_idx * line_height)
             line_group.move_to([0, y_pos, 0])
