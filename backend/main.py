@@ -7,7 +7,9 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, Any
 
+import aiofiles
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -171,7 +173,7 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
                             "files": total_files,
                         }
 
-            time.sleep(0.5)  # Check every 500ms
+            time.sleep(1.5)  # Check every 1500ms (reduced from 500ms for efficiency)
         except Exception:
             break
 
@@ -184,14 +186,20 @@ def cleanup_cache():
     total_size = 0
     files_by_age = []
 
-    for f in CACHE_DIR.glob("*.mp4"):
-        try:
-            stat = f.stat()
-            age = now - stat.st_mtime
-            total_size += stat.st_size
-            files_by_age.append((age, stat.st_size, f))
-        except OSError:
-            continue
+    # Use os.scandir for more efficient stat batching
+    try:
+        with os.scandir(CACHE_DIR) as entries:
+            for entry in entries:
+                if entry.name.endswith('.mp4'):
+                    try:
+                        stat = entry.stat()
+                        age = now - stat.st_mtime
+                        total_size += stat.st_size
+                        files_by_age.append((age, stat.st_size, Path(entry.path)))
+                    except OSError:
+                        continue
+    except OSError:
+        return
 
     # Remove files older than MAX_CACHE_AGE
     for age, size, f in files_by_age:
@@ -202,10 +210,10 @@ def cleanup_cache():
             except OSError:
                 pass
 
-    # Remove oldest files if cache too large
-    files_by_age.sort(reverse=True)  # Oldest first
+    # Remove oldest files if cache too large (sort ascending, pop from end = O(1))
+    files_by_age.sort()  # Oldest last (ascending by age)
     while total_size > MAX_CACHE_SIZE and files_by_age:
-        _, size, f = files_by_age.pop(0)
+        _, size, f = files_by_age.pop()  # O(1) pop from end
         if f.exists():
             try:
                 f.unlink()
@@ -230,7 +238,11 @@ async def get_progress(task_id: str):
 
 
 @app.post("/api/animate")
-async def create_animation(file: UploadFile = File(...), config: str = Form(...)):
+async def create_animation(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    config: str = Form(...)
+):
     # Upload a code file and configuration, then generate animation
 
     try:
@@ -292,7 +304,8 @@ async def create_animation(file: UploadFile = File(...), config: str = Form(...)
 
         # Save uploaded file - use already-read content from cache check
         upload_path = UPLOADS_DIR / unique_filename
-        upload_path.write_bytes(file_content)
+        async with aiofiles.open(upload_path, 'wb') as f:
+            await f.write(file_content)
 
         # Build config JSON to pass via stdin (eliminates temp file I/O)
         config_json = json.dumps({
@@ -326,6 +339,7 @@ async def create_animation(file: UploadFile = File(...), config: str = Form(...)
         video_quality_dir = preset["video_dir"]
 
         manim_cmd = [
+            "nice", "-n", "10",  # Lower CPU priority so FastAPI stays responsive
             "manim",
             *quality_flags,
             "--flush_cache",
@@ -340,24 +354,33 @@ async def create_animation(file: UploadFile = File(...), config: str = Form(...)
         # Pass full config via stdin (eliminates temp file race conditions)
         env = os.environ.copy()
         env["ANIM_ORIENTATION"] = orientation
-        result = subprocess.run(
+        
+        # Use Popen with streaming to avoid buffering all output in memory
+        proc = subprocess.Popen(
             manim_cmd,
-            input=config_json,
-            capture_output=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,  # Discard stdout to save memory
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout,
             env=env,
         )
+        try:
+            _, stderr = proc.communicate(input=config_json, timeout=timeout)
+            returncode = proc.returncode
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.communicate()
+            raise
 
         # monitoring
         stop_event.set()
         progress_thread.join(timeout=2)
 
-        if result.returncode != 0:
-            print(f"Error running Manim: {result.stderr}")
+        if returncode != 0:
+            print(f"Error running Manim: {stderr}")
             progress_tracking[task_id] = {"progress": 0, "status": "error"}
             raise HTTPException(
-                status_code=500, detail=f"Animation generation failed: {result.stderr}"
+                status_code=500, detail=f"Animation generation failed: {stderr}"
             )
 
         # Update progress to 95% (video generated, now copying)
@@ -393,8 +416,8 @@ async def create_animation(file: UploadFile = File(...), config: str = Form(...)
         # Save to cache for future identical requests
         try:
             shutil.copy(video_path, cached_video)
-            # Run cache cleanup in background
-            cleanup_cache()
+            # Run cache cleanup in background (non-blocking)
+            background_tasks.add_task(cleanup_cache)
         except Exception as e:
             print(f"Warning: Could not cache video: {e}")
 

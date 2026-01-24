@@ -14,10 +14,10 @@ export const DEFAULT_SYNTAX_COLORS = {
 };
 
 export const DEFAULT_TIMING = {
-  initialDelay: 1.5,
-  lineSlideIn: 0.4,
-  pauseBetweenGroups: 0.2,
-  finalPause: 2.0,
+  initialDelay: 1,
+  lineSlideIn: 0.8,
+  pauseBetweenGroups: 0.6,
+  finalPause: 3.0,
 };
 
 export const DEFAULT_TIMING_STR = Object.fromEntries(

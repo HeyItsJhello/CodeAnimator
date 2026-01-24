@@ -41,6 +41,9 @@ else:
 
 # To Optimize we are creating Lazy Text, like Minecrafts lazy chunk!
 class LazyTextGeneration:
+    __slots__ = ('filtered_lines', 'color_map', 'font', 'font_size', 
+                 'line_height', 'num_gutter', 'content_start_x', 'start_y', '_cache')
+    
     def __init__(
         self,
         filtered_lines,
@@ -440,8 +443,9 @@ class CodeAnimation(Scene):
 
         DEFAULT_COLOR = color_default
 
-        # Pre-compute token type inheritance lookup for O(1) color resolution
-        # This avoids repeated inheritance checks during tokenization
+        # Pre-build inheritance lookup as tuple for faster iteration
+        # Order matters: more specific types first (longer tuples checked first)
+        _token_parents = tuple(sorted(TOKEN_COLORS.items(), key=lambda x: -len(x[0])))
         _token_color_cache = {}
 
         def get_token_color(token_type):
@@ -449,13 +453,13 @@ class CodeAnimation(Scene):
             if token_type in _token_color_cache:
                 return _token_color_cache[token_type]
 
-            # Direct lookup first
+            # Direct lookup first (O(1) dict access)
             if token_type in TOKEN_COLORS:
                 _token_color_cache[token_type] = TOKEN_COLORS[token_type]
                 return TOKEN_COLORS[token_type]
 
-            # Check inheritance (token_type in parent_type)
-            for ttype, tcolor in TOKEN_COLORS.items():
+            # Check inheritance using pre-sorted tuple (most specific first)
+            for ttype, tcolor in _token_parents:
                 if token_type in ttype:
                     _token_color_cache[token_type] = tcolor
                     return tcolor
@@ -522,9 +526,11 @@ class CodeAnimation(Scene):
             full_tokens = fixed_tokens
 
         # Build color map using list of lists for O(1) access (vs dict hashing)
-        # Pre-allocate based on line count for better memory efficiency
+        # Pre-allocate each line's color array based on line length for O(1) assignment
         num_filtered = len(filtered_lines)
-        color_map = [[] for _ in range(num_filtered)]
+        color_map = [
+            [DEFAULT_COLOR] * len(content) for _, content in filtered_lines
+        ]
         current_line = 0
         current_char = 0
 
@@ -537,15 +543,11 @@ class CodeAnimation(Scene):
                     current_line += 1
                     current_char = 0
                 else:
-                    # Extend list if needed and set color
-                    line_colors = (
-                        color_map[current_line] if current_line < num_filtered else None
-                    )
-                    if line_colors is not None:
-                        # Extend to reach current_char if needed
-                        while len(line_colors) <= current_char:
-                            line_colors.append(DEFAULT_COLOR)
-                        line_colors[current_char] = token_color
+                    # Direct assignment - array already pre-allocated
+                    if current_line < num_filtered:
+                        line_colors = color_map[current_line]
+                        if current_char < len(line_colors):
+                            line_colors[current_char] = token_color
                     current_char += 1
 
         # Measure max line width for scaling - create text objects once
