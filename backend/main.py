@@ -1,15 +1,35 @@
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
-from pathlib import Path
+import hashlib
 import json
-import subprocess
+import os
 import shutil
-from datetime import datetime
+import subprocess
 import threading
 import time
+from datetime import datetime
+from pathlib import Path
+
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 
 app = FastAPI(title="Code Animator API")
+
+
+# === Video Caching System ===
+def generate_cache_key(file_content: bytes, config_data: dict) -> str:
+    """Generate unique hash for file content + config combination."""
+    normalized = {
+        "content_hash": hashlib.md5(file_content).hexdigest(),
+        "start_line": config_data.get("startLine"),
+        "end_line": config_data.get("endLine"),
+        "include_comments": config_data.get("includeComments"),
+        "orientation": config_data.get("orientation", "landscape"),
+        "quality": config_data.get("quality", "standard"),
+        "line_groups": json.dumps(sorted(config_data.get("lineGroups", []))),
+        "syntax_colors": json.dumps(config_data.get("syntaxColors", {}), sort_keys=True),
+        "animation_timing": json.dumps(config_data.get("animationTiming", {}), sort_keys=True),
+    }
+    return hashlib.sha256(json.dumps(normalized, sort_keys=True).encode()).hexdigest()[:16]
 
 # Configure CORS
 app.add_middleware(
@@ -23,28 +43,40 @@ app.add_middleware(
 BASE_DIR = Path(__file__).parent
 UPLOADS_DIR = BASE_DIR / "uploads"
 OUTPUTS_DIR = BASE_DIR / "outputs"
+CACHE_DIR = BASE_DIR / "cache"
 ANIMATOR_SCRIPT = BASE_DIR.parent / "CodeAnimator.py"
 
 UPLOADS_DIR.mkdir(exist_ok=True)
 OUTPUTS_DIR.mkdir(exist_ok=True)
+CACHE_DIR.mkdir(exist_ok=True)
+
+# Cache settings
+MAX_CACHE_AGE = 7 * 24 * 60 * 60  # 7 days in seconds
+MAX_CACHE_SIZE = 5 * 1024 * 1024 * 1024  # 5 GB
 
 # Quality presets for different render speeds/quality tradeoffs
 QUALITY_PRESETS = {
     "fast": {
-        "landscape": ["-ql", "--frame_rate", "60"],      # 480p60
+        "landscape": ["-ql", "--frame_rate", "60"],  # 480p60
         "portrait": ["-r", "540,960", "--frame_rate", "60"],
-        "video_dir": "480p60"
+        "video_dir": "480p60",
     },
     "standard": {
-        "landscape": ["-qm", "--frame_rate", "60"],      # 720p60
+        "landscape": ["-qm", "--frame_rate", "60"],  # 720p60
         "portrait": ["-r", "720,1280", "--frame_rate", "60"],
-        "video_dir": "720p60"
+        "video_dir": "720p60",
     },
     "high": {
-        "landscape": ["-qh", "--frame_rate", "60"],      # 1080p60
+        "landscape": ["-qh", "--frame_rate", "60"],  # 1080p60
         "portrait": ["-r", "1080,1920", "--frame_rate", "60"],
-        "video_dir": "1080p60"
-    }
+        "video_dir": "1080p60",
+    },
+}
+
+TIMEOUT_BY_QUALITY = {
+    "fast": 180,
+    "standard": 360,
+    "high": 600,
 }
 
 progress_tracking = {}
@@ -67,14 +99,31 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
             if media_dir.exists():
                 # Count SVG files (text/code objects) - single existence check
                 tex_dir = media_dir / "Tex"
-                svg_files = sum(1 for _ in tex_dir.rglob("*.svg")) if tex_dir.exists() else 0
+                svg_files = (
+                    sum(1 for _ in tex_dir.rglob("*.svg")) if tex_dir.exists() else 0
+                )
 
                 # Count PNG frames more efficiently - consolidate directory checks
                 frame_files = 0
                 video_exists = False
                 # Check all possible quality directories
-                for quality_dir in ["480p24", "720p30", "1080p30", "1080p60", "1920p60", "960p24", "1280p30", "1920p30"]:
-                    partial_dir = media_dir / "videos" / "CodeAnimator" / quality_dir / "partial_movie_files"
+                for quality_dir in [
+                    "480p24",
+                    "720p30",
+                    "1080p30",
+                    "1080p60",
+                    "1920p60",
+                    "960p24",
+                    "1280p30",
+                    "1920p30",
+                ]:
+                    partial_dir = (
+                        media_dir
+                        / "videos"
+                        / "CodeAnimator"
+                        / quality_dir
+                        / "partial_movie_files"
+                    )
                     if partial_dir.exists():
                         # Count files with list comprehension (more efficient than generator with sum)
                         frame_files += len([f for f in partial_dir.glob("*.png")])
@@ -99,7 +148,7 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
                         progress_tracking[task_id] = {
                             "progress": progress,
                             "status": "generating SVGs",
-                            "files": total_files
+                            "files": total_files,
                         }
 
                     # Frame rendering phase (15-90%)
@@ -111,7 +160,7 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
                             "progress": progress,
                             "status": "rendering frames",
                             "files": total_files,
-                            "frames": frame_files
+                            "frames": frame_files,
                         }
 
                     # Video compilation detected
@@ -119,7 +168,7 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
                         progress_tracking[task_id] = {
                             "progress": 90,
                             "status": "compiling video",
-                            "files": total_files
+                            "files": total_files,
                         }
 
             time.sleep(0.5)  # Check every 500ms
@@ -127,6 +176,42 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
             break
 
     # Final progress will be set by main function
+
+
+def cleanup_cache():
+    """Remove old cached videos to stay within size and age limits."""
+    now = time.time()
+    total_size = 0
+    files_by_age = []
+
+    for f in CACHE_DIR.glob("*.mp4"):
+        try:
+            stat = f.stat()
+            age = now - stat.st_mtime
+            total_size += stat.st_size
+            files_by_age.append((age, stat.st_size, f))
+        except OSError:
+            continue
+
+    # Remove files older than MAX_CACHE_AGE
+    for age, size, f in files_by_age:
+        if age > MAX_CACHE_AGE:
+            try:
+                f.unlink()
+                total_size -= size
+            except OSError:
+                pass
+
+    # Remove oldest files if cache too large
+    files_by_age.sort(reverse=True)  # Oldest first
+    while total_size > MAX_CACHE_SIZE and files_by_age:
+        _, size, f = files_by_age.pop(0)
+        if f.exists():
+            try:
+                f.unlink()
+                total_size -= size
+            except OSError:
+                pass
 
 
 @app.get("/")
@@ -145,24 +230,58 @@ async def get_progress(task_id: str):
 
 
 @app.post("/api/animate")
-async def create_animation(
-    file: UploadFile = File(...),
-    config: str = Form(...)
-):
-    
+async def create_animation(file: UploadFile = File(...), config: str = Form(...)):
     # Upload a code file and configuration, then generate animation
-    
+
     try:
         # Parse configuration
         config_data = json.loads(config)
         start_line = config_data["startLine"]
         end_line = config_data["endLine"]
         include_comments = config_data["includeComments"]
-        orientation = config_data.get("orientation", "landscape")  # 'landscape' or 'portrait'
-        quality = config_data.get("quality", "standard")  # 'fast', 'standard', or 'high'
+        orientation = config_data.get(
+            "orientation", "landscape"
+        )  # 'landscape' or 'portrait'
+        quality = config_data.get(
+            "quality", "standard"
+        )  # 'fast', 'standard', or 'high'
         preset = QUALITY_PRESETS.get(quality, QUALITY_PRESETS["standard"])
         line_groups = config_data["lineGroups"]
         syntax_colors = config_data.get("syntaxColors", {})
+
+        # Read file content for cache key generation
+        file_content = await file.read()
+        await file.seek(0)  # Reset for later use
+
+        # Check video cache
+        cache_key = generate_cache_key(file_content, config_data)
+        cached_video = CACHE_DIR / f"{cache_key}.mp4"
+
+        if cached_video.exists():
+            # Cache hit - copy to outputs and return immediately
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            original_filename = Path(file.filename).stem
+            video_filename = f"{original_filename}_{start_line}-{end_line}.mp4"
+            output_video_path = OUTPUTS_DIR / f"{timestamp}_{video_filename}"
+            shutil.copy(cached_video, output_video_path)
+
+            # Update cache file's mtime to keep it fresh
+            cached_video.touch()
+
+            # Add to progress tracking so frontend polling works
+            task_id = f"cached-{timestamp}"
+            progress_tracking[task_id] = {"progress": 100, "status": "complete"}
+
+            return JSONResponse(
+                {
+                    "success": True,
+                    "message": "Animation retrieved from cache",
+                    "videoId": f"{timestamp}_{video_filename}",
+                    "filename": video_filename,
+                    "taskId": task_id,
+                    "cached": True,
+                }
+            )
         animation_timing = config_data.get("animationTiming", {})
 
         # Generate unique filename - do this once
@@ -171,25 +290,22 @@ async def create_animation(
         file_extension = Path(file.filename).suffix
         unique_filename = f"{original_filename}_{timestamp}{file_extension}"
 
-        # Save uploaded file - read once into memory
+        # Save uploaded file - use already-read content from cache check
         upload_path = UPLOADS_DIR / unique_filename
-        content = await file.read()
-        upload_path.write_bytes(content)
+        upload_path.write_bytes(file_content)
 
-        # Create config file for CodeAnimator - build all content at once
-        config_path = "/tmp/anim_config.txt"
-        config_lines = [
-            str(upload_path),
-            str(start_line),
-            str(end_line),
-            str(include_comments),
-            json.dumps(syntax_colors),
-            orientation,
-            json.dumps(animation_timing),
-            quality
-        ]
-        config_lines.extend(line_groups)
-        Path(config_path).write_text('\n'.join(config_lines))
+        # Build config JSON to pass via stdin (eliminates temp file I/O)
+        config_json = json.dumps({
+            "script_path": str(upload_path),
+            "start_line": start_line,
+            "end_line": end_line,
+            "include_comments": include_comments,
+            "syntax_colors": syntax_colors,
+            "orientation": orientation,
+            "animation_timing": animation_timing,
+            "quality": quality,
+            "line_groups": line_groups,
+        })
 
         # Generate output filename
         output_name = f"{original_filename}_{start_line}-{end_line}"
@@ -199,29 +315,38 @@ async def create_animation(
         stop_event = threading.Event()
         task_id = timestamp
         progress_thread = threading.Thread(
-            target=monitor_manim_progress,
-            args=(task_id, media_dir, stop_event)
+            target=monitor_manim_progress, args=(task_id, media_dir, stop_event)
         )
         progress_thread.start()
 
         # Build Manim command based on orientation and quality preset
-        quality_flags = preset["portrait"] if orientation == "portrait" else preset["landscape"]
+        quality_flags = (
+            preset["portrait"] if orientation == "portrait" else preset["landscape"]
+        )
         video_quality_dir = preset["video_dir"]
 
         manim_cmd = [
             "manim",
             *quality_flags,
             "--flush_cache",
-            "-o", output_name,
+            "-o",
+            output_name,
             str(ANIMATOR_SCRIPT),
-            "CodeAnimation"
+            "CodeAnimation",
         ]
 
+        timeout = TIMEOUT_BY_QUALITY.get(quality, 300)
+        # Pass orientation via env var (needed at module load time)
+        # Pass full config via stdin (eliminates temp file race conditions)
+        env = os.environ.copy()
+        env["ANIM_ORIENTATION"] = orientation
         result = subprocess.run(
             manim_cmd,
+            input=config_json,
             capture_output=True,
             text=True,
-            timeout=300  # 5 minute timeout
+            timeout=timeout,
+            env=env,
         )
 
         # monitoring
@@ -232,8 +357,7 @@ async def create_animation(
             print(f"Error running Manim: {result.stderr}")
             progress_tracking[task_id] = {"progress": 0, "status": "error"}
             raise HTTPException(
-                status_code=500,
-                detail=f"Animation generation failed: {result.stderr}"
+                status_code=500, detail=f"Animation generation failed: {result.stderr}"
             )
 
         # Update progress to 95% (video generated, now copying)
@@ -259,13 +383,20 @@ async def create_animation(
 
         if video_path is None or not video_path.exists():
             raise HTTPException(
-                status_code=500,
-                detail=f"Generated video not found in {videos_base}"
+                status_code=500, detail=f"Generated video not found in {videos_base}"
             )
 
         # Copy video to outputs directory
         output_video_path = OUTPUTS_DIR / f"{timestamp}_{video_filename}"
         shutil.copy(video_path, output_video_path)
+
+        # Save to cache for future identical requests
+        try:
+            shutil.copy(video_path, cached_video)
+            # Run cache cleanup in background
+            cleanup_cache()
+        except Exception as e:
+            print(f"Warning: Could not cache video: {e}")
 
         # Clean up user's uploaded file immediately (PRIVACY)
         try:
@@ -285,23 +416,25 @@ async def create_animation(
         # Mark as complete
         progress_tracking[task_id] = {"progress": 100, "status": "complete"}
 
-        return JSONResponse({
-            "success": True,
-            "message": "Animation generated successfully",
-            "videoId": f"{timestamp}_{video_filename}",
-            "filename": video_filename,
-            "taskId": task_id
-        })
+        return JSONResponse(
+            {
+                "success": True,
+                "message": "Animation generated successfully",
+                "videoId": f"{timestamp}_{video_filename}",
+                "filename": video_filename,
+                "taskId": task_id,
+            }
+        )
 
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid configuration JSON")
     except subprocess.TimeoutExpired:
-        if 'task_id' in locals():
+        if "task_id" in locals():
             progress_tracking[task_id] = {"progress": 0, "status": "timeout"}
         raise HTTPException(status_code=500, detail="Animation generation timed out")
     except Exception as e:
         print(f"Error: {str(e)}")
-        if 'task_id' in locals():
+        if "task_id" in locals():
             raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -343,8 +476,11 @@ async def download_video(video_id: str, background_tasks: BackgroundTasks):
         path=video_path,
         media_type="video/mp4",
         filename=video_id.split("_", 1)[1],  # Remove timestamp prefix
-        headers={"Content-Disposition": f"attachment; filename={video_id.split('_', 1)[1]}"}
+        headers={
+            "Content-Disposition": f"attachment; filename={video_id.split('_', 1)[1]}"
+        },
     )
+
 
 @app.delete("/api/videos/{video_id}")
 async def delete_video(video_id: str):
@@ -362,4 +498,5 @@ async def delete_video(video_id: str):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
