@@ -41,9 +41,18 @@ else:
 
 # To Optimize we are creating Lazy Text, like Minecrafts lazy chunk!
 class LazyTextGeneration:
-    __slots__ = ('filtered_lines', 'color_map', 'font', 'font_size', 
-                 'line_height', 'num_gutter', 'content_start_x', 'start_y', '_cache')
-    
+    __slots__ = (
+        "filtered_lines",
+        "color_map",
+        "font",
+        "font_size",
+        "line_height",
+        "num_gutter",
+        "content_start_x",
+        "start_y",
+        "_cache",
+    )
+
     def __init__(
         self,
         filtered_lines,
@@ -528,9 +537,7 @@ class CodeAnimation(Scene):
         # Build color map using list of lists for O(1) access (vs dict hashing)
         # Pre-allocate each line's color array based on line length for O(1) assignment
         num_filtered = len(filtered_lines)
-        color_map = [
-            [DEFAULT_COLOR] * len(content) for _, content in filtered_lines
-        ]
+        color_map = [[DEFAULT_COLOR] * len(content) for _, content in filtered_lines]
         current_line = 0
         current_char = 0
 
@@ -623,7 +630,6 @@ class CodeAnimation(Scene):
                     (current_run_start, display_char_idx, current_run_color)
                 )
 
-            # Apply color runs - much fewer set_color calls than char-by-char
             for start_idx, end_idx, color in color_runs:
                 try:
                     for char in line_group[start_idx:end_idx]:
@@ -645,7 +651,7 @@ class CodeAnimation(Scene):
 
         self.wait(initial_delay)
 
-        # Animate line groups with chunking support
+        # Animate line groups with chunking support, chunking lets me render faster yipeeee
         if enable_chunking:
             # Chunked display mode - show lines in chunks, scrolling up between chunks
             currently_visible = []  # Track which line objects are currently visible on screen
@@ -653,7 +659,7 @@ class CodeAnimation(Scene):
 
             # Helper function to calculate position for a line within the current visible chunk
             def get_chunk_position(slot_index):
-                """Calculate Y position for a line at the given slot index (0 = top of visible area)"""
+                # Y positioning, we needed
                 chunk_height = chunk_size * line_height
                 y_start_chunk = (chunk_height / 2) - (line_height / 2)
                 return y_start_chunk - (slot_index * line_height)
