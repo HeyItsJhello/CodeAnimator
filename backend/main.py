@@ -7,7 +7,6 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
 
 import aiofiles
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
@@ -17,9 +16,7 @@ from fastapi.responses import FileResponse, JSONResponse
 app = FastAPI(title="Code Animator API")
 
 
-# === Video Caching System ===
 def generate_cache_key(file_content: bytes, config_data: dict) -> str:
-    """Generate unique hash for file content + config combination."""
     normalized = {
         "content_hash": hashlib.md5(file_content).hexdigest(),
         "start_line": config_data.get("startLine"),
@@ -28,10 +25,17 @@ def generate_cache_key(file_content: bytes, config_data: dict) -> str:
         "orientation": config_data.get("orientation", "landscape"),
         "quality": config_data.get("quality", "standard"),
         "line_groups": json.dumps(sorted(config_data.get("lineGroups", []))),
-        "syntax_colors": json.dumps(config_data.get("syntaxColors", {}), sort_keys=True),
-        "animation_timing": json.dumps(config_data.get("animationTiming", {}), sort_keys=True),
+        "syntax_colors": json.dumps(
+            config_data.get("syntaxColors", {}), sort_keys=True
+        ),
+        "animation_timing": json.dumps(
+            config_data.get("animationTiming", {}), sort_keys=True
+        ),
     }
-    return hashlib.sha256(json.dumps(normalized, sort_keys=True).encode()).hexdigest()[:16]
+    return hashlib.sha256(json.dumps(normalized, sort_keys=True).encode()).hexdigest()[
+        :16
+    ]
+
 
 
 # Configure CORS - allow local development and production frontend
@@ -190,7 +194,6 @@ def monitor_manim_progress(task_id: str, media_dir: Path, stop_event: threading.
 
 
 def cleanup_cache():
-    """Remove old cached videos to stay within size and age limits."""
     now = time.time()
     total_size = 0
     files_by_age = []
@@ -199,7 +202,7 @@ def cleanup_cache():
     try:
         with os.scandir(CACHE_DIR) as entries:
             for entry in entries:
-                if entry.name.endswith('.mp4'):
+                if entry.name.endswith(".mp4"):
                     try:
                         stat = entry.stat()
                         age = now - stat.st_mtime
@@ -250,7 +253,7 @@ async def get_progress(task_id: str):
 async def create_animation(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    config: str = Form(...)
+    config: str = Form(...),
 ):
     # Upload a code file and configuration, then generate animation
 
@@ -313,21 +316,23 @@ async def create_animation(
 
         # Save uploaded file - use already-read content from cache check
         upload_path = UPLOADS_DIR / unique_filename
-        async with aiofiles.open(upload_path, 'wb') as f:
+        async with aiofiles.open(upload_path, "wb") as f:
             await f.write(file_content)
 
         # Build config JSON to pass via stdin (eliminates temp file I/O)
-        config_json = json.dumps({
-            "script_path": str(upload_path),
-            "start_line": start_line,
-            "end_line": end_line,
-            "include_comments": include_comments,
-            "syntax_colors": syntax_colors,
-            "orientation": orientation,
-            "animation_timing": animation_timing,
-            "quality": quality,
-            "line_groups": line_groups,
-        })
+        config_json = json.dumps(
+            {
+                "script_path": str(upload_path),
+                "start_line": start_line,
+                "end_line": end_line,
+                "include_comments": include_comments,
+                "syntax_colors": syntax_colors,
+                "orientation": orientation,
+                "animation_timing": animation_timing,
+                "quality": quality,
+                "line_groups": line_groups,
+            }
+        )
 
         # Generate output filename
         output_name = f"{original_filename}_{start_line}-{end_line}"
@@ -348,7 +353,9 @@ async def create_animation(
         video_quality_dir = preset["video_dir"]
 
         manim_cmd = [
-            "nice", "-n", "10",  # Lower CPU priority so FastAPI stays responsive
+            "nice",
+            "-n",
+            "10",  # Lower CPU priority so FastAPI stays responsive
             "manim",
             *quality_flags,
             "--flush_cache",
@@ -363,7 +370,7 @@ async def create_animation(
         # Pass full config via stdin (eliminates temp file race conditions)
         env = os.environ.copy()
         env["ANIM_ORIENTATION"] = orientation
-        
+
         # Use Popen with streaming to avoid buffering all output in memory
         proc = subprocess.Popen(
             manim_cmd,
