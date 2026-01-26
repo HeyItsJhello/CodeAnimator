@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import "../App.css";
 
@@ -53,10 +53,14 @@ function AppPage() {
 
   // Settings state
   const [includeComments, setIncludeComments] = useState(true);
-  const [syntaxColors, setSyntaxColors] = useState({ ...DEFAULT_SYNTAX_COLORS });
+  const [syntaxColors, setSyntaxColors] = useState({
+    ...DEFAULT_SYNTAX_COLORS,
+  });
   const [orientation, setOrientation] = useState("landscape");
   const [quality, setQuality] = useState("standard");
-  const [animationTiming, setAnimationTiming] = useState({ ...DEFAULT_TIMING_STR });
+  const [animationTiming, setAnimationTiming] = useState({
+    ...DEFAULT_TIMING_STR,
+  });
 
   // Line groups state
   const [lineGroups, setLineGroups] = useState([]);
@@ -135,7 +139,9 @@ function AppPage() {
           return false;
         }
         if (lineNum < startLine || lineNum > endLine) {
-          alert(`Warning: Line ${lineNum} is outside range [${startLine}, ${endLine}]`);
+          alert(
+            `Warning: Line ${lineNum} is outside range [${startLine}, ${endLine}]`,
+          );
           return false;
         }
         return true;
@@ -308,13 +314,18 @@ function AppPage() {
       const taskId = result.taskId;
       const progressInterval = setInterval(async () => {
         try {
-          const progressResponse = await fetch(`${API_URL}/api/progress/${taskId}`);
+          const progressResponse = await fetch(
+            `${API_URL}/api/progress/${taskId}`,
+          );
           if (progressResponse.ok) {
             const progressData = await progressResponse.json();
             setLoadingProgress(progressData.progress);
             setLoadingStatus(progressData.status || "processing");
 
-            if (progressData.status === "complete" || progressData.progress >= 100) {
+            if (
+              progressData.status === "complete" ||
+              progressData.progress >= 100
+            ) {
               clearInterval(progressInterval);
             }
           }
@@ -326,10 +337,15 @@ function AppPage() {
       await new Promise((resolve) => {
         const checkComplete = setInterval(async () => {
           try {
-            const progressResponse = await fetch(`${API_URL}/api/progress/${taskId}`);
+            const progressResponse = await fetch(
+              `${API_URL}/api/progress/${taskId}`,
+            );
             if (progressResponse.ok) {
               const progressData = await progressResponse.json();
-              if (progressData.status === "complete" || progressData.progress >= 100) {
+              if (
+                progressData.status === "complete" ||
+                progressData.progress >= 100
+              ) {
                 clearInterval(checkComplete);
                 clearInterval(progressInterval);
                 setLoadingProgress(100);
@@ -390,7 +406,7 @@ function AppPage() {
           <Link to="/" className="back-to-home">
             ← Back to Home
           </Link>
-          
+
           <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
