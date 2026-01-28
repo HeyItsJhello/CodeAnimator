@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { usedInVideos } from './UsedIn'
 
-function Navbar() {
+function Navbar({ showSectionLinks = true }) {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -21,7 +22,7 @@ function Navbar() {
   }
 
   return (
-    <motion.nav 
+    <motion.nav
       className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}
       initial={{ y: -100 }}
       animate={{ y: 0 }}
@@ -32,17 +33,32 @@ function Navbar() {
           <img src="/Movie.png" alt="" className="navbar__logo-icon" />
           Code Animator
         </Link>
-        
+
         <div className="navbar__links">
-          <button onClick={() => scrollToSection('features')} className="navbar__link">
-            Features
-          </button>
-          <button onClick={() => scrollToSection('how-it-works')} className="navbar__link">
-            How It Works
-          </button>
-          <a 
-            href="https://github.com/HeyItsJhello/CodeAnimator" 
-            target="_blank" 
+          {showSectionLinks && (
+            <>
+              <button onClick={() => scrollToSection('features')} className="navbar__link">
+                Features
+              </button>
+              <button onClick={() => scrollToSection('how-it-works')} className="navbar__link">
+                How It Works
+              </button>
+              <button onClick={() => scrollToSection('why-i-made-this')} className="navbar__link">
+                Why I Made This
+              </button>
+              {usedInVideos.length > 0 && (
+                <button onClick={() => scrollToSection('used-in')} className="navbar__link">
+                  Used In
+                </button>
+              )}
+            </>
+          )}
+          <Link to="/downloads" className="navbar__link">
+            Downloads
+          </Link>
+          <a
+            href="https://github.com/HeyItsJhello/CodeAnimator"
+            target="_blank"
             rel="noopener noreferrer"
             className="navbar__link"
           >

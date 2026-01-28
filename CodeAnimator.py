@@ -135,7 +135,6 @@ class CodeAnimation(Scene):
             return None
 
     def _parse_line_groups(self, groups_list):
-        """Parse line groups from JSON list format."""
         parsed = []
         for group in groups_list:
             if group == "ALL_REMAINING":
