@@ -151,12 +151,14 @@
 .navbar__links {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
 .navbar__link {
   background: none;
   border: none;
+  padding: 0;
+  margin: 0;
   font-family: 'Jersey 15', monospace;
   font-size: 1.1rem;
   font-weight: bold;
@@ -164,6 +166,7 @@
   cursor: pointer;
   text-decoration: none;
   transition: color 0.2s ease;
+  white-space: nowrap;
 }
 
 .navbar__link:hover {
@@ -239,9 +242,17 @@
 
 .hero__buttons {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 1rem;
   justify-content: center;
   margin-bottom: 3rem;
+}
+
+.hero__buttons-row {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
   flex-wrap: wrap;
 }
 
@@ -557,6 +568,147 @@
 }
 
 /* ===================================
+   Why I Made This Section
+   =================================== */
+
+.why-i-made-this {
+  padding: 6rem 2rem;
+}
+
+.why-i-made-this__container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.why-i-made-this__content {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #555;
+}
+
+.why-i-made-this__content p {
+  margin: 0 0 1rem 0;
+}
+
+.why-i-made-this__content p:last-child {
+  margin-bottom: 0;
+}
+
+/* ===================================
+   Used In Section
+   =================================== */
+
+.used-in {
+  padding: 6rem 0;
+  background: white;
+  border-top: 4px solid #333;
+  border-bottom: 4px solid #333;
+  overflow: hidden;
+}
+
+.used-in__container {
+  width: 100%;
+}
+
+.used-in__container .section-title,
+.used-in__container .section-subtitle {
+  padding: 0 2rem;
+}
+
+.used-in__slider {
+  width: 100%;
+  overflow: hidden;
+}
+
+.used-in__videos {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  padding: 0 2rem;
+}
+
+.used-in__videos--scrollable {
+  justify-content: flex-start;
+  padding: 0;
+  width: max-content;
+  animation: scroll-gallery 30s linear infinite;
+}
+
+.used-in__slider:hover .used-in__videos--scrollable {
+  animation-play-state: paused;
+}
+
+@keyframes scroll-gallery {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.used-in__video {
+  flex-shrink: 0;
+  width: 480px;
+}
+
+.used-in__video-container {
+  background: #1e1e1e;
+  border: 4px solid #333;
+  box-shadow: 8px 8px 0 #333, 12px 12px 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.used-in__video-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #2d2d2d;
+  border-bottom: 2px solid #333;
+}
+
+.used-in__video-dot {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #333;
+}
+
+.used-in__video-dot--red { background: #ff5f56; }
+.used-in__video-dot--yellow { background: #ffbd2e; }
+.used-in__video-dot--green { background: #27c93f; }
+
+.used-in__video-title {
+  margin-left: 0.5rem;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.used-in__video-content {
+  position: relative;
+  aspect-ratio: 16/9;
+  background: #1e1e1e;
+}
+
+.used-in__video-content iframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .used-in__video {
+    width: 360px;
+  }
+}
+
+@media (max-width: 480px) {
+  .used-in__video {
+    width: 300px;
+  }
+}
+
+/* ===================================
    Open Source Section
    =================================== */
 
@@ -739,6 +891,110 @@
 }
 
 /* ===================================
+   Downloads Page
+   =================================== */
+
+.downloads {
+  min-height: 100vh;
+  padding: 8rem 2rem 4rem;
+}
+
+.downloads__container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.downloads__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.download-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.download-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 #333, 10px 10px 0 rgba(0, 0, 0, 0.1);
+}
+
+.download-card__icon {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.download-card__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.download-card__info {
+  flex: 1;
+}
+
+.download-card__platform {
+  font-size: 1.5rem;
+  color: #333;
+  margin: 0 0 0.25rem 0;
+}
+
+.download-card__arch {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0 0 0.5rem 0;
+}
+
+.download-card__meta {
+  font-size: 0.9rem;
+  color: #999;
+  margin: 0;
+}
+
+.download-card__action {
+  flex-shrink: 0;
+}
+
+.downloads__more {
+  text-align: center;
+  padding-top: 2rem;
+  border-top: 4px solid #333;
+}
+
+.downloads__more-text {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .download-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .download-card__icon {
+    margin: 0 auto;
+  }
+
+  .download-card__info {
+    text-align: center;
+  }
+}
+
+/* ===================================
    Responsive Design
    =================================== */
 
@@ -755,7 +1011,7 @@
     font-size: 1.2rem;
   }
   
-  .hero__buttons {
+  .hero__buttons-row {
     flex-direction: column;
     align-items: center;
   }

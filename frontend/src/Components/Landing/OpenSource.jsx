@@ -52,7 +52,7 @@ function OpenSource() {
             <br />
             No accounts, no subscriptions, no limits.
             <br />
-            Your code stays private—files are deleted immediately after
+            Your code stays private, files are deleted immediately after
             processing.
           </p>
 

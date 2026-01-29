@@ -23,7 +23,7 @@ function Hero() {
           Turn Your Code Into
           <br />
           <span className="hero__headline--accent">
-            Stunning Animated Videos
+            Amazing Animated Videos
           </span>
         </motion.h1>
 
@@ -33,7 +33,7 @@ function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          Create professional code animations with Manim in seconds.
+          Create professional code animations with Manim quickly
           <br />
           No video editing skills required. Just upload, configure, and
           download.
@@ -45,9 +45,14 @@ function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
         >
-          <Link to="/app" className="retro-btn retro-btn--primary">
-            Try It Free →
-          </Link>
+          <div className="hero__buttons-row">
+            <Link to="/downloads" className="retro-btn retro-btn--primary">
+              Downloads →
+            </Link>
+            <Link to="/app" className="retro-btn retro-btn--primary">
+              Try It Online →
+            </Link>
+          </div>
           <a
             href="https://github.com/HeyItsJhello/CodeAnimator"
             target="_blank"

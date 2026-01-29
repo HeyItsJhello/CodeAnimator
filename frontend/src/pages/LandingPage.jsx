@@ -1,11 +1,13 @@
-import { 
-  Navbar, 
-  Hero, 
-  Features, 
-  HowItWorks, 
-  Comparison, 
-  OpenSource, 
-  CTAFooter 
+import {
+  Navbar,
+  Hero,
+  Features,
+  HowItWorks,
+  Comparison,
+  WhyIMadeThis,
+  UsedIn,
+  OpenSource,
+  CTAFooter
 } from '../Components/Landing'
 import '../styles/Landing.css'
 
@@ -17,6 +19,8 @@ function LandingPage() {
       <Features />
       <HowItWorks />
       <Comparison />
+      <WhyIMadeThis />
+      <UsedIn />
       <OpenSource />
       <CTAFooter />
     </div>
