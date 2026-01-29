@@ -221,6 +221,24 @@ class CodeAnimation(Scene):
             "line_groups": line_groups,
         }
 
+    def _build_line_animation(self, line_obj, target_pos, animation_type, run_time):
+        if animation_type == "fade_in":
+            line_obj.move_to(target_pos)
+            self.remove(line_obj)
+            return FadeIn(line_obj, run_time=run_time)
+        elif animation_type == "typewriter":
+            line_obj.move_to(target_pos)
+            self.remove(line_obj)
+            return AddTextLetterByLetter(line_obj)
+        elif animation_type == "drop_in":
+            return line_obj.animate(run_time=run_time).move_to(target_pos)
+        elif animation_type == "scale_in":
+            line_obj.move_to(target_pos)
+            self.remove(line_obj)
+            return GrowFromCenter(line_obj, run_time=run_time)
+        else:  # slide_left (default)
+            return line_obj.animate(run_time=run_time).move_to(target_pos)
+
     def construct(self):
         self.renderer.skip_animations = False
 
@@ -236,6 +254,7 @@ class CodeAnimation(Scene):
         custom_colors = anim_config["syntax_colors"]
         orientation = anim_config["orientation"]
         animation_timing = anim_config["animation_timing"]
+        animation_type = anim_config.get("animation_type", "slide_left")
         line_groups = anim_config["line_groups"]
 
         # Apply timing values with defaults
@@ -265,6 +284,7 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Custom colors: {custom_colors}")
         print(f"DEBUG: Orientation: {orientation}")
         print(f"DEBUG: Animation timing: {animation_timing}")
+        print(f"DEBUG: Animation type: {animation_type}")
 
         # making the custom filename for the output, example_1-11.mp4
         base_filename = os.path.splitext(os.path.basename(script_path))[0]
@@ -644,8 +664,15 @@ class CodeAnimation(Scene):
                 line_group.move_to([0, y_pos, 0])
                 line_group.to_edge(LEFT, buff=left_margin)
             final_pos = line_group.get_center().copy()
-            line_group.shift(LEFT * (frame_w + 2))
-            self.add(line_group)
+            if animation_type in ("fade_in", "typewriter", "scale_in"):
+                # Don't add to scene - introducer animations will add them
+                pass
+            elif animation_type == "drop_in":
+                line_group.shift(UP * (frame_h + 2))
+                self.add(line_group)
+            else:  # slide_left (default)
+                line_group.shift(LEFT * (frame_w + 2))
+                self.add(line_group)
             line_mobjects.append((line_group, final_pos))
 
         self.wait(initial_delay)
@@ -695,14 +722,19 @@ class CodeAnimation(Scene):
                             line_obj, original_final_pos = line_mobjects[idx]
                             slot_y = get_chunk_position(current_visible_count)
                             target_pos = [original_final_pos[0], slot_y, 0]
-                            line_obj.move_to([-(frame_w + 2), slot_y, 0])
-                            animations.append(line_obj.animate.move_to(target_pos))
+                            if animation_type == "drop_in":
+                                line_obj.move_to([original_final_pos[0], frame_h + 2, 0])
+                            elif animation_type not in ("fade_in", "typewriter", "scale_in"):
+                                line_obj.move_to([-(frame_w + 2), slot_y, 0])
+                            animations.append(
+                                self._build_line_animation(line_obj, target_pos, animation_type, line_slide_in)
+                            )
                             shown_lines.add(line_num)
                             currently_visible.append(line_obj)
                             current_visible_count += 1
 
                         if animations:
-                            self.play(*animations, run_time=line_slide_in)
+                            self.play(*animations)
                             self.wait(pause_between_groups)
 
                 elif isinstance(group, tuple) and group[0] == "SPLIT":
@@ -729,12 +761,12 @@ class CodeAnimation(Scene):
                             line_obj, original_final_pos = line_mobjects[idx]
                             slot_y = get_chunk_position(current_visible_count)
                             target_pos = [original_final_pos[0], slot_y, 0]
-                            # First, move to correct Y position while staying off-screen left
-                            line_obj.move_to([-(frame_w + 2), slot_y, 0])
-                            # Then animate sliding in from left
+                            if animation_type == "drop_in":
+                                line_obj.move_to([original_final_pos[0], frame_h + 2, 0])
+                            elif animation_type not in ("fade_in", "typewriter", "scale_in"):
+                                line_obj.move_to([-(frame_w + 2), slot_y, 0])
                             self.play(
-                                line_obj.animate.move_to(target_pos),
-                                run_time=line_slide_in,
+                                self._build_line_animation(line_obj, target_pos, animation_type, line_slide_in),
                             )
                             shown_lines.add(split_line_num)
                             currently_visible.append(line_obj)
@@ -771,13 +803,18 @@ class CodeAnimation(Scene):
                             line_obj, original_final_pos = line_mobjects[idx]
                             slot_y = get_chunk_position(current_visible_count)
                             target_pos = [original_final_pos[0], slot_y, 0]
-                            line_obj.move_to([-(frame_w + 2), slot_y, 0])
-                            animations.append(line_obj.animate.move_to(target_pos))
+                            if animation_type == "drop_in":
+                                line_obj.move_to([original_final_pos[0], frame_h + 2, 0])
+                            elif animation_type not in ("fade_in", "typewriter", "scale_in"):
+                                line_obj.move_to([-(frame_w + 2), slot_y, 0])
+                            animations.append(
+                                self._build_line_animation(line_obj, target_pos, animation_type, line_slide_in)
+                            )
                             shown_lines.add(line_num)
                             currently_visible.append(line_obj)
                             current_visible_count += 1
 
-                        self.play(*animations, run_time=line_slide_in)
+                        self.play(*animations)
                         self.wait(pause_between_groups)
         else:
             for group in line_groups:
@@ -798,13 +835,16 @@ class CodeAnimation(Scene):
 
                 if lines_to_show:
                     animations = [
-                        line_mobjects[idx][0].animate.move_to(line_mobjects[idx][1])
+                        self._build_line_animation(
+                            line_mobjects[idx][0], line_mobjects[idx][1],
+                            animation_type, line_slide_in
+                        )
                         for idx, _ in lines_to_show
                     ]
                     for idx, line_num in lines_to_show:
                         shown_lines.add(line_num)
 
-                    self.play(*animations, run_time=line_slide_in)
+                    self.play(*animations)
                     self.wait(pause_between_groups)
 
         # Final pause

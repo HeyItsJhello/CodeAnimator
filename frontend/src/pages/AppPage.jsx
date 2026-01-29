@@ -8,6 +8,7 @@ import {
   API_URL,
   DEFAULT_SYNTAX_COLORS,
   DEFAULT_TIMING_STR,
+  DEFAULT_ANIMATION_TYPE,
 } from "../data/constants";
 import { getTokenPatterns, tokenizeLine } from "../data/tokenizer";
 
@@ -38,6 +39,7 @@ import {
   PreviewModal,
   VideoCompleteModal,
   SubmitSection,
+  AnimationTypeSelector,
 } from "../Components";
 
 function AppPage() {
@@ -61,6 +63,7 @@ function AppPage() {
   const [animationTiming, setAnimationTiming] = useState({
     ...DEFAULT_TIMING_STR,
   });
+  const [animationType, setAnimationType] = useState(DEFAULT_ANIMATION_TYPE);
 
   // Line groups state
   const [lineGroups, setLineGroups] = useState([]);
@@ -240,6 +243,7 @@ function AppPage() {
     setCompletedVideoUrl(null);
     setCompletedVideoFilename("");
     setQuality("standard");
+    setAnimationType(DEFAULT_ANIMATION_TYPE);
     window._videoDownloadUrl = null;
   };
 
@@ -289,6 +293,7 @@ function AppPage() {
       lineGroups: buildLineGroupsForApi(lineGroups),
       syntaxColors,
       animationTiming: timingConfig,
+      animationType,
     };
 
     const formData = new FormData();
@@ -467,6 +472,11 @@ function AppPage() {
                     animationTiming={animationTiming}
                     onUpdateTiming={updateTiming}
                     onResetTiming={resetTiming}
+                  />
+
+                  <AnimationTypeSelector
+                    animationType={animationType}
+                    onAnimationTypeChange={setAnimationType}
                   />
 
                   <LineGroupsSection

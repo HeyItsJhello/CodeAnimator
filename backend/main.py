@@ -31,6 +31,7 @@ def generate_cache_key(file_content: bytes, config_data: dict) -> str:
         "animation_timing": json.dumps(
             config_data.get("animationTiming", {}), sort_keys=True
         ),
+        "animation_type": config_data.get("animationType", "slide_left"),
     }
     return hashlib.sha256(json.dumps(normalized, sort_keys=True).encode()).hexdigest()[
         :16
@@ -298,6 +299,7 @@ async def create_animation(
                 }
             )
         animation_timing = config_data.get("animationTiming", {})
+        animation_type = config_data.get("animationType", "slide_left")
 
         # Generate unique filename - do this once
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -320,6 +322,7 @@ async def create_animation(
                 "syntax_colors": syntax_colors,
                 "orientation": orientation,
                 "animation_timing": animation_timing,
+                "animation_type": animation_type,
                 "quality": quality,
                 "line_groups": line_groups,
             }

@@ -23,3 +23,13 @@ export const DEFAULT_TIMING = {
 export const DEFAULT_TIMING_STR = Object.fromEntries(
   Object.entries(DEFAULT_TIMING).map(([k, v]) => [k, String(v)]),
 );
+
+export const ANIMATION_TYPES = [
+  { value: "slide_left", label: "Slide In", desc: "From the left" },
+  { value: "fade_in", label: "Fade In", desc: "Opacity transition" },
+  { value: "typewriter", label: "Typewriter", desc: "Letter by letter" },
+  { value: "drop_in", label: "Drop In", desc: "From the top" },
+  { value: "scale_in", label: "Scale In", desc: "Grow from center" },
+];
+
+export const DEFAULT_ANIMATION_TYPE = "slide_left";
