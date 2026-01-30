@@ -576,14 +576,17 @@ class CodeAnimation(Scene):
                             line_colors[current_char] = token_color
                     current_char += 1
 
+        # Measure the width of a single digit character for gutter alignment.
+        # Manim strips leading whitespace, so we shift lines right instead of padding.
+        digit_ref = Text("0", font=MONOSPACE_FONT, font_size=base_font_size, disable_ligatures=True)
+        digit_width = digit_ref.width
+
         # Measure max line width for scaling - create text objects once
         # Only store (line_num, content, line_group) - content_display not needed after Text creation
         temp_lines = []
         max_line_width = 0
         for line_num, content in filtered_lines:
-            full_line = (
-                f"{line_num:>{line_num_width}}  {content.replace(chr(9), '    ')}"
-            )
+            full_line = f"{line_num}  {content.replace(chr(9), '    ')}"
             # Create and cache Text object in one pass to avoid recreating later
             line_group = Text(
                 full_line,
@@ -592,9 +595,13 @@ class CodeAnimation(Scene):
                 color=DEFAULT_COLOR,
                 disable_ligatures=True,
             )
-            temp_lines.append((line_num, content, line_group))
-            if line_group.width > max_line_width:
-                max_line_width = line_group.width
+            # How many digits short of the max this line number is
+            gutter_offset = line_num_width - len(str(line_num))
+            temp_lines.append((line_num, content, line_group, gutter_offset))
+            # Account for the gutter shift when measuring max width
+            effective_width = line_group.width + gutter_offset * digit_width
+            if effective_width > max_line_width:
+                max_line_width = effective_width
 
         width_scale = 1.0
         if max_line_width > available_width:
@@ -607,8 +614,8 @@ class CodeAnimation(Scene):
 
         y_start = (num_lines * line_height / 2) - (line_height / 2)
 
-        for line_idx, (line_num, content, line_group) in enumerate(temp_lines):
-            display_char_idx = line_num_width + 2
+        for line_idx, (line_num, content, line_group, gutter_offset) in enumerate(temp_lines):
+            display_char_idx = len(str(line_num)) + 2
             original_char_idx = 0
             line_colors = color_map[line_idx] if line_idx < len(color_map) else []
 
@@ -663,6 +670,10 @@ class CodeAnimation(Scene):
                 line_group.scale(width_scale)
                 line_group.move_to([0, y_pos, 0])
                 line_group.to_edge(LEFT, buff=left_margin)
+            # Shift lines right to account for fewer digits in the line number
+            # (e.g. line 1 shifts right by 1 digit width when max is 2 digits)
+            if gutter_offset > 0:
+                line_group.shift(RIGHT * digit_width * gutter_offset * (width_scale if width_scale < 1.0 else 1.0))
             final_pos = line_group.get_center().copy()
             if animation_type in ("fade_in", "typewriter", "scale_in"):
                 # Don't add to scene - introducer animations will add them
