@@ -26,7 +26,6 @@ if _orientation not in ["landscape", "portrait"]:
     except:
         pass
 
-# Set frame dimensions based on orientation
 if _orientation == "portrait":
     config.frame_width = 9.0
     config.frame_height = 16.0
@@ -39,7 +38,6 @@ else:
     config.pixel_height = 1080
 
 
-# To Optimize we are creating Lazy Text, like Minecrafts lazy chunk!
 class LazyTextGeneration:
     __slots__ = (
         "filtered_lines",
@@ -80,8 +78,6 @@ class LazyTextGeneration:
 
         line_num, content = self.filtered_lines[idx]
 
-        # Creating the objects
-
         display_text = f"{line_num:>{self.num_gutter}} {content}"
         line_group = Text(
             display_text,
@@ -90,7 +86,6 @@ class LazyTextGeneration:
             disable_ligatures=True,
         )
 
-        # Apply colors now
         offset = self.num_gutter + 2
         color_runs = self.color_map[idx]
         for start_idx, end_idx, color in color_runs:
@@ -99,7 +94,6 @@ class LazyTextGeneration:
             for char in line_group[actual_start:actual_end]:
                 char.set_color(color)
 
-        # Positioning
         y_pos = self.start_y - idx * self.line_height
         line_group.move_to([self.content_start_x, y_pos, 0], aligned_edge=LEFT)
 
@@ -109,12 +103,10 @@ class LazyTextGeneration:
 
 class CodeAnimation(Scene):
     def _load_config(self):
-        # Try stdin first (passed by backend via subprocess)
         if not sys.stdin.isatty():
             try:
                 anim_config = json.load(sys.stdin)
                 print("DEBUG: Config loaded from stdin")
-                # Parse line_groups from JSON format
                 anim_config["line_groups"] = self._parse_line_groups(
                     anim_config.get("line_groups", [])
                 )
@@ -123,7 +115,6 @@ class CodeAnimation(Scene):
                 print(f"ERROR: Invalid JSON from stdin: {e}")
                 return None
 
-        # Fallback to config file for manual/interactive testing
         try:
             with open("/tmp/anim_config.txt", "r") as f:
                 content = f.read()
@@ -143,7 +134,6 @@ class CodeAnimation(Scene):
                 split_line = int(group.split()[1])
                 parsed.append(("SPLIT", split_line))
             elif isinstance(group, str):
-                # Space-separated line numbers or range like "1-5"
                 parsed.append(self._parse_line_spec(group))
             elif isinstance(group, list):
                 parsed.append(group)
@@ -158,7 +148,6 @@ class CodeAnimation(Scene):
     def _parse_legacy_config(self, content):
         lines = content.strip().split("\n")
 
-        # Parse custom syntax colors (line 5 is JSON)
         syntax_colors = {}
         try:
             if len(lines) > 4 and lines[4].strip().startswith("{"):
@@ -166,7 +155,6 @@ class CodeAnimation(Scene):
         except (json.JSONDecodeError, IndexError):
             pass
 
-        # Parse orientation (line 6)
         orientation = "landscape"
         try:
             if len(lines) > 5 and lines[5].strip() in ["landscape", "portrait"]:
@@ -174,7 +162,6 @@ class CodeAnimation(Scene):
         except IndexError:
             pass
 
-        # Parse animation timing (line 7)
         animation_timing = {}
         try:
             if len(lines) > 6 and lines[6].strip().startswith("{"):
@@ -182,7 +169,6 @@ class CodeAnimation(Scene):
         except (json.JSONDecodeError, IndexError):
             pass
 
-        # Parse line groups (starting after metadata lines)
         line_groups = []
         start_idx = 6
         for i in range(6, len(lines)):
@@ -242,7 +228,6 @@ class CodeAnimation(Scene):
     def construct(self):
         self.renderer.skip_animations = False
 
-        # Read config from stdin (backend) or file (manual testing)
         anim_config = self._load_config()
         if anim_config is None:
             return
@@ -257,7 +242,6 @@ class CodeAnimation(Scene):
         animation_type = anim_config.get("animation_type", "slide_left")
         line_groups = anim_config["line_groups"]
 
-        # Apply timing values with defaults
         default_timing = {
             "initialDelay": 1.5,
             "lineSlideIn": 0.4,
@@ -286,12 +270,10 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Animation timing: {animation_timing}")
         print(f"DEBUG: Animation type: {animation_type}")
 
-        # making the custom filename for the output, example_1-11.mp4
         base_filename = os.path.splitext(os.path.basename(script_path))[0]
         custom_name = f"{base_filename}_{start_line}-{end_line}"
         self.renderer.file_writer.movie_file_extension = ".mp4"
 
-        # Output file name yippeee
         try:
             self.renderer.file_writer.output_name = custom_name
         except AttributeError:
@@ -301,24 +283,20 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Lines {start_line}-{end_line}")
         print(f"DEBUG: Include comments: {include_comments}")
 
-        # Opening the source file yippeeeeee
         with open(script_path, "r") as f:
             source_lines = f.readlines()
 
-        # Filter lines, for rendering purposes
         filtered_lines = []
         for i in range(start_line - 1, min(end_line, len(source_lines))):
             line = source_lines[i].rstrip()
 
-            # Filtering comments if requested
             if not include_comments:
                 stripped = line.strip()
                 if stripped.startswith("#") or stripped.startswith("//"):
                     continue
 
-            filtered_lines.append((i + 1, line))  # Store (line_number, content)
+            filtered_lines.append((i + 1, line))
 
-        # Getting the correct line indexes from the file
         line_to_index = {
             line_num: idx for idx, (line_num, _) in enumerate(filtered_lines)
         }
@@ -329,7 +307,6 @@ class CodeAnimation(Scene):
         max_line_num = max(line_num for line_num, _ in filtered_lines)
         line_num_width = len(str(max_line_num))
 
-        # Create text objects for each line with syntax highlighting
         line_mobjects = []
         shown_lines = set()
 
@@ -378,7 +355,6 @@ class CodeAnimation(Scene):
         ideal_line_height = available_height / num_lines
         line_height = max(MIN_LINE_HEIGHT, min(MAX_LINE_HEIGHT, ideal_line_height))
 
-        # Font size scales with line height - use larger multiplier for portrait, normal for landscape
         font_multiplier = 55 if orientation == "portrait" else 45
         base_font_size = int(line_height * font_multiplier)
         base_font_size = max(MIN_FONT_SIZE, min(MAX_FONT_SIZE, base_font_size))
@@ -397,7 +373,6 @@ class CodeAnimation(Scene):
         print(f"DEBUG: Total height needed: {total_height:.3f}")
         print(f"DEBUG: Available height: {available_height:.3f}")
 
-        # Determine chunking
         enable_chunking = False
         chunk_size = 0
         lines_that_fit = int(available_height / MIN_LINE_HEIGHT)
@@ -416,7 +391,6 @@ class CodeAnimation(Scene):
                 base_font_size = int(line_height * font_multiplier)
                 base_font_size = max(MIN_FONT_SIZE, min(MAX_FONT_SIZE, base_font_size))
 
-        # Get colors from custom config or defaults
         color_keywords = custom_colors.get("keywords", "#9b59b6")
         color_types = custom_colors.get("types", "#3498db")
         color_functions = custom_colors.get("functions", "#3498db")
@@ -471,22 +445,18 @@ class CodeAnimation(Scene):
 
         DEFAULT_COLOR = color_default
 
-        # Pre-build inheritance lookup as tuple for faster iteration
-        # Order matters: more specific types first (longer tuples checked first)
+        # More specific token types first so inheritance lookup matches correctly
         _token_parents = tuple(sorted(TOKEN_COLORS.items(), key=lambda x: -len(x[0])))
         _token_color_cache = {}
 
         def get_token_color(token_type):
-            """Get color for token type with caching for inheritance lookup"""
             if token_type in _token_color_cache:
                 return _token_color_cache[token_type]
 
-            # Direct lookup first (O(1) dict access)
             if token_type in TOKEN_COLORS:
                 _token_color_cache[token_type] = TOKEN_COLORS[token_type]
                 return TOKEN_COLORS[token_type]
 
-            # Check inheritance using pre-sorted tuple (most specific first)
             for ttype, tcolor in _token_parents:
                 if token_type in ttype:
                     _token_color_cache[token_type] = tcolor
@@ -495,7 +465,6 @@ class CodeAnimation(Scene):
             _token_color_cache[token_type] = DEFAULT_COLOR
             return DEFAULT_COLOR
 
-        # Cache lexer to avoid repeated file detection
         try:
             lexer = get_lexer_for_filename(script_path)
         except Exception:
@@ -553,8 +522,6 @@ class CodeAnimation(Scene):
 
             full_tokens = fixed_tokens
 
-        # Build color map using list of lists for O(1) access (vs dict hashing)
-        # Pre-allocate each line's color array based on line length for O(1) assignment
         num_filtered = len(filtered_lines)
         color_map = [[DEFAULT_COLOR] * len(content) for _, content in filtered_lines]
         current_line = 0
@@ -563,43 +530,43 @@ class CodeAnimation(Scene):
         for token_type, token_value in full_tokens:
             token_color = get_token_color(token_type)
 
-            # Process token value and map positions to colors
             for char in token_value:
                 if char == "\n":
                     current_line += 1
                     current_char = 0
                 else:
-                    # Direct assignment - array already pre-allocated
                     if current_line < num_filtered:
                         line_colors = color_map[current_line]
                         if current_char < len(line_colors):
                             line_colors[current_char] = token_color
                     current_char += 1
 
-        # Measure the width of a single digit character for gutter alignment.
-        # Manim strips leading whitespace, so we shift lines right instead of padding.
         digit_ref = Text("0", font=MONOSPACE_FONT, font_size=base_font_size, disable_ligatures=True)
         digit_width = digit_ref.width
 
-        # Measure max line width for scaling - create text objects once
-        # Only store (line_num, content, line_group) - content_display not needed after Text creation
+        gutter_text_width = line_num_width * digit_width + 2 * digit_width
+
         temp_lines = []
         max_line_width = 0
         for line_num, content in filtered_lines:
-            full_line = f"{line_num}  {content.replace(chr(9), '    ')}"
-            # Create and cache Text object in one pass to avoid recreating later
-            line_group = Text(
-                full_line,
-                font=MONOSPACE_FONT,
-                font_size=base_font_size,
-                color=DEFAULT_COLOR,
-                disable_ligatures=True,
-            )
-            # How many digits short of the max this line number is
+            content_display = content.replace(chr(9), "    ")
+            leading_spaces = len(content_display) - len(content_display.lstrip(" "))
+            content_stripped = content_display.lstrip(" ")
+            if content_stripped:
+                content_obj = Text(
+                    content_stripped,
+                    font=MONOSPACE_FONT,
+                    font_size=base_font_size,
+                    color=DEFAULT_COLOR,
+                    disable_ligatures=True,
+                )
+                content_width = content_obj.width + leading_spaces * digit_width
+            else:
+                content_width = 0
+
             gutter_offset = line_num_width - len(str(line_num))
-            temp_lines.append((line_num, content, line_group, gutter_offset))
-            # Account for the gutter shift when measuring max width
-            effective_width = line_group.width + gutter_offset * digit_width
+            temp_lines.append((line_num, content, gutter_offset))
+            effective_width = gutter_text_width + content_width
             if effective_width > max_line_width:
                 max_line_width = effective_width
 
@@ -614,92 +581,177 @@ class CodeAnimation(Scene):
 
         y_start = (num_lines * line_height / 2) - (line_height / 2)
 
-        for line_idx, (line_num, content, line_group, gutter_offset) in enumerate(temp_lines):
-            display_char_idx = len(str(line_num)) + 2
-            original_char_idx = 0
-            line_colors = color_map[line_idx] if line_idx < len(color_map) else []
+        scaled_gutter = gutter_text_width * (width_scale if width_scale < 1.0 else 1.0)
 
-            # Build color runs (consecutive chars with same color) for batch application
-            # This reduces set_color calls significantly
-            color_runs = []  # [(start_idx, end_idx, color), ...]
-            current_run_start = display_char_idx
-            current_run_color = None
-
-            for orig_char in content:
-                # Get color from pre-computed list (O(1) vs dict hash)
-                color = (
-                    line_colors[original_char_idx]
-                    if original_char_idx < len(line_colors)
-                    else DEFAULT_COLOR
-                )
-
-                char_count = 4 if orig_char == "\t" else 1
-
-                if color != current_run_color:
-                    # Save previous run if exists
-                    if (
-                        current_run_color is not None
-                        and current_run_color != DEFAULT_COLOR
-                    ):
-                        color_runs.append(
-                            (current_run_start, display_char_idx, current_run_color)
-                        )
-                    current_run_start = display_char_idx
-                    current_run_color = color
-
-                display_char_idx += char_count
-                original_char_idx += 1
-
-            # Don't forget the last run
-            if current_run_color is not None and current_run_color != DEFAULT_COLOR:
-                color_runs.append(
-                    (current_run_start, display_char_idx, current_run_color)
-                )
-
-            for start_idx, end_idx, color in color_runs:
-                try:
-                    for char in line_group[start_idx:end_idx]:
-                        char.set_color(color)
-                except IndexError:
-                    break
-
+        for line_idx, (line_num, content, gutter_offset) in enumerate(temp_lines):
             y_pos = y_start - (line_idx * line_height)
-            line_group.move_to([0, y_pos, 0])
-            line_group.to_edge(LEFT, buff=left_margin)
+
+            num_str = str(line_num)
+            num_obj = Text(
+                num_str,
+                font=MONOSPACE_FONT,
+                font_size=base_font_size,
+                color=DEFAULT_COLOR,
+                disable_ligatures=True,
+            )
             if width_scale < 1.0:
-                line_group.scale(width_scale)
-                line_group.move_to([0, y_pos, 0])
-                line_group.to_edge(LEFT, buff=left_margin)
-            # Shift lines right to account for fewer digits in the line number
-            # (e.g. line 1 shifts right by 1 digit width when max is 2 digits)
+                num_obj.scale(width_scale)
+            num_obj.move_to([0, y_pos, 0])
+            num_obj.to_edge(LEFT, buff=left_margin)
             if gutter_offset > 0:
-                line_group.shift(RIGHT * digit_width * gutter_offset * (width_scale if width_scale < 1.0 else 1.0))
-            final_pos = line_group.get_center().copy()
+                num_obj.shift(RIGHT * digit_width * gutter_offset * (width_scale if width_scale < 1.0 else 1.0))
+            final_num_pos = num_obj.get_center().copy()
+
+            content_display = content.replace(chr(9), "    ")
+            # Manim strips leading whitespace, so we handle indent via positioning
+            leading_spaces = len(content_display) - len(content_display.lstrip(" "))
+            content_stripped = content_display.lstrip(" ")
+            indent_offset = leading_spaces * digit_width * (width_scale if width_scale < 1.0 else 1.0)
+
+            if content_stripped:
+                content_obj = Text(
+                    content_stripped,
+                    font=MONOSPACE_FONT,
+                    font_size=base_font_size,
+                    color=DEFAULT_COLOR,
+                    disable_ligatures=True,
+                )
+
+                original_char_idx = 0
+                display_char_idx = 0
+                line_colors = color_map[line_idx] if line_idx < len(color_map) else []
+
+                color_runs = []
+                current_run_start = 0
+                current_run_color = None
+
+                for orig_char in content:
+                    color = (
+                        line_colors[original_char_idx]
+                        if original_char_idx < len(line_colors)
+                        else DEFAULT_COLOR
+                    )
+                    char_count = 4 if orig_char == "\t" else 1
+
+                    if color != current_run_color:
+                        if current_run_color is not None and current_run_color != DEFAULT_COLOR:
+                            color_runs.append((current_run_start, display_char_idx, current_run_color))
+                        current_run_start = display_char_idx
+                        current_run_color = color
+
+                    display_char_idx += char_count
+                    original_char_idx += 1
+
+                if current_run_color is not None and current_run_color != DEFAULT_COLOR:
+                    color_runs.append((current_run_start, display_char_idx, current_run_color))
+
+                for start_idx, end_idx, color in color_runs:
+                    adj_start = start_idx - leading_spaces
+                    adj_end = end_idx - leading_spaces
+                    if adj_end <= 0:
+                        continue
+                    adj_start = max(0, adj_start)
+                    try:
+                        for char in content_obj[adj_start:adj_end]:
+                            char.set_color(color)
+                    except IndexError:
+                        break
+
+                if width_scale < 1.0:
+                    content_obj.scale(width_scale)
+                content_obj.move_to([0, y_pos, 0])
+                content_obj.to_edge(LEFT, buff=left_margin + scaled_gutter + indent_offset)
+                final_content_pos = content_obj.get_center().copy()
+            else:
+                content_obj = None
+                final_content_pos = None
+
             if animation_type in ("fade_in", "typewriter", "scale_in"):
-                # Don't add to scene - introducer animations will add them
                 pass
             elif animation_type == "drop_in":
-                line_group.shift(UP * (frame_h + 2))
-                self.add(line_group)
+                num_obj.shift(UP * (frame_h + 2))
+                self.add(num_obj)
             else:  # slide_left (default)
-                line_group.shift(LEFT * (frame_w + 2))
-                self.add(line_group)
-            line_mobjects.append((line_group, final_pos))
+                num_obj.shift(LEFT * (frame_w + 2))
+                self.add(num_obj)
+
+            if content_obj is not None:
+                if animation_type in ("fade_in", "typewriter", "scale_in"):
+                    pass
+                elif animation_type == "drop_in":
+                    content_obj.shift(UP * (frame_h + 2))
+                    self.add(content_obj)
+                else:  # slide_left (default)
+                    content_obj.shift(LEFT * (frame_w + 2))
+                    self.add(content_obj)
+
+            line_mobjects.append((num_obj, content_obj, final_num_pos, final_content_pos))
 
         self.wait(initial_delay)
 
-        # Animate line groups with chunking support, chunking lets me render faster yipeeee
         if enable_chunking:
-            # Chunked display mode - show lines in chunks, scrolling up between chunks
-            currently_visible = []  # Track which line objects are currently visible on screen
-            current_visible_count = 0  # Track how many lines are currently visible
+            currently_visible = []
+            current_visible_count = 0
 
-            # Helper function to calculate position for a line within the current visible chunk
             def get_chunk_position(slot_index):
-                # Y positioning, we needed
                 chunk_height = chunk_size * line_height
                 y_start_chunk = (chunk_height / 2) - (line_height / 2)
                 return y_start_chunk - (slot_index * line_height)
+
+            def _scroll_off_visible():
+                nonlocal currently_visible, current_visible_count
+                if currently_visible:
+                    all_objs = []
+                    for pair in currently_visible:
+                        all_objs.extend(obj for obj in pair if obj is not None)
+                    visible_group = VGroup(*all_objs)
+                    self.play(
+                        visible_group.animate.shift(UP * (available_height + 1)),
+                        run_time=scroll_duration,
+                    )
+                    currently_visible.clear()
+                    current_visible_count = 0
+
+            def _animate_chunk_lines(lines_list):
+                nonlocal current_visible_count
+
+                num_animations = []
+                content_animations = []
+                start_slot = current_visible_count
+
+                for idx, line_num in lines_list:
+                    num_obj, content_obj, orig_num_pos, orig_content_pos = line_mobjects[idx]
+                    slot_y = get_chunk_position(current_visible_count)
+
+                    num_target = [orig_num_pos[0], slot_y, 0]
+                    if animation_type == "drop_in":
+                        num_obj.move_to([orig_num_pos[0], frame_h + 2, 0])
+                    elif animation_type not in ("fade_in", "typewriter", "scale_in"):
+                        num_obj.move_to([-(frame_w + 2), slot_y, 0])
+                    num_animations.append(
+                        self._build_line_animation(num_obj, num_target, animation_type, line_slide_in)
+                    )
+
+                    if content_obj is not None:
+                        content_target = [orig_content_pos[0], slot_y, 0]
+                        if animation_type == "drop_in":
+                            content_obj.move_to([orig_content_pos[0], frame_h + 2, 0])
+                        elif animation_type not in ("fade_in", "typewriter", "scale_in"):
+                            content_obj.move_to([-(frame_w + 2), slot_y, 0])
+                        content_animations.append(
+                            self._build_line_animation(content_obj, content_target, animation_type, line_slide_in)
+                        )
+
+                    shown_lines.add(line_num)
+                    currently_visible.append((num_obj, content_obj))
+                    current_visible_count += 1
+
+                if num_animations:
+                    self.play(*num_animations)
+                    self.wait(pause_between_groups)
+                if content_animations:
+                    self.play(*content_animations)
+                    self.wait(pause_between_groups)
 
             for group in line_groups:
                 if group == "ALL_REMAINING":
@@ -713,76 +765,24 @@ class CodeAnimation(Scene):
                         available_slots = chunk_size - current_visible_count
 
                         if available_slots <= 0:
-                            # Use VGroup for more efficient scroll animation
-                            visible_group = VGroup(*currently_visible)
-                            self.play(
-                                visible_group.animate.shift(
-                                    UP * (available_height + 1)
-                                ),
-                                run_time=scroll_duration,
-                            )
-                            currently_visible.clear()
-                            current_visible_count = 0
+                            _scroll_off_visible()
                             available_slots = chunk_size
 
                         chunk = remaining_indices[:available_slots]
                         remaining_indices = remaining_indices[available_slots:]
-
-                        animations = []
-                        for idx, line_num in chunk:
-                            line_obj, original_final_pos = line_mobjects[idx]
-                            slot_y = get_chunk_position(current_visible_count)
-                            target_pos = [original_final_pos[0], slot_y, 0]
-                            if animation_type == "drop_in":
-                                line_obj.move_to([original_final_pos[0], frame_h + 2, 0])
-                            elif animation_type not in ("fade_in", "typewriter", "scale_in"):
-                                line_obj.move_to([-(frame_w + 2), slot_y, 0])
-                            animations.append(
-                                self._build_line_animation(line_obj, target_pos, animation_type, line_slide_in)
-                            )
-                            shown_lines.add(line_num)
-                            currently_visible.append(line_obj)
-                            current_visible_count += 1
-
-                        if animations:
-                            self.play(*animations)
-                            self.wait(pause_between_groups)
+                        _animate_chunk_lines(chunk)
 
                 elif isinstance(group, tuple) and group[0] == "SPLIT":
-                    # SPLIT command: scroll current content off, then show from the split line
                     split_line_num = group[1]
+                    _scroll_off_visible()
 
-                    # Scroll all currently visible lines off screen using VGroup
-                    if currently_visible:
-                        visible_group = VGroup(*currently_visible)
-                        self.play(
-                            visible_group.animate.shift(UP * (available_height + 1)),
-                            run_time=scroll_duration,
-                        )
-                        currently_visible.clear()
-                        current_visible_count = 0
-
-                    # Now show the split line (if not already shown)
                     if (
                         split_line_num in line_to_index
                         and split_line_num not in shown_lines
                     ):
                         idx = line_to_index[split_line_num]
                         if idx < len(line_mobjects):
-                            line_obj, original_final_pos = line_mobjects[idx]
-                            slot_y = get_chunk_position(current_visible_count)
-                            target_pos = [original_final_pos[0], slot_y, 0]
-                            if animation_type == "drop_in":
-                                line_obj.move_to([original_final_pos[0], frame_h + 2, 0])
-                            elif animation_type not in ("fade_in", "typewriter", "scale_in"):
-                                line_obj.move_to([-(frame_w + 2), slot_y, 0])
-                            self.play(
-                                self._build_line_animation(line_obj, target_pos, animation_type, line_slide_in),
-                            )
-                            shown_lines.add(split_line_num)
-                            currently_visible.append(line_obj)
-                            current_visible_count += 1
-                            self.wait(pause_between_groups)
+                            _animate_chunk_lines([(idx, split_line_num)])
 
                 else:
                     lines_to_show = [
@@ -798,36 +798,19 @@ class CodeAnimation(Scene):
                         available_slots = chunk_size - current_visible_count
 
                         if lines_needed > available_slots:
-                            # Use VGroup for more efficient scroll animation
-                            visible_group = VGroup(*currently_visible)
-                            self.play(
-                                visible_group.animate.shift(
-                                    UP * (available_height + 1)
-                                ),
-                                run_time=scroll_duration,
-                            )
-                            currently_visible.clear()
-                            current_visible_count = 0
+                            _scroll_off_visible()
 
-                        animations = []
-                        for idx, line_num in lines_to_show:
-                            line_obj, original_final_pos = line_mobjects[idx]
-                            slot_y = get_chunk_position(current_visible_count)
-                            target_pos = [original_final_pos[0], slot_y, 0]
-                            if animation_type == "drop_in":
-                                line_obj.move_to([original_final_pos[0], frame_h + 2, 0])
-                            elif animation_type not in ("fade_in", "typewriter", "scale_in"):
-                                line_obj.move_to([-(frame_w + 2), slot_y, 0])
-                            animations.append(
-                                self._build_line_animation(line_obj, target_pos, animation_type, line_slide_in)
-                            )
-                            shown_lines.add(line_num)
-                            currently_visible.append(line_obj)
-                            current_visible_count += 1
-
-                        self.play(*animations)
-                        self.wait(pause_between_groups)
+                        _animate_chunk_lines(lines_to_show)
         else:
+            num_animations = []
+            for num_obj, content_obj, final_num_pos, final_content_pos in line_mobjects:
+                num_animations.append(
+                    self._build_line_animation(num_obj, final_num_pos, animation_type, line_slide_in)
+                )
+            if num_animations:
+                self.play(*num_animations)
+                self.wait(pause_between_groups)
+
             for group in line_groups:
                 if group == "ALL_REMAINING":
                     lines_to_show = [
@@ -845,23 +828,26 @@ class CodeAnimation(Scene):
                     ]
 
                 if lines_to_show:
-                    animations = [
-                        self._build_line_animation(
-                            line_mobjects[idx][0], line_mobjects[idx][1],
-                            animation_type, line_slide_in
-                        )
-                        for idx, _ in lines_to_show
-                    ]
+                    animations = []
+                    for idx, _ in lines_to_show:
+                        content_obj = line_mobjects[idx][1]
+                        final_content_pos = line_mobjects[idx][3]
+                        if content_obj is not None:
+                            animations.append(
+                                self._build_line_animation(
+                                    content_obj, final_content_pos,
+                                    animation_type, line_slide_in
+                                )
+                            )
                     for idx, line_num in lines_to_show:
                         shown_lines.add(line_num)
 
-                    self.play(*animations)
+                    if animations:
+                        self.play(*animations)
                     self.wait(pause_between_groups)
 
-        # Final pause
         self.wait(final_pause)
 
-        # Clean up SVG cache files after rendering
         cache_dir = config.text_dir
         if os.path.exists(cache_dir):
             print(f"INFO: Cleaning up SVG cache at {cache_dir}")
@@ -875,10 +861,8 @@ class CodeAnimation(Scene):
 def get_input():
     print("\n=== Code Animation Script ===\n")
 
-    # Get script path
     script_path = input("Enter the path to the script file: ").strip()
 
-    # Validate file exists
     try:
         with open(script_path, "r") as f:
             lines = f.readlines()
@@ -888,7 +872,6 @@ def get_input():
         print(f"✗ Error: File '{script_path}' not found")
         sys.exit(1)
 
-    # Get line range
     print("\n--- Line Range ---")
     while True:
         try:
@@ -908,12 +891,10 @@ def get_input():
         except ValueError:
             print("Please enter a valid number")
 
-    # Ask about comments
     include_comments = (
         input("\nInclude comments in the video? (y/n): ").strip().lower() == "y"
     )
 
-    # Get line groups
     print("\n--- Line Groups ---")
     print("Enter line numbers for each group (space-separated)")
     print("Press Enter without input to show all remaining lines")
@@ -926,7 +907,6 @@ def get_input():
     while True:
         line_input = input(f"\nGroup {group_num} lines: ").strip()
 
-        # Empty input means "all remaining lines"
         if not line_input:
             line_groups.append("ALL_REMAINING")
             print("✓ Will show all remaining lines in this group")
@@ -934,7 +914,6 @@ def get_input():
 
         try:
             group = [int(x) for x in line_input.split()]
-            # Validate line numbers
             valid_group = []
             for line_num in group:
                 if line_num in shown_lines:
@@ -955,7 +934,6 @@ def get_input():
         except ValueError:
             print("Invalid input. Please enter space-separated numbers")
 
-    # Save configuration
     with open("/tmp/anim_config.txt", "w") as f:
         f.write(f"{script_path}\n")
         f.write(f"{start_line}\n")
@@ -967,7 +945,6 @@ def get_input():
             else:
                 f.write(" ".join(map(str, group)) + "\n")
 
-    # Generate output filename
     base_filename = os.path.splitext(os.path.basename(script_path))[0]
     output_name = f"{base_filename}_{start_line}-{end_line}"
 
@@ -978,11 +955,9 @@ def get_input():
 
 
 if __name__ == "__main__":
-    # Check if running in interactive mode
     if len(sys.argv) == 1 or sys.argv[1] != "--render":
         get_input()
 
-        # Read the config back to get the output name for display
         with open("/tmp/anim_config.txt", "r") as f:
             config_lines = f.read().strip().split("\n")
         script_path = config_lines[0]
@@ -1001,5 +976,4 @@ if __name__ == "__main__":
         )
         print("\nNote: --flush_cache will clean up SVG files after rendering")
     else:
-        # This is being called by manim to render
         pass
