@@ -1,9 +1,7 @@
 import { motion } from "framer-motion";
 
-// Add YouTube video IDs here when available
 export const usedInVideos = [
-  // { id: "dQw4w9WgXcQ", title: "Example Video 1" },
-  // { id: "dQw4w9WgXcQ", title: "Example Video 2" },
+  { id: "7xtbcF-l3mw?si=gq6UrK4hU_n5lGxf", title: "Xogot Polygon Tutorial" },
 ];
 
 function UsedIn() {
@@ -15,7 +13,6 @@ function UsedIn() {
     return null;
   }
 
-  // Duplicate videos for seamless infinite scroll
   const displayVideos = shouldScroll ? [...videos, ...videos] : videos;
 
   return (
