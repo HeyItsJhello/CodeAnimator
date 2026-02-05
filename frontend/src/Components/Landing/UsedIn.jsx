@@ -34,7 +34,7 @@ function UsedIn() {
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          See what others have created with Code Animator
+          Look at what has been created with Code Animator!
         </motion.p>
         <div className="used-in__slider">
           <motion.div
