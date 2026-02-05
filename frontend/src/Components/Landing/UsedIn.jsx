@@ -1,7 +1,12 @@
 import { motion } from "framer-motion";
 
 export const usedInVideos = [
-  { id: "7xtbcF-l3mw?si=gq6UrK4hU_n5lGxf", title: "Xogot Polygon Tutorial" },
+  {
+    id: "7xtbcF-l3mw?si=gq6UrK4hU_n5lGxf",
+    title: "Xogot Polygon Tutorial",
+    description:
+      "A tutorial showing how to create quick and easy polygon environments in Xogot. Created by ME!",
+  },
 ];
 
 function UsedIn() {
@@ -63,6 +68,11 @@ function UsedIn() {
                     />
                   </div>
                 </div>
+                {video.description && (
+                  <p className="used-in__video-description">
+                    {video.description}
+                  </p>
+                )}
               </div>
             ))}
           </motion.div>
