@@ -1,4 +1,8 @@
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
+
+const OVERSCAN         = 30;   // extra lines above/below viewport
+const VIRTUAL_THRESHOLD = 250; // activate windowing beyond this line count
 
 function PreviewPanel({
   fileName,
@@ -11,22 +15,62 @@ function PreviewPanel({
   fontFamily,
   onOpenPreviewModal,
 }) {
-  const getPreviewLines = () => {
-    if (!fileContent) return [];
-    return fileContent.split("\n");
-  };
+  const scrollRef     = useRef(null);
+  const lineHeightRef = useRef(26); // CSS: 0.78rem×1.55 line-height + 0.4rem×2 padding ≈ 26px
+  const measuredRef   = useRef(false);
 
-  const isLineInRange = (lineNum) => {
-    return lineNum >= startLine && lineNum <= endLine;
-  };
+  const [scrollTop,  setScrollTop]  = useState(0);
+  const [viewHeight, setViewHeight] = useState(500);
 
-  const isLineInGroup = (lineNum) => {
-    return shownLines.has(lineNum);
-  };
+  const lines    = fileContent ? fileContent.split("\n") : [];
+  const isVirtual = lines.length > VIRTUAL_THRESHOLD;
 
-  const lines = getPreviewLines();
-  const maxLineNum = lines.length;
+  // Track container height for windowing calculations
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(([e]) => setViewHeight(e.contentRect.height));
+    obs.observe(el);
+    setViewHeight(el.clientHeight);
+    return () => obs.disconnect();
+  }, []);
+
+  // Measure actual line height from first rendered line (runs once)
+  const measureRef = useCallback((node) => {
+    if (node && !measuredRef.current) {
+      const h = node.getBoundingClientRect().height;
+      if (h > 0) {
+        lineHeightRef.current = h;
+        measuredRef.current   = true;
+      }
+    }
+  }, []);
+
+  const handleScroll = useCallback((e) => {
+    setScrollTop(e.currentTarget.scrollTop);
+  }, []);
+
+  const { firstIdx, lastIdx } = useMemo(() => {
+    if (!isVirtual) return { firstIdx: 0, lastIdx: lines.length - 1 };
+    const lh   = lineHeightRef.current;
+    const first = Math.max(0, Math.floor(scrollTop / lh) - OVERSCAN);
+    const last  = Math.min(
+      lines.length - 1,
+      Math.ceil((scrollTop + viewHeight) / lh) + OVERSCAN,
+    );
+    return { firstIdx: first, lastIdx: last };
+  }, [isVirtual, scrollTop, viewHeight, lines.length]);
+
+  const maxLineNum  = lines.length;
   const lineNumWidth = String(maxLineNum).length;
+
+  const topPad    = isVirtual ? firstIdx * lineHeightRef.current : 0;
+  const bottomPad = isVirtual
+    ? Math.max(0, (lines.length - 1 - lastIdx) * lineHeightRef.current)
+    : 0;
+
+  const isLineInRange = (n) => n >= startLine && n <= endLine;
+  const isLineInGroup = (n) => shownLines.has(n);
 
   return (
     <motion.div
@@ -37,11 +81,17 @@ function PreviewPanel({
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div className="preview-chrome">
-        <span className="chrome-dot red" />
+        <span className="chrome-dot red"   />
         <span className="chrome-dot yellow" />
         <span className="chrome-dot green" />
         <span className="chrome-label">preview</span>
+        {isVirtual && (
+          <span className="virtual-badge" title="Windowed rendering active">
+            virtual
+          </span>
+        )}
       </div>
+
       <div className="preview-header">
         <div className="preview-header-top">
           <h2>File Preview</h2>
@@ -59,33 +109,51 @@ function PreviewPanel({
           <span className="cursor-blink">_</span>
         </span>
       </div>
-      <div className="preview-content">
-        <pre className="code-preview" style={fontFamily ? { fontFamily } : undefined}>
-          {lines.map((line, index) => {
-            const lineNum = index + 1;
-            const inRange = isLineInRange(lineNum);
-            const inGroup = isLineInGroup(lineNum);
-            const indicatorText = lineGroupMap.get(lineNum)?.length
-              ? `G${lineGroupMap.get(lineNum).join(",")}`
-              : "";
-            const paddedLineNum = String(lineNum).padStart(lineNumWidth, " ");
+
+      <div
+        className="preview-content"
+        ref={isVirtual ? scrollRef : undefined}
+        onScroll={isVirtual ? handleScroll : undefined}
+      >
+        <pre
+          className="code-preview"
+          style={fontFamily ? { fontFamily } : undefined}
+        >
+          {isVirtual && topPad > 0 && (
+            <div aria-hidden style={{ height: topPad }} />
+          )}
+
+          {lines.slice(firstIdx, lastIdx + 1).map((line, i) => {
+            const lineNum      = firstIdx + i + 1;
+            const dataIdx      = firstIdx + i;
+            const inRange      = isLineInRange(lineNum);
+            const inGroup      = isLineInGroup(lineNum);
+            const groupNums    = lineGroupMap.get(lineNum);
+            const indicatorText = groupNums?.length ? `G${groupNums.join(",")}` : "";
+            const paddedNum    = String(lineNum).padStart(lineNumWidth, " ");
+
             return (
               <div
-                key={index}
-                className={`code-line ${inRange ? "in-range" : ""} ${inGroup ? "in-group" : ""}`}
+                key={lineNum}
+                ref={i === 0 ? measureRef : undefined}
+                className={`code-line${inRange ? " in-range" : ""}${inGroup ? " in-group" : ""}`}
               >
-                <span className="line-number">{paddedLineNum}</span>
+                <span className="line-number">{paddedNum}</span>
                 <span className="line-content">
-                  {(highlightedLines[index]?.tokens ?? [{ text: line || " ", color: "#ffffff" }]).map(
+                  {(highlightedLines[dataIdx]?.tokens ?? [{ text: line || " ", color: "#ffffff" }]).map(
                     (token, tIdx) => (
                       <span key={tIdx} style={{ color: token.color }}>{token.text}</span>
-                    )
+                    ),
                   )}
                 </span>
                 <span className="line-group-indicator">{indicatorText}</span>
               </div>
             );
           })}
+
+          {isVirtual && bottomPad > 0 && (
+            <div aria-hidden style={{ height: bottomPad }} />
+          )}
         </pre>
       </div>
     </motion.div>

@@ -43,6 +43,8 @@ import {
   SubmitSection,
   AnimationTypeSelector,
   FontSelector,
+  RoughPreviewModal,
+  DryRunModal,
 } from "../Components";
 
 function AppPage() {
@@ -104,8 +106,18 @@ function AppPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingStatus, setLoadingStatus] = useState("starting");
+  const [loadingPhase, setLoadingPhase] = useState(null); // "rough" | "full" | null
   const [queuePosition, setQueuePosition] = useState(null);
   const [queueTotal, setQueueTotal] = useState(null);
+
+  // Rough preview state
+  const [roughVideoUrl, setRoughVideoUrl] = useState(null);
+  const [showRoughModal, setShowRoughModal] = useState(false);
+  const roughConfirmRef = useRef(null);
+
+  // Dry-run state
+  const [dryRunResult, setDryRunResult] = useState(null);
+  const [showDryRunModal, setShowDryRunModal] = useState(false);
 
   // Modal state
   const [showSplitModal, setShowSplitModal] = useState(false);
@@ -300,34 +312,76 @@ function AppPage() {
     window._videoDownloadUrl = null;
   };
 
-  // Form submit handler
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Core render helper — submits one render job and waits for completion via SSE
+  const runRender = useCallback(async (config) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("config", JSON.stringify(config));
 
-    if (!file) {
-      alert("Please upload a file");
-      return;
+    const response = await fetch(`${API_URL}/api/animate`, {
+      method: "POST",
+      body: formData,
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      const detail = result.detail;
+      if (detail?.errors) throw new Error(detail.errors.join("\n"));
+      throw new Error(detail || "Failed to generate animation");
     }
 
-    if (lineGroups.length === 0) {
-      alert("Please add at least one line group");
-      return;
-    }
+    const { taskId } = result;
+
+    return new Promise((resolve, reject) => {
+      const es = new EventSource(`${API_URL}/api/progress-stream/${taskId}`);
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setLoadingProgress(data.progress ?? 0);
+          setLoadingStatus(data.status || "processing");
+          if (data.status === "queued") {
+            setQueuePosition(data.queue_position ?? null);
+            setQueueTotal(data.queue_total ?? null);
+          } else {
+            setQueuePosition(null);
+            setQueueTotal(null);
+          }
+          if (data.status === "complete") {
+            es.close();
+            resolve({
+              videoUrl:    `${API_URL}/api/stream/${data.videoId}`,
+              downloadUrl: `${API_URL}/api/download/${data.videoId}`,
+              filename:    data.filename,
+              cached:      !!data.cached,
+            });
+          } else if (data.status === "error") {
+            es.close();
+            reject(new Error(data.detail || "Animation generation failed"));
+          } else if (data.status === "timeout") {
+            es.close();
+            reject(new Error("Animation generation timed out"));
+          }
+        } catch (err) {
+          console.error("SSE parse error:", err);
+        }
+      };
+      es.onerror = () => {
+        es.close();
+        reject(new Error("Lost connection to server"));
+      };
+    });
+  }, [file]);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Dry-run handler
+  const handleDryRun = useCallback(async () => {
+    if (!file) { alert("Please upload a file first"); return; }
+    if (lineGroups.length === 0) { alert("Please add at least one line group first"); return; }
 
     const timingConfig = buildTimingConfig(animationTiming);
-
     const config = {
-      scriptPath: fileName,
-      startLine,
-      endLine,
-      includeComments,
-      orientation,
-      quality,
+      scriptPath: fileName, startLine, endLine, includeComments,
+      orientation, quality,
       lineGroups: buildLineGroupsForApi(lineGroups),
-      syntaxColors,
-      animationTiming: timingConfig,
-      animationType,
-      font,
+      syntaxColors, animationTiming: timingConfig, animationType, font,
     };
 
     const formData = new FormData();
@@ -335,73 +389,81 @@ function AppPage() {
     formData.append("config", JSON.stringify(config));
 
     try {
+      const response = await fetch(`${API_URL}/api/dry-run`, { method: "POST", body: formData });
+      const data = await response.json();
+      if (!response.ok) {
+        const err = data.detail?.errors ? data.detail.errors.join("\n") : (data.detail || "Dry run failed");
+        throw new Error(err);
+      }
+      setDryRunResult(data);
+      setShowDryRunModal(true);
+    } catch (err) {
+      alert(`Dry run failed: ${err.message}`);
+    }
+  }, [file, fileName, startLine, endLine, includeComments, orientation, quality,
+      lineGroups, syntaxColors, animationTiming, animationType, font]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Form submit handler — two-pass: rough preview → user confirms → full quality
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!file) { alert("Please upload a file"); return; }
+    if (lineGroups.length === 0) { alert("Please add at least one line group"); return; }
+
+    const timingConfig = buildTimingConfig(animationTiming);
+    const baseConfig = {
+      scriptPath: fileName,
+      startLine, endLine, includeComments, orientation,
+      lineGroups: buildLineGroupsForApi(lineGroups),
+      syntaxColors, animationTiming: timingConfig, animationType, font,
+    };
+
+    try {
+      if (quality !== "fast") {
+        // Phase 1: quick 480p preview
+        setIsLoading(true);
+        setLoadingProgress(0);
+        setLoadingStatus("starting");
+        setLoadingPhase("rough");
+
+        const rough = await runRender({ ...baseConfig, quality: "fast" });
+
+        setIsLoading(false);
+        setRoughVideoUrl(rough.videoUrl);
+        setShowRoughModal(true);
+
+        const confirmed = await new Promise((resolve) => {
+          roughConfirmRef.current = resolve;
+        });
+
+        setShowRoughModal(false);
+        setRoughVideoUrl(null);
+        if (!confirmed) return;
+      }
+
+      // Phase 2 (or only pass for fast quality): full quality render
       setIsLoading(true);
       setLoadingProgress(0);
       setLoadingStatus("starting");
+      setLoadingPhase("full");
 
-      const response = await fetch(`${API_URL}/api/animate`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.detail || "Failed to generate animation");
-      }
-
-      const { taskId } = result;
-
-      await new Promise((resolve, reject) => {
-        const es = new EventSource(`${API_URL}/api/progress-stream/${taskId}`);
-
-        es.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            setLoadingProgress(data.progress ?? 0);
-            setLoadingStatus(data.status || "processing");
-
-            if (data.status === "queued") {
-              setQueuePosition(data.queue_position ?? null);
-              setQueueTotal(data.queue_total ?? null);
-            } else {
-              setQueuePosition(null);
-              setQueueTotal(null);
-            }
-
-            if (data.status === "complete") {
-              es.close();
-              setFromCache(!!data.cached);
-              setCompletedVideoUrl(`${API_URL}/api/stream/${data.videoId}`);
-              setCompletedVideoFilename(data.filename);
-              window._videoDownloadUrl = `${API_URL}/api/download/${data.videoId}`;
-              resolve();
-            } else if (data.status === "error") {
-              es.close();
-              reject(new Error(data.detail || "Animation generation failed"));
-            } else if (data.status === "timeout") {
-              es.close();
-              reject(new Error("Animation generation timed out"));
-            }
-          } catch (err) {
-            console.error("SSE parse error:", err);
-          }
-        };
-
-        es.onerror = () => {
-          es.close();
-          reject(new Error("Lost connection to server"));
-        };
-      });
+      const result = await runRender({ ...baseConfig, quality });
 
       setIsLoading(false);
       setLoadingProgress(0);
+      setLoadingPhase(null);
+      setFromCache(result.cached);
+      setCompletedVideoUrl(result.videoUrl);
+      setCompletedVideoFilename(result.filename);
+      window._videoDownloadUrl = result.downloadUrl;
       setShowUploadAnotherModal(true);
+
     } catch (error) {
       console.error("Error:", error);
       alert(`Error: ${error.message}`);
       setIsLoading(false);
       setLoadingProgress(0);
+      setLoadingPhase(null);
     }
   };
 
@@ -539,7 +601,7 @@ function AppPage() {
                     onOpenSplitModal={() => setShowSplitModal(true)}
                   />
 
-                  <SubmitSection apiStatus={apiStatus} />
+                  <SubmitSection apiStatus={apiStatus} onDryRun={handleDryRun} />
                 </>
               )}
             </AnimatePresence>
@@ -566,6 +628,7 @@ function AppPage() {
           isLoading={isLoading}
           loadingProgress={loadingProgress}
           loadingStatus={loadingStatus}
+          loadingPhase={loadingPhase}
           queuePosition={queuePosition}
           queueTotal={queueTotal}
         />
@@ -604,6 +667,31 @@ function AppPage() {
           onClose={handleCloseVideoModal}
           onDownload={handleDownloadVideo}
           onUploadNew={resetForNewFile}
+        />
+
+        <RoughPreviewModal
+          show={showRoughModal}
+          videoUrl={roughVideoUrl}
+          onConfirm={() => {
+            if (roughConfirmRef.current) roughConfirmRef.current(true);
+            roughConfirmRef.current = null;
+          }}
+          onCancel={() => {
+            if (roughConfirmRef.current) roughConfirmRef.current(false);
+            roughConfirmRef.current = null;
+            setShowRoughModal(false);
+            setRoughVideoUrl(null);
+          }}
+        />
+
+        <DryRunModal
+          show={showDryRunModal}
+          result={dryRunResult}
+          onClose={() => setShowDryRunModal(false)}
+          onRender={() => {
+            setShowDryRunModal(false);
+            handleSubmit({ preventDefault: () => {} });
+          }}
         />
       </div>
     </div>

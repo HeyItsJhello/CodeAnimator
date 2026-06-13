@@ -3149,3 +3149,246 @@ h3 {
 .dark-theme .filename-prompt {
     color: rgba(255, 255, 255, 0.2);
 }
+
+/* ─── Submit row (Dry Run + Generate side by side) ─── */
+.submit-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: stretch;
+}
+
+.btn-dry-run {
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    color: var(--text);
+    border: 3px solid var(--border);
+    font-family: "Jersey 15", monospace;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+.btn-dry-run:not(:disabled):hover {
+    background: var(--border);
+    color: var(--bg);
+}
+
+.btn-dry-run:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ─── Virtual scroll badge ─── */
+.virtual-badge {
+    margin-left: auto;
+    font-size: 0.6rem;
+    font-family: "Jersey 15", monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: #1a1a2e;
+    color: #00ecff;
+    border: 1px solid #00ecff44;
+    padding: 0.1rem 0.4rem;
+    opacity: 0.75;
+}
+
+/* ─── Rough Preview Modal ─── */
+.rough-preview-modal {
+    background: var(--bg);
+    border: 3px solid var(--border);
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.25);
+    max-width: 700px;
+    width: 95vw;
+    overflow: hidden;
+}
+
+.rough-preview-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 2px solid var(--border);
+    background: var(--surface);
+}
+
+.rough-preview-title {
+    font-family: "Jersey 15", monospace;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.rough-preview-badge {
+    background: #f4a261;
+    color: #1a1a1a;
+    font-family: "Jersey 15", monospace;
+    font-size: 0.7rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    padding: 0.2rem 0.5rem;
+    border: 2px solid #333;
+    box-shadow: 2px 2px 0 #33333366;
+}
+
+.rough-preview-body {
+    padding: 1.5rem;
+}
+
+.rough-preview-hint {
+    font-size: 0.85rem;
+    opacity: 0.75;
+    margin-bottom: 1rem;
+}
+
+.rough-video-container {
+    border: 3px solid var(--border);
+    background: #000;
+    margin-bottom: 1.25rem;
+}
+
+.rough-video {
+    width: 100%;
+    max-height: 380px;
+    display: block;
+}
+
+.rough-preview-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+/* ─── Dry Run Modal ─── */
+.dry-run-modal {
+    background: var(--bg);
+    border: 3px solid var(--border);
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.25);
+    max-width: 560px;
+    width: 95vw;
+    overflow: hidden;
+}
+
+.dry-run-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 2px solid var(--border);
+    background: var(--surface);
+}
+
+.dry-run-title {
+    font-family: "Jersey 15", monospace;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.dry-run-badge {
+    background: #2a9d8f;
+    color: #fff;
+    font-family: "Jersey 15", monospace;
+    font-size: 0.7rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    padding: 0.2rem 0.5rem;
+    border: 2px solid #fff;
+    box-shadow: 2px 2px 0 #33333366;
+}
+
+.dry-run-body {
+    padding: 1.5rem;
+}
+
+.dry-run-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px dashed var(--border);
+}
+
+.dry-run-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.dry-stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.5;
+}
+
+.dry-stat-value {
+    font-family: "Jersey 15", monospace;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+}
+
+.dry-stat-value.highlight {
+    color: #e63946;
+    font-size: 1.15rem;
+}
+
+.dry-run-groups {
+    margin-bottom: 1.25rem;
+}
+
+.dry-groups-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.6;
+    margin-bottom: 0.5rem;
+}
+
+.dry-groups-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.dry-group-row {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr 3rem;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.3rem 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 0.8rem;
+}
+
+.dry-group-num {
+    font-family: "Jersey 15", monospace;
+    font-size: 0.85rem;
+    color: #e63946;
+}
+
+.dry-group-lines {
+    opacity: 0.75;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dry-group-dur {
+    text-align: right;
+    font-family: "Jersey 15", monospace;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.dry-run-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
