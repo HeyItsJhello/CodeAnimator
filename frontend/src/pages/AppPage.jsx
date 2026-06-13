@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import "../App.css";
@@ -9,6 +9,8 @@ import {
   DEFAULT_SYNTAX_COLORS,
   DEFAULT_TIMING_STR,
   DEFAULT_ANIMATION_TYPE,
+  DEFAULT_FONT,
+  FONT_OPTIONS,
 } from "../data/constants";
 import { getTokenPatterns, tokenizeLine } from "../data/tokenizer";
 
@@ -40,9 +42,36 @@ import {
   VideoCompleteModal,
   SubmitSection,
   AnimationTypeSelector,
+  FontSelector,
 } from "../Components";
 
 function AppPage() {
+  const [isDark, setIsDark] = useState(
+    () => localStorage.getItem("theme") === "dark"
+  );
+
+  const SUBTITLE = "> render your code as animation // powered by manim";
+  const [typed, setTyped] = useState("");
+  const typedRef = useRef(0);
+  useEffect(() => {
+    typedRef.current = 0;
+    setTyped("");
+    const id = setInterval(() => {
+      typedRef.current += 1;
+      setTyped(SUBTITLE.slice(0, typedRef.current));
+      if (typedRef.current >= SUBTITLE.length) clearInterval(id);
+    }, 28);
+    return () => clearInterval(id);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setIsDark((prev) => {
+      const next = !prev;
+      localStorage.setItem("theme", next ? "dark" : "light");
+      return next;
+    });
+  }, []);
+
   // File state
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState("");
@@ -64,6 +93,7 @@ function AppPage() {
     ...DEFAULT_TIMING_STR,
   });
   const [animationType, setAnimationType] = useState(DEFAULT_ANIMATION_TYPE);
+  const [font, setFont] = useState(DEFAULT_FONT);
 
   // Line groups state
   const [lineGroups, setLineGroups] = useState([]);
@@ -294,6 +324,7 @@ function AppPage() {
       syntaxColors,
       animationTiming: timingConfig,
       animationType,
+      font,
     };
 
     const formData = new FormData();
@@ -316,60 +347,40 @@ function AppPage() {
         throw new Error(result.detail || "Failed to generate animation");
       }
 
-      const taskId = result.taskId;
-      const progressInterval = setInterval(async () => {
-        try {
-          const progressResponse = await fetch(
-            `${API_URL}/api/progress/${taskId}`,
-          );
-          if (progressResponse.ok) {
-            const progressData = await progressResponse.json();
-            setLoadingProgress(progressData.progress);
-            setLoadingStatus(progressData.status || "processing");
+      const { taskId } = result;
 
-            if (
-              progressData.status === "complete" ||
-              progressData.progress >= 100
-            ) {
-              clearInterval(progressInterval);
-            }
-          }
-        } catch (err) {
-          console.error("Progress polling error:", err);
-        }
-      }, 500);
+      await new Promise((resolve, reject) => {
+        const es = new EventSource(`${API_URL}/api/progress-stream/${taskId}`);
 
-      await new Promise((resolve) => {
-        const checkComplete = setInterval(async () => {
+        es.onmessage = (event) => {
           try {
-            const progressResponse = await fetch(
-              `${API_URL}/api/progress/${taskId}`,
-            );
-            if (progressResponse.ok) {
-              const progressData = await progressResponse.json();
-              if (
-                progressData.status === "complete" ||
-                progressData.progress >= 100
-              ) {
-                clearInterval(checkComplete);
-                clearInterval(progressInterval);
-                setLoadingProgress(100);
-                resolve();
-              }
+            const data = JSON.parse(event.data);
+            setLoadingProgress(data.progress ?? 0);
+            setLoadingStatus(data.status || "processing");
+
+            if (data.status === "complete") {
+              es.close();
+              setCompletedVideoUrl(`${API_URL}/api/stream/${data.videoId}`);
+              setCompletedVideoFilename(data.filename);
+              window._videoDownloadUrl = `${API_URL}/api/download/${data.videoId}`;
+              resolve();
+            } else if (data.status === "error") {
+              es.close();
+              reject(new Error(data.detail || "Animation generation failed"));
+            } else if (data.status === "timeout") {
+              es.close();
+              reject(new Error("Animation generation timed out"));
             }
           } catch (err) {
-            console.error("Completion check error:", err);
+            console.error("SSE parse error:", err);
           }
-        }, 500);
+        };
+
+        es.onerror = () => {
+          es.close();
+          reject(new Error("Lost connection to server"));
+        };
       });
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const streamUrl = `${API_URL}/api/stream/${result.videoId}`;
-      const downloadUrl = `${API_URL}/api/download/${result.videoId}`;
-      setCompletedVideoUrl(streamUrl);
-      setCompletedVideoFilename(result.filename);
-      window._videoDownloadUrl = downloadUrl;
 
       setIsLoading(false);
       setLoadingProgress(0);
@@ -399,8 +410,13 @@ function AppPage() {
     return calculateLineGroupMap(lineGroups, startLine, endLine);
   }, [lineGroups, startLine, endLine]);
 
+  const fontFamily = useMemo(
+    () => FONT_OPTIONS.find((f) => f.value === font)?.family ?? "monospace",
+    [font],
+  );
+
   return (
-    <div className="app">
+    <div className={`app${isDark ? " dark-theme" : ""}`}>
       <div className={`main-layout ${!fileContent ? "centered" : ""}`}>
         <motion.div
           className="container"
@@ -408,24 +424,29 @@ function AppPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          <Link to="/" className="back-to-home">
-            ← Back to Home
-          </Link>
+          <span className="corner-tl" aria-hidden="true" />
+          <span className="corner-tr" aria-hidden="true" />
+          <div className="nav-row">
+            <Link to="/" className="back-to-home">← Back to Home</Link>
+            <button type="button" className="theme-toggle" onClick={toggleTheme}>
+              {isDark ? "☀ Light" : "☾ Dark"}
+            </button>
+          </div>
 
           <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            Code Animator
+            Code Animator<span className="cursor-blink">_</span>
           </motion.h1>
           <motion.p
             className="subtitle"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.1, delay: 0.3 }}
           >
-            Create an automatic showcase of your code! (Animated using Manim)
+            {typed}<span className="cursor-blink">_</span>
           </motion.p>
 
           <ApiStatusBanner apiStatus={apiStatus} onRetry={checkApiStatus} />
@@ -479,6 +500,11 @@ function AppPage() {
                     onAnimationTypeChange={setAnimationType}
                   />
 
+                  <FontSelector
+                    font={font}
+                    onFontChange={setFont}
+                  />
+
                   <LineGroupsSection
                     lineGroups={lineGroups}
                     currentGroup={currentGroup}
@@ -501,10 +527,12 @@ function AppPage() {
             <PreviewPanel
               fileName={fileName}
               fileContent={fileContent}
+              highlightedLines={highlightedLines}
               startLine={startLine}
               endLine={endLine}
               shownLines={shownLines}
               lineGroupMap={lineGroupMap}
+              fontFamily={fontFamily}
               onOpenPreviewModal={() => setShowPreviewModal(true)}
             />
           )}

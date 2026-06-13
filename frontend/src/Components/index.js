@@ -15,3 +15,4 @@ export { default as PreviewModal } from "./PreviewModal";
 export { default as VideoCompleteModal } from "./VideoCompleteModal";
 export { default as SubmitSection } from "./SubmitSection";
 export { default as AnimationTypeSelector } from "./AnimationTypeSelector";
+export { default as FontSelector } from "./FontSelector";
