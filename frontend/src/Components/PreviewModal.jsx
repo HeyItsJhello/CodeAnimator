@@ -65,7 +65,7 @@ function PreviewModal({
                 <span className="legend-title">Legend:</span>
                 <div className="legend-items">
                   {Object.entries(syntaxColors)
-                    .filter(([key]) => key !== "default")
+                    .filter(([key]) => key !== "default" && key !== "background")
                     .map(([key, color]) => (
                       <div key={key} className="legend-item">
                         <span

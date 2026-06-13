@@ -33,7 +33,7 @@ function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          Create professional code animations with Manim quickly
+          Create professional code animations instantly.
           <br />
           No video editing skills required. Just upload, configure, and
           download.

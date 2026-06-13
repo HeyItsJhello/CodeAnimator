@@ -7,10 +7,11 @@
     "testEnvironment": "node"
   },
   "dependencies": {
+    "@remotion/google-fonts": "^4.0.477",
+    "prism-react-renderer": "^2.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "remotion": "^4.0.0",
-    "prism-react-renderer": "^2.3.0"
+    "remotion": "^4.0.0"
   },
   "devDependencies": {
     "jest": "^29.0.0"

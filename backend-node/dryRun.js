@@ -1,7 +1,7 @@
-const FPS_BY_QUALITY = { fast: 30, standard: 60, high: 60 };
+import { QUALITY_DIMS } from '../renderer/timing.js';
 
 export function computeDryRun({ lineGroups, animationTiming, quality = 'standard' }) {
-  const fps = FPS_BY_QUALITY[quality] || 30;
+  const fps = (QUALITY_DIMS[quality] ?? QUALITY_DIMS.standard).fps;
   const {
     initialDelay = 1,
     lineSlideIn = 0.8,
@@ -12,11 +12,16 @@ export function computeDryRun({ lineGroups, animationTiming, quality = 'standard
   let frames = Math.round(initialDelay * fps);
 
   const groups = (lineGroups || []).map((group, i) => {
-    const lineCount = group.lineCount ?? group.lines?.length ?? 0;
-    const groupFrames = Math.round(lineCount * lineSlideIn * fps);
+    const groupFrames = Math.round(lineSlideIn * fps);
     frames += groupFrames;
     if (i < lineGroups.length - 1) frames += Math.round(pauseBetweenGroups * fps);
-    return { index: i, lineCount, frames: groupFrames };
+    return {
+      index:       i,
+      lineCount:   group.lineCount ?? group.lines?.length ?? 0,
+      lines:       group.lines || [],
+      frames:      groupFrames,
+      durationSecs: Math.round((groupFrames / fps) * 100) / 100,
+    };
   });
 
   frames += Math.round(finalPause * fps);

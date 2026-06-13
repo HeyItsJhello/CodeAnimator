@@ -1,6 +1,15 @@
 import { motion, AnimatePresence } from "framer-motion";
 
-function LoadingModal({ isLoading, loadingProgress, loadingStatus, loadingPhase, queuePosition, queueTotal }) {
+const STATUS_LABEL = {
+  queued:    "Queued — waiting for slot...",
+  rendering: "Rendering frames...",
+  complete:  "Complete!",
+  error:     "Error",
+};
+
+function LoadingModal({ isLoading, loadingProgress, loadingStatus }) {
+  const statusText = STATUS_LABEL[loadingStatus] ?? "Processing...";
+
   return (
     <AnimatePresence>
       {isLoading && (
@@ -21,49 +30,31 @@ function LoadingModal({ isLoading, loadingProgress, loadingStatus, loadingPhase,
             <div className="loading-header">
               <span className="loading-title">Code Animator</span>
             </div>
+
             <div className="loading-body">
               <div className="loading-icon">
                 <img src="/Movie.png" alt="" className="icon-sprite" />
               </div>
-              <h3 className="loading-text">
-                {loadingPhase === "rough" ? "Quick Preview..." : "Generating Animation..."}
-              </h3>
+
+              <h3 className="loading-text">Generating Animation...</h3>
               <p className="loading-subtext">
-                {loadingPhase === "rough"
-                  ? "Rendering 480p preview — you'll confirm before full quality"
-                  : "Please wait while we render your code animation"}
+                Please wait while we render your code animation
               </p>
+
               <div className="progress-bar-container">
-                <div className="progress-status">
-                  {loadingStatus === "queued" && (
-                    queuePosition
-                      ? `Queued — position ${queuePosition}${queueTotal ? ` of ${queueTotal}` : ""}`
-                      : "Waiting for available slot..."
-                  )}
-                  {loadingStatus === "starting" && "Starting..."}
-                  {loadingStatus === "generating SVGs" && "Generating text elements..."}
-                  {loadingStatus === "rendering frames" && "Rendering frames..."}
-                  {loadingStatus === "compiling video" && "Compiling video..."}
-                  {loadingStatus === "finalizing" && "Finalizing..."}
-                  {loadingStatus === "complete" && "Complete!"}
-                </div>
+                <div className="progress-status">{statusText}</div>
+
                 <div className="progress-bar-bg">
                   <motion.div
                     className="progress-bar-fill"
                     initial={{ width: 0 }}
                     animate={{ width: `${loadingProgress}%` }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
-                  ></motion.div>
+                  />
+                  <span className="progress-bar-label">
+                    {Math.round(loadingProgress)}%
+                  </span>
                 </div>
-                <motion.span
-                  className="progress-text"
-                  key={Math.round(loadingProgress)}
-                  initial={{ scale: 1.2, color: "#e63946" }}
-                  animate={{ scale: 1, color: "#e63946" }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {Math.round(loadingProgress)}%
-                </motion.span>
               </div>
             </div>
           </motion.div>

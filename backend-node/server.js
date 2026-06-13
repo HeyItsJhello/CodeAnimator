@@ -7,9 +7,9 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
 import { initBundle, renderAnimation, OUTPUTS_DIR } from './render.js';
-import { generateCacheKey, getCachedVideo, saveToCache } from './cache.js';
 import { validateConfig } from './validate.js';
 import { computeDryRun } from './dryRun.js';
+import { detectLanguage, buildStructuredGroups } from './lineGroups.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
@@ -32,13 +32,15 @@ app.get('/', (_req, res) => res.json({ status: 'ok' }));
 // ── Validate ────────────────────────────────────────────────────────────────
 
 app.post('/api/validate', upload.single('file'), (req, res) => {
+  const uploadPath = req.file?.path;
   try {
-    const config = JSON.parse(req.body.config);
-    const fileContent = fs.readFileSync(req.file.path);
-    fs.unlinkSync(req.file.path);
+    const config      = JSON.parse(req.body.config);
+    const fileContent = fs.readFileSync(uploadPath);
+    fs.unlinkSync(uploadPath);
     const errors = validateConfig(fileContent, config);
     res.json({ valid: errors.length === 0, errors });
   } catch (e) {
+    if (uploadPath) try { fs.unlinkSync(uploadPath); } catch (_) {}
     res.status(400).json({ valid: false, errors: [e.message] });
   }
 });
@@ -49,15 +51,24 @@ app.post('/api/dry-run', upload.single('file'), (req, res) => {
   try {
     const config = JSON.parse(req.body.config);
     if (req.file) fs.unlinkSync(req.file.path);
+
     const structured = buildStructuredGroups(
       config.lineGroups, config.startLine, config.endLine
     );
-    const result = computeDryRun({
-      lineGroups: structured,
+    const timing = computeDryRun({
+      lineGroups:      structured,
       animationTiming: config.animationTiming,
-      quality: config.quality,
+      quality:         config.quality,
     });
-    res.json(result);
+
+    res.json({
+      ...timing,
+      quality:       config.quality       || 'standard',
+      font:          config.font          || 'default',
+      animationType: config.animationType || 'slide_left',
+      orientation:   config.orientation   || 'landscape',
+      lineRange:     [config.startLine, config.endLine],
+    });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
@@ -78,26 +89,14 @@ app.post('/api/animate', upload.single('file'), async (req, res) => {
       return res.status(422).json({ errors });
     }
 
-    const cacheKey      = generateCacheKey(fileContent, config);
     const taskId        = `${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const originalName  = req.file.originalname || 'animation';
     const stem          = path.basename(originalName, path.extname(originalName));
     const outputName    = `${stem}_${config.startLine}-${config.endLine}_${taskId}`;
     const videoFilename = `${outputName}.mp4`;
 
-    const cachedPath = getCachedVideo(cacheKey);
-    if (cachedPath) {
-      fs.copyFileSync(cachedPath, path.join(OUTPUTS_DIR, videoFilename));
-      fs.unlinkSync(uploadPath);
-      setProgress(taskId, {
-        progress: 100, status: 'complete',
-        videoId: videoFilename, filename: videoFilename, cached: true,
-      });
-      return res.json({ success: true, taskId, cached: true });
-    }
-
-    setProgress(taskId, { progress: 0, status: 'queued', queue_position: null });
-    res.json({ success: true, taskId, cached: false });
+    setProgress(taskId, { progress: 0, status: 'queued' });
+    res.json({ success: true, taskId });
 
     const lineGroups = buildStructuredGroups(
       config.lineGroups, config.startLine, config.endLine
@@ -116,6 +115,10 @@ app.post('/api/animate', upload.single('file'), async (req, res) => {
       language:        detectLanguage(req.file.originalname),
     };
 
+    // Delete upload immediately — code is never stored beyond this point
+    try { fs.unlinkSync(uploadPath); } catch (_) {}
+    uploadPath = null;
+
     setProgress(taskId, { progress: 5, status: 'rendering' });
 
     renderAnimation({
@@ -124,14 +127,11 @@ app.post('/api/animate', upload.single('file'), async (req, res) => {
       quality:    config.quality || 'standard',
       onProgress: (pct) => setProgress(taskId, { progress: pct, status: 'rendering' }),
     }).then((outputPath) => {
-      saveToCache(cacheKey, outputPath);
-      try { fs.unlinkSync(uploadPath); } catch (_) {}
       setProgress(taskId, {
         progress: 100, status: 'complete',
-        videoId: videoFilename, filename: videoFilename, cached: false,
+        videoId: videoFilename, filename: videoFilename,
       });
     }).catch((err) => {
-      try { fs.unlinkSync(uploadPath); } catch (_) {}
       setProgress(taskId, { progress: 0, status: 'error', error: err.message });
       console.error('[render error]', err.message);
     });
@@ -184,6 +184,7 @@ app.get('/api/stream/:videoId', (req, res) => {
   fs.createReadStream(videoPath).pipe(res);
 });
 
+// Delete the output file immediately after download
 app.get('/api/download/:videoId', (req, res) => {
   const { videoId } = req.params;
   const videoPath   = path.join(OUTPUTS_DIR, videoId);
@@ -192,47 +193,6 @@ app.get('/api/download/:videoId', (req, res) => {
     try { fs.unlinkSync(videoPath); } catch (_) {}
   });
 });
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-const EXT_TO_LANG = {
-  py: 'python', gd: 'gdscript', js: 'javascript', ts: 'typescript',
-  jsx: 'jsx', tsx: 'tsx', rs: 'rust', go: 'go', cpp: 'cpp', c: 'c',
-  java: 'java', cs: 'csharp', rb: 'ruby', php: 'php', swift: 'swift',
-  kt: 'kotlin', css: 'css', html: 'html', json: 'json', sh: 'bash',
-};
-
-function detectLanguage(filename) {
-  const ext = (filename || '').split('.').pop().toLowerCase();
-  return EXT_TO_LANG[ext] || 'python';
-}
-
-function buildStructuredGroups(lineGroupStrings, startLine, endLine) {
-  const consumed = new Set();
-  const groups   = [];
-
-  for (const token of lineGroupStrings || []) {
-    if (token.startsWith('SPLIT')) continue;
-
-    let lines;
-    if (token === 'ALL_REMAINING') {
-      lines = [];
-      for (let i = startLine; i <= endLine; i++) {
-        if (!consumed.has(i)) lines.push(i);
-      }
-    } else {
-      lines = token
-        .split(' ')
-        .map(Number)
-        .filter((n) => !isNaN(n) && n >= startLine && n <= endLine && !consumed.has(n));
-    }
-
-    for (const ln of lines) consumed.add(ln);
-    if (lines.length > 0) groups.push({ lines, lineCount: lines.length });
-  }
-
-  return groups;
-}
 
 // ── Start ───────────────────────────────────────────────────────────────────
 

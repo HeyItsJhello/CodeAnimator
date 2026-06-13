@@ -1,6 +1,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
 import { CodeLine } from './components/CodeLine.jsx';
 import { calculateTotalFrames, QUALITY_DIMS } from './timing.js';
+import { getFontFamily, loadSelectedFont } from './fonts.js';
 
 export { calculateTotalFrames };
 
@@ -34,6 +35,11 @@ export function CodeAnimation({
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
 
+  // Trigger font download before Remotion renders any frame.
+  // @remotion/google-fonts handles delayRender/continueRender internally.
+  loadSelectedFont(font);
+  const fontFamily = getFontFamily(font);
+
   const {
     initialDelay = 1,
     lineSlideIn = 0.8,
@@ -51,13 +57,14 @@ export function CodeAnimation({
   let currentFrame = initialFrames;
 
   for (let gi = 0; gi < lineGroups.length; gi++) {
+    const groupStartFrame = currentFrame;
     for (const lineNum of lineGroups[gi].lines) {
       const zeroIdx = lineNum - startLine;
       const content = codeLines[zeroIdx] ?? '';
       if (!includeComments && content.trimStart().startsWith('#')) continue;
-      timeline.push({ lineNum, content, startFrame: currentFrame });
-      currentFrame += lineFrames;
+      timeline.push({ lineNum, content, startFrame: groupStartFrame });
     }
+    currentFrame += lineFrames; // advance once per group — all lines animate simultaneously
     if (gi < lineGroups.length - 1) {
       currentFrame += pauseFrames;
     }
@@ -78,7 +85,6 @@ export function CodeAnimation({
   const fontSize        = Math.round(LINE_HEIGHT * 0.62);
   const gutterWidth     = String(endLine).length;
   const gutterCharWidth = fontSize * 0.6;
-  const fontFamily      = font === 'default' ? 'monospace' : `'${font}', monospace`;
 
   // Scrolling (only when scaled-down still doesn't fit)
   let scrollY = 0;
@@ -101,12 +107,14 @@ export function CodeAnimation({
     }
   }
 
+  const backgroundColor = syntaxColors.background || '#1e1e2e';
+
   return (
     <div
       style={{
         width,
         height,
-        backgroundColor: '#1e1e2e',
+        backgroundColor,
         fontFamily,
         fontSize,
         position: 'relative',

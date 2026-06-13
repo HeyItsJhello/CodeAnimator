@@ -14,7 +14,7 @@ export function calculateTotalFrames({ animationTiming, lineGroups, fps }) {
 
   let frames = Math.round(initialDelay * fps);
   for (let i = 0; i < lineGroups.length; i++) {
-    frames += Math.round(lineGroups[i].lineCount * lineSlideIn * fps);
+    frames += Math.round(lineSlideIn * fps); // whole group animates in one duration
     if (i < lineGroups.length - 1) {
       frames += Math.round(pauseBetweenGroups * fps);
     }

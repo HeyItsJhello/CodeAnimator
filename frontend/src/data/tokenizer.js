@@ -1,34 +1,16 @@
+const EXT_TO_LANG = {
+  ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".hpp": "cpp", ".h": "cpp",
+  ".c": "c", ".py": "py",
+  ".js": "js", ".jsx": "js", ".ts": "js", ".tsx": "js", ".mjs": "js",
+  ".java": "java", ".go": "go", ".rs": "rs", ".rb": "rb", ".php": "php",
+  ".swift": "swift", ".kt": "kt", ".kts": "kt", ".gd": "gd",
+};
+
 // Simple syntax highlighter patterns for preview
 // These patterns give a reasonable approximation of Pygments tokenization
 export const getTokenPatterns = (fileExtension) => {
   const ext = fileExtension?.toLowerCase() || "";
-
-  // Map file extension to language
-  const extToLang = {
-    ".cpp": "cpp",
-    ".cc": "cpp",
-    ".cxx": "cpp",
-    ".hpp": "cpp",
-    ".h": "cpp",
-    ".c": "c",
-    ".py": "py",
-    ".js": "js",
-    ".jsx": "js",
-    ".ts": "js",
-    ".tsx": "js",
-    ".mjs": "js",
-    ".java": "java",
-    ".go": "go",
-    ".rs": "rs",
-    ".rb": "rb",
-    ".php": "php",
-    ".swift": "swift",
-    ".kt": "kt",
-    ".kts": "kt",
-    ".gd": "gd",
-  };
-
-  const lang = extToLang[ext] || "cpp";
+  const lang = EXT_TO_LANG[ext] || "cpp";
   const isCLike = ["cpp", "c"].includes(lang);
 
   // Common patterns for most languages

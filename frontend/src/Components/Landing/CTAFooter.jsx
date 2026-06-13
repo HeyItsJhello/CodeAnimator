@@ -76,7 +76,7 @@ function CTAFooter() {
               © {new Date().getFullYear()} Code Animator. MIT License.
             </p>
             <p className="footer__made-with">
-              Made with Manim by a creator, for Creators
+              Made with Remotion by a creator, for Creators
             </p>
           </div>
         </div>

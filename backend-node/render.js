@@ -7,17 +7,11 @@ import { renderMedia, selectComposition } from '@remotion/renderer';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const OUTPUTS_DIR = path.join(__dirname, 'outputs');
-fs.mkdirSync(OUTPUTS_DIR, { recursive: true });
-
-const QUALITY_DIMS = {
-  fast:     { width: 854,  height: 480,  fps: 24 },
-  standard: { width: 1280, height: 720,  fps: 30 },
-  high:     { width: 1920, height: 1080, fps: 30 },
-};
 
 let bundleLocation = null;
 
 export async function initBundle() {
+  fs.mkdirSync(OUTPUTS_DIR, { recursive: true });
   console.log('[renderer] Bundling Remotion compositions...');
   bundleLocation = await bundle({
     entryPoint: path.resolve(__dirname, '../renderer/index.jsx'),
@@ -46,7 +40,8 @@ export async function renderAnimation({ inputProps, outputName, quality, onProgr
     outputLocation: outputPath,
     inputProps: { ...inputProps, quality },
     concurrency: 2,
-    crf: 10,
+    crf: 1,           // near-lossless H264 — minimal DCT artifacts
+    imageFormat: 'png', // lossless intermediate frames (vs default JPEG)
     onProgress: ({ progress }) => onProgress(Math.round(progress * 100)),
     overwrite: true,
   });

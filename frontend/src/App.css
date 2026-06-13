@@ -739,6 +739,7 @@ h3 {
 .preview-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     background: #1a1a1a;
     position: relative;
     box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(42, 157, 143, 0.04);
@@ -763,10 +764,11 @@ h3 {
     margin: 0;
     padding: 1rem 0;
     font-family: "Jersey 15", "Courier New", monospace;
-    font-size: 0.78rem;
+    font-size: 0.78rem; /* overridden inline by scale-to-fit logic */
     line-height: 1.55;
     color: #d4d4d4;
     font-weight: bold;
+    width: 100%;
 }
 
 .code-line {
@@ -936,56 +938,47 @@ h3 {
 
 .progress-status {
     color: #333;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
     margin-bottom: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 1px;
+    min-height: 1.4em;
 }
 
 .progress-bar-bg {
     width: 100%;
-    height: 40px;
-    background: #f5f5f5;
+    height: 44px;
+    background: #f0f0f0;
     border: 4px solid #333;
     position: relative;
     overflow: hidden;
-    box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.1);
+    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.08);
 }
 
 .progress-bar-fill {
     height: 100%;
     background: #e63946;
-    background-image: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 10px,
-        rgba(255, 255, 255, 0.1) 10px,
-        rgba(255, 255, 255, 0.1) 20px
-    );
-    transition: width 0.3s ease;
-    position: relative;
-    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3);
-    animation: barberPole 1s linear infinite;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
-@keyframes barberPole {
-    0% {
-        background-position: 0 0;
-    }
-    100% {
-        background-position: 28px 0;
-    }
-}
-
-.progress-text {
-    display: block;
-    margin-top: 0.75rem;
-    font-size: 1.2rem;
+.progress-bar-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
     font-weight: bold;
-    color: #e63946;
     font-family: "Jersey 15", monospace;
+    color: #333;
+    mix-blend-mode: difference;
+    filter: invert(1);
+    pointer-events: none;
+    letter-spacing: 1px;
 }
 
 /* Responsive Design */
@@ -2539,11 +2532,15 @@ h3 {
 }
 
 .dark-theme .progress-bar-bg {
-    background: #111;
+    background: #1a1a1a;
     border-color: #333;
 }
 
 .dark-theme .progress-status {
+    color: #e8e8e8;
+}
+
+.dark-theme .progress-bar-label {
     color: #e8e8e8;
 }
 
@@ -3150,9 +3147,10 @@ h3 {
     color: rgba(255, 255, 255, 0.2);
 }
 
-/* ─── Submit row (Dry Run + Generate side by side) ─── */
+/* ─── Submit row (Dry Run above, Generate full-width below) ─── */
 .submit-row {
     display: flex;
+    flex-direction: column;
     gap: 0.75rem;
     align-items: stretch;
 }

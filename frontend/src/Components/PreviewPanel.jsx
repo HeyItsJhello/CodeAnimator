@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 
-const OVERSCAN         = 30;   // extra lines above/below viewport
-const VIRTUAL_THRESHOLD = 250; // activate windowing beyond this line count
+const OVERSCAN          = 30;
+const VIRTUAL_THRESHOLD = 250;
+const NATURAL_FONT_SIZE = 13;   // px — don't scale UP beyond this
+const MIN_FONT_SIZE     = 7;    // px — below this is unreadable; clip instead
+const CHAR_RATIO        = 0.60; // approx char-width / font-size for monospace
 
 function PreviewPanel({
   fileName,
@@ -15,27 +18,31 @@ function PreviewPanel({
   fontFamily,
   onOpenPreviewModal,
 }) {
-  const scrollRef     = useRef(null);
-  const lineHeightRef = useRef(26); // CSS: 0.78rem×1.55 line-height + 0.4rem×2 padding ≈ 26px
+  const containerRef  = useRef(null);
+  const lineHeightRef = useRef(26);
   const measuredRef   = useRef(false);
 
   const [scrollTop,  setScrollTop]  = useState(0);
   const [viewHeight, setViewHeight] = useState(500);
+  const [viewWidth,  setViewWidth]  = useState(800);
 
-  const lines    = fileContent ? fileContent.split("\n") : [];
+  const lines     = fileContent ? fileContent.split("\n") : [];
   const isVirtual = lines.length > VIRTUAL_THRESHOLD;
 
-  // Track container height for windowing calculations
+  // Always observe container size (for both font scaling and virtual scroll)
   useEffect(() => {
-    const el = scrollRef.current;
+    const el = containerRef.current;
     if (!el) return;
-    const obs = new ResizeObserver(([e]) => setViewHeight(e.contentRect.height));
+    const obs = new ResizeObserver(([e]) => {
+      setViewHeight(e.contentRect.height);
+      setViewWidth(e.contentRect.width);
+    });
     obs.observe(el);
     setViewHeight(el.clientHeight);
+    setViewWidth(el.clientWidth);
     return () => obs.disconnect();
   }, []);
 
-  // Measure actual line height from first rendered line (runs once)
   const measureRef = useCallback((node) => {
     if (node && !measuredRef.current) {
       const h = node.getBoundingClientRect().height;
@@ -50,6 +57,25 @@ function PreviewPanel({
     setScrollTop(e.currentTarget.scrollTop);
   }, []);
 
+  // Longest line in the whole file — stable so font doesn't jump while scrolling
+  const maxLineLength = useMemo(
+    () => Math.max(1, ...lines.map((l) => l.length)),
+    [lines],
+  );
+
+  const maxLineNum   = lines.length;
+  const lineNumWidth = String(maxLineNum).length;
+
+  // Estimate space consumed by gutter (line numbers) and group indicator
+  const gutterPx    = lineNumWidth * NATURAL_FONT_SIZE * CHAR_RATIO + 56; // 56 ≈ paddings
+  const indicatorPx = 80;
+  const hPad        = 16;
+  const available   = Math.max(60, viewWidth - gutterPx - indicatorPx - hPad);
+
+  // Font size that fits the longest line; clamped to [MIN, NATURAL]
+  const fittedSize = available / (maxLineLength * CHAR_RATIO);
+  const fontSize   = Math.min(NATURAL_FONT_SIZE, Math.max(MIN_FONT_SIZE, fittedSize));
+
   const { firstIdx, lastIdx } = useMemo(() => {
     if (!isVirtual) return { firstIdx: 0, lastIdx: lines.length - 1 };
     const lh   = lineHeightRef.current;
@@ -60,9 +86,6 @@ function PreviewPanel({
     );
     return { firstIdx: first, lastIdx: last };
   }, [isVirtual, scrollTop, viewHeight, lines.length]);
-
-  const maxLineNum  = lines.length;
-  const lineNumWidth = String(maxLineNum).length;
 
   const topPad    = isVirtual ? firstIdx * lineHeightRef.current : 0;
   const bottomPad = isVirtual
@@ -81,9 +104,9 @@ function PreviewPanel({
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div className="preview-chrome">
-        <span className="chrome-dot red"   />
+        <span className="chrome-dot red"    />
         <span className="chrome-dot yellow" />
-        <span className="chrome-dot green" />
+        <span className="chrome-dot green"  />
         <span className="chrome-label">preview</span>
         {isVirtual && (
           <span className="virtual-badge" title="Windowed rendering active">
@@ -112,25 +135,28 @@ function PreviewPanel({
 
       <div
         className="preview-content"
-        ref={isVirtual ? scrollRef : undefined}
+        ref={containerRef}
         onScroll={isVirtual ? handleScroll : undefined}
       >
         <pre
           className="code-preview"
-          style={fontFamily ? { fontFamily } : undefined}
+          style={{
+            fontSize: `${fontSize}px`,
+            ...(fontFamily ? { fontFamily } : {}),
+          }}
         >
           {isVirtual && topPad > 0 && (
             <div aria-hidden style={{ height: topPad }} />
           )}
 
           {lines.slice(firstIdx, lastIdx + 1).map((line, i) => {
-            const lineNum      = firstIdx + i + 1;
-            const dataIdx      = firstIdx + i;
-            const inRange      = isLineInRange(lineNum);
-            const inGroup      = isLineInGroup(lineNum);
-            const groupNums    = lineGroupMap.get(lineNum);
+            const lineNum       = firstIdx + i + 1;
+            const dataIdx       = firstIdx + i;
+            const inRange       = isLineInRange(lineNum);
+            const inGroup       = isLineInGroup(lineNum);
+            const groupNums     = lineGroupMap.get(lineNum);
             const indicatorText = groupNums?.length ? `G${groupNums.join(",")}` : "";
-            const paddedNum    = String(lineNum).padStart(lineNumWidth, " ");
+            const paddedNum     = String(lineNum).padStart(lineNumWidth, " ");
 
             return (
               <div

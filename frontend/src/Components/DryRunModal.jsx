@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from "framer-motion";
 function DryRunModal({ show, result, onClose, onRender }) {
   if (!result) return null;
 
-  const { quality, font, animation_type, orientation, line_range,
-    n_groups, groups, estimated_duration_s, estimated_frames, frame_rate } = result;
+  const {
+    quality, font, animationType, orientation, lineRange,
+    groups, estimatedDuration, totalFrames, fps,
+  } = result;
 
-  const mins  = Math.floor(estimated_duration_s / 60);
-  const secs  = Math.round(estimated_duration_s % 60);
+  const mins   = Math.floor(estimatedDuration / 60);
+  const secs   = Math.round(estimatedDuration % 60);
   const durStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
   return (
@@ -46,7 +48,7 @@ function DryRunModal({ show, result, onClose, onRender }) {
                 </div>
                 <div className="dry-run-stat">
                   <span className="dry-stat-label">animation</span>
-                  <span className="dry-stat-value">{animation_type.replace("_", " ")}</span>
+                  <span className="dry-stat-value">{animationType.replace(/_/g, " ")}</span>
                 </div>
                 <div className="dry-run-stat">
                   <span className="dry-stat-label">orientation</span>
@@ -58,13 +60,13 @@ function DryRunModal({ show, result, onClose, onRender }) {
                 </div>
                 <div className="dry-run-stat">
                   <span className="dry-stat-label">frames</span>
-                  <span className="dry-stat-value">{estimated_frames.toLocaleString()} @ {frame_rate}fps</span>
+                  <span className="dry-stat-value">{totalFrames.toLocaleString()} @ {fps}fps</span>
                 </div>
               </div>
 
               <div className="dry-run-groups">
                 <div className="dry-groups-title">
-                  {n_groups} group{n_groups !== 1 ? "s" : ""} · lines {line_range[0]}–{line_range[1]}
+                  {groups.length} group{groups.length !== 1 ? "s" : ""} · lines {lineRange[0]}–{lineRange[1]}
                 </div>
                 <div className="dry-groups-list">
                   {groups.map((g, i) => (
@@ -74,7 +76,7 @@ function DryRunModal({ show, result, onClose, onRender }) {
                         {g.lines.slice(0, 6).join(", ")}
                         {g.lines.length > 6 && ` +${g.lines.length - 6} more`}
                       </span>
-                      <span className="dry-group-dur">{g.duration_s}s</span>
+                      <span className="dry-group-dur">{g.durationSecs}s</span>
                     </div>
                   ))}
                 </div>

@@ -3,6 +3,7 @@ export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // Default syntax highlighting colors — Godot 4 script editor (dark theme)
 export const DEFAULT_SYNTAX_COLORS = {
+  background: "#1e1e2e", // scene background
   keywords:   "#FF3D3D", // pure vivid red    (func, var, if, for, return, extends…)
   types:      "#00FF9B", // saturated mint    (Vector2, Node3D, String, Dictionary…)
   functions:  "#00ECFF", // bright cyan       (print(), get_node(), randf(), user funcs)
@@ -52,3 +53,9 @@ export const FONT_OPTIONS = [
 ];
 
 export const DEFAULT_FONT = "default";
+
+export const QUALITY_OPTIONS = [
+  { value: "fast",     label: "Fast",     size: "720p @ 30fps"  },
+  { value: "standard", label: "Standard", size: "1080p @ 60fps" },
+  { value: "high",     label: "High",     size: "4K @ 60fps"    },
+];
