@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-function SubmitSection({ apiStatus }) {
+function SubmitSection({ apiStatus, onDryRun }) {
   return (
     <motion.div
       className="form-section submit-section"
@@ -9,15 +9,25 @@ function SubmitSection({ apiStatus }) {
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.4, delay: 0.4 }}
     >
-      <button
-        type="submit"
-        className="btn-submit"
-        disabled={apiStatus !== "awake"}
-      >
-        {apiStatus !== "awake"
-          ? "Waiting for server..."
-          : "Generate Animation"}
-      </button>
+      <div className="submit-row">
+        <button
+          type="button"
+          className="btn-dry-run"
+          disabled={apiStatus !== "awake"}
+          onClick={onDryRun}
+        >
+          Dry Run
+        </button>
+        <button
+          type="submit"
+          className="btn-submit"
+          disabled={apiStatus !== "awake"}
+        >
+          {apiStatus !== "awake"
+            ? "Waiting for server..."
+            : "Generate Animation"}
+        </button>
+      </div>
       <div className="footer-links">
         <a
           href="https://ko-fi.com/heyitsjhello"

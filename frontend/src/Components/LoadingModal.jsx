@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 
-function LoadingModal({ isLoading, loadingProgress, loadingStatus, queuePosition, queueTotal }) {
+function LoadingModal({ isLoading, loadingProgress, loadingStatus, loadingPhase, queuePosition, queueTotal }) {
   return (
     <AnimatePresence>
       {isLoading && (
@@ -25,9 +25,13 @@ function LoadingModal({ isLoading, loadingProgress, loadingStatus, queuePosition
               <div className="loading-icon">
                 <img src="/Movie.png" alt="" className="icon-sprite" />
               </div>
-              <h3 className="loading-text">Generating Animation...</h3>
+              <h3 className="loading-text">
+                {loadingPhase === "rough" ? "Quick Preview..." : "Generating Animation..."}
+              </h3>
               <p className="loading-subtext">
-                Please wait while we render your code animation
+                {loadingPhase === "rough"
+                  ? "Rendering 480p preview — you'll confirm before full quality"
+                  : "Please wait while we render your code animation"}
               </p>
               <div className="progress-bar-container">
                 <div className="progress-status">

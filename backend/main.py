@@ -178,6 +178,59 @@ app.add_middleware(
 )
 
 
+# ─── config helpers ──────────────────────────────────────────────────────────
+
+_FONT_DISPLAY_NAMES = {
+    "default": "System Monospace", "jetbrains_mono": "JetBrains Mono",
+    "fira_code": "Fira Code", "source_code_pro": "Source Code Pro",
+    "roboto_mono": "Roboto Mono", "ibm_plex_mono": "IBM Plex Mono",
+    "inconsolata": "Inconsolata", "space_mono": "Space Mono",
+    "share_tech_mono": "Share Tech Mono", "pt_mono": "PT Mono",
+    "courier_new": "Courier New", "anonymous_pro": "Anonymous Pro",
+    "pixel_code": "Pixel Code", "vt323": "VT323",
+}
+
+def _build_worker_config(camel: dict, script_path: str, quality: str) -> dict:
+    """Convert camelCase frontend config to snake_case worker config."""
+    return {
+        "script_path":      script_path,
+        "start_line":       camel["startLine"],
+        "end_line":         camel["endLine"],
+        "include_comments": camel["includeComments"],
+        "syntax_colors":    camel.get("syntaxColors", {}),
+        "orientation":      camel.get("orientation", "landscape"),
+        "animation_timing": camel.get("animationTiming", {}),
+        "animation_type":   camel.get("animationType", "slide_left"),
+        "font":             camel.get("font", "default"),
+        "quality":          quality,
+        "line_groups":      camel.get("lineGroups", []),
+    }
+
+def _expand_line_groups(raw_groups: list, start_line: int, end_line: int) -> list[list[int]]:
+    """Expand ALL_REMAINING / SPLIT N group specs into concrete line lists."""
+    shown: set[int] = set()
+    expanded: list[list[int]] = []
+    for grp in raw_groups:
+        if grp == "ALL_REMAINING":
+            remaining = [l for l in range(start_line, end_line + 1) if l not in shown]
+            expanded.append(remaining)
+            shown.update(remaining)
+        elif isinstance(grp, str) and grp.startswith("SPLIT "):
+            n = int(grp.split()[1])
+            remaining = [l for l in range(start_line, end_line + 1) if l not in shown]
+            chunk = max(1, len(remaining) // n)
+            for i in range(0, len(remaining), chunk):
+                sub = remaining[i:i + chunk]
+                if sub:
+                    expanded.append(sub)
+                    shown.update(sub)
+        else:
+            nums = [int(x) for x in (grp.split() if isinstance(grp, str) else grp)]
+            expanded.append(nums)
+            shown.update(nums)
+    return expanded
+
+
 # ─── cache helpers ────────────────────────────────────────────────────────────
 
 def generate_cache_key(file_content: bytes, config_data: dict) -> str:
@@ -336,6 +389,54 @@ async def _update_queue_positions():
 
 # ─── render background task ───────────────────────────────────────────────────
 
+async def _warm_cache(file_bytes: bytes, orig_config: dict, completed_quality: str):
+    """After a successful render, silently pre-render other quality levels."""
+    ext = Path(orig_config.get("scriptPath", "file.py")).suffix
+
+    for quality in ("fast", "standard", "high"):
+        if quality == completed_quality:
+            continue
+        warm_orig = {**orig_config, "quality": quality}
+        cache_key  = generate_cache_key(file_bytes, warm_orig)
+        cached     = CACHE_DIR / f"{cache_key}.mp4"
+        if cached.exists():
+            cached.touch()
+            continue
+
+        task_id   = f"warm_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}_{quality}"
+        warm_path = UPLOADS_DIR / f"warm_{task_id}{ext}"
+        media_dir = RENDERS_DIR / task_id
+        out_name  = f"warm_{task_id}"
+
+        try:
+            warm_path.write_bytes(file_bytes)
+        except Exception as e:
+            print(f"[warm] Could not write temp file: {e}", file=sys.stderr)
+            continue
+
+        worker_cfg = _build_worker_config(warm_orig, str(warm_path), quality)
+        timeout_s  = TIMEOUT_BY_QUALITY.get(quality, 360)
+        worker     = await worker_pool.acquire()
+        job        = {"task_id": task_id, "config": worker_cfg,
+                      "media_dir": str(media_dir), "output_name": out_name}
+        try:
+            result = await asyncio.wait_for(
+                asyncio.to_thread(worker.send_job, job),
+                timeout=float(timeout_s),
+            )
+            if result.get("type") == "success":
+                vpath = Path(result["video_path"])
+                if vpath.exists():
+                    await asyncio.to_thread(shutil.copy, vpath, cached)
+                    print(f"[warm] Cached {quality} ({cache_key})", file=sys.stderr)
+        except Exception as e:
+            print(f"[warm] {quality} failed: {e}", file=sys.stderr)
+        finally:
+            worker_pool.release(worker)
+            warm_path.unlink(missing_ok=True)
+            await asyncio.to_thread(shutil.rmtree, media_dir, ignore_errors=True)
+
+
 async def _do_render(
     task_id: str,
     upload_path: Path,
@@ -344,6 +445,7 @@ async def _do_render(
     timeout: int,
     output_name: str,
     cached_video: Path,
+    original_config: dict = None,
 ):
     # Add to queue and broadcast positions
     async with _render_queue_lock:
@@ -431,6 +533,18 @@ async def _do_render(
     except Exception as e:
         print(f"Warning: could not cache video: {e}", file=sys.stderr)
 
+    # Schedule cache warming for other quality levels (background, non-blocking)
+    if original_config:
+        try:
+            file_bytes = await asyncio.to_thread(upload_path.read_bytes)
+            asyncio.create_task(_warm_cache(
+                file_bytes,
+                original_config,
+                original_config.get("quality", "standard"),
+            ))
+        except Exception as e:
+            print(f"[warm] Setup failed: {e}", file=sys.stderr)
+
     upload_path.unlink(missing_ok=True)
     await asyncio.to_thread(shutil.rmtree, media_dir, ignore_errors=True)
 
@@ -493,6 +607,72 @@ async def progress_stream(task_id: str):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.post("/api/dry-run")
+async def dry_run(file: UploadFile = File(...), config: str = Form(...)):
+    """Analyze what will be rendered without starting a render (< 100 ms)."""
+    try:
+        cfg          = json.loads(config)
+        file_content = await file.read()
+
+        errors = validate_render_config(file_content, cfg)
+        if errors:
+            raise HTTPException(status_code=422, detail={"errors": errors})
+
+        start_line = cfg["startLine"]
+        end_line   = cfg["endLine"]
+        quality    = cfg.get("quality", "standard")
+
+        _QUALITY_LABELS = {
+            "fast":     "480p 60fps",
+            "standard": "720p 60fps",
+            "high":     "1080p 60fps",
+        }
+        _FRAME_RATES = {"fast": 60, "standard": 60, "high": 60}
+
+        timing = cfg.get("animationTiming", {})
+        initial_delay        = max(0.0,  float(timing.get("initialDelay",       1.5)))
+        line_slide_in        = max(0.05, float(timing.get("lineSlideIn",         0.4)))
+        pause_between_groups = max(0.0,  float(timing.get("pauseBetweenGroups", 0.2)))
+        final_pause          = max(0.0,  float(timing.get("finalPause",          2.0)))
+
+        expanded = _expand_line_groups(cfg.get("lineGroups", []), start_line, end_line)
+
+        group_info = []
+        for grp in expanded:
+            dur = len(grp) * line_slide_in + pause_between_groups
+            group_info.append({"lines": grp, "n_lines": len(grp), "duration_s": round(dur, 2)})
+
+        total_anim   = sum(g["duration_s"] for g in group_info)
+        total_dur    = initial_delay + total_anim + final_pause
+        frame_rate   = _FRAME_RATES.get(quality, 60)
+        frame_count  = int(total_dur * frame_rate)
+        all_animated = sorted({ln for g in expanded for ln in g})
+
+        return {
+            "quality":          _QUALITY_LABELS.get(quality, quality),
+            "font":             _FONT_DISPLAY_NAMES.get(cfg.get("font", "default"), cfg.get("font", "default")),
+            "animation_type":   cfg.get("animationType", "slide_left"),
+            "orientation":      cfg.get("orientation", "landscape"),
+            "line_range":       [start_line, end_line],
+            "lines_animated":   all_animated,
+            "n_groups":         len(expanded),
+            "groups":           group_info,
+            "estimated_duration_s":  round(total_dur, 1),
+            "estimated_frames": frame_count,
+            "frame_rate":       frame_rate,
+            "timing": {
+                "initial_delay":        initial_delay,
+                "line_slide_in":        line_slide_in,
+                "pause_between_groups": pause_between_groups,
+                "final_pause":          final_pause,
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/validate")
@@ -559,24 +739,10 @@ async def create_animation(
         async with aiofiles.open(upload_path, "wb") as f:
             await f.write(file_content)
 
-        # Config dict passed directly to the worker (not serialized again)
-        render_config = {
-            "script_path":      str(upload_path),
-            "start_line":       start_line,
-            "end_line":         end_line,
-            "include_comments": include_comments,
-            "syntax_colors":    syntax_colors,
-            "orientation":      orientation,
-            "animation_timing": animation_timing,
-            "animation_type":   animation_type,
-            "font":             font,
-            "quality":          quality,
-            "line_groups":      line_groups,
-        }
-
-        output_name = f"{original_filename}_{start_line}-{end_line}"
-        media_dir   = RENDERS_DIR / task_id
-        timeout     = TIMEOUT_BY_QUALITY.get(quality, 360)
+        render_config = _build_worker_config(config_data, str(upload_path), quality)
+        output_name   = f"{original_filename}_{start_line}-{end_line}"
+        media_dir     = RENDERS_DIR / task_id
+        timeout       = TIMEOUT_BY_QUALITY.get(quality, 360)
 
         _prune_progress_tracking()
         progress_tracking[task_id] = {"progress": 0, "status": "queued", "queue_position": None}
@@ -585,6 +751,7 @@ async def create_animation(
             _do_render,
             task_id, upload_path, render_config, media_dir,
             timeout, output_name, cached_video,
+            original_config=config_data,
         )
 
         return JSONResponse({"success": True, "taskId": task_id, "cached": False})

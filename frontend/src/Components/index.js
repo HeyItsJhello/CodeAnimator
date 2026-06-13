@@ -16,3 +16,5 @@ export { default as VideoCompleteModal } from "./VideoCompleteModal";
 export { default as SubmitSection } from "./SubmitSection";
 export { default as AnimationTypeSelector } from "./AnimationTypeSelector";
 export { default as FontSelector } from "./FontSelector";
+export { default as RoughPreviewModal } from "./RoughPreviewModal";
+export { default as DryRunModal } from "./DryRunModal";
