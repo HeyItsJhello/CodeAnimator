@@ -159,6 +159,8 @@ app.get('/api/progress-stream/:taskId', (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
+  let interval;
+
   const sendSnapshot = () => {
     const data = progress[taskId] || { progress: 0, status: 'queued' };
     res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -168,8 +170,8 @@ app.get('/api/progress-stream/:taskId', (req, res) => {
     }
   };
 
+  interval = setInterval(sendSnapshot, 500);
   sendSnapshot();
-  const interval = setInterval(sendSnapshot, 500);
   req.on('close', () => clearInterval(interval));
 });
 
