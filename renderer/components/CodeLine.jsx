@@ -24,9 +24,9 @@ export function CodeLine({
     { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
   );
 
-  let transform = 'none';
-  let opacity = 1;
-  let displayContent = content;
+  let transform   = 'none';
+  let opacity     = 1;
+  let charLimit   = undefined; // undefined = show all chars
 
   switch (animationType) {
     case 'slide_left': {
@@ -44,13 +44,13 @@ export function CodeLine({
     }
     case 'scale_in':
       transform = `scale(${Math.max(progress, 0.001)})`;
-      opacity = progress;
+      opacity   = progress;
       break;
-    case 'typewriter': {
-      opacity = progress > 0 ? 1 : 0;
-      displayContent = content.slice(0, Math.round(progress * content.length));
+    case 'typewriter':
+      // Full content is always tokenized (colors correct), charLimit clips rendering
+      charLimit = Math.round(progress * content.length);
+      opacity   = progress > 0 ? 1 : 0;
       break;
-    }
     default: {
       const x = interpolate(progress, [0, 1], [-compositionWidth, 0]);
       transform = `translateX(${x}px)`;
@@ -59,7 +59,7 @@ export function CodeLine({
 
   const gutterColor = '#555566';
   const gutterStr   = String(lineNum).padStart(gutterWidth, ' ');
-  const gutterPx    = gutterWidth * gutterCharWidth + 32; // 24px left pad + 8px gap
+  const gutterPx    = gutterWidth * gutterCharWidth + 32;
 
   return (
     <div
@@ -105,10 +105,11 @@ export function CodeLine({
         }}
       >
         <SyntaxTokens
-          content={displayContent}
+          content={content}
           syntaxColors={syntaxColors}
           language={language}
           fontSize={fontSize}
+          charLimit={charLimit}
         />
       </div>
     </div>

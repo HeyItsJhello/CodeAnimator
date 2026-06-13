@@ -1,7 +1,7 @@
 export const QUALITY_DIMS = {
-  fast:     { width: 854,  height: 480,  fps: 24 },
-  standard: { width: 1280, height: 720,  fps: 30 },
-  high:     { width: 1920, height: 1080, fps: 30 },
+  fast:     { width: 1280, height: 720,  fps: 30 },
+  standard: { width: 1920, height: 1080, fps: 60 },
+  high:     { width: 3840, height: 2160, fps: 60 },
 };
 
 export function calculateTotalFrames({ animationTiming, lineGroups, fps }) {
