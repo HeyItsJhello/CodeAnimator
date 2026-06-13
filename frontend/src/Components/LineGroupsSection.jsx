@@ -17,7 +17,7 @@ function LineGroupsSection({
       exit={{ opacity: 0, x: -20 }}
       transition={{ duration: 0.4, delay: 0.3 }}
     >
-      <h2>8. Define Line Groups</h2>
+      <h2>10. Define Line Groups</h2>
       <p className="help-text">
         Enter line numbers for each animation group (space-separated). Leave
         empty and click "Add Group" to show all remaining lines.

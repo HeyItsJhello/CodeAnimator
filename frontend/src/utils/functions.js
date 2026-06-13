@@ -5,7 +5,7 @@ export const parseLineToken = (token) => {
   if (token.includes("-") && !token.match(/^-?\d+$/)) {
     const parts = token.split("-");
 
-    if (parts.length != 2) return [];
+    if (parts.length !== 2) return [];
 
     const start = parseInt(parts[0]);
     const end = parseInt(parts[1]);

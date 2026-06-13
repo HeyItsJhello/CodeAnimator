@@ -3,10 +3,12 @@ import { motion } from "framer-motion";
 function PreviewPanel({
   fileName,
   fileContent,
+  highlightedLines,
   startLine,
   endLine,
   shownLines,
   lineGroupMap,
+  fontFamily,
   onOpenPreviewModal,
 }) {
   const getPreviewLines = () => {
@@ -34,6 +36,12 @@ function PreviewPanel({
       exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
+      <div className="preview-chrome">
+        <span className="chrome-dot red" />
+        <span className="chrome-dot yellow" />
+        <span className="chrome-dot green" />
+        <span className="chrome-label">preview</span>
+      </div>
       <div className="preview-header">
         <div className="preview-header-top">
           <h2>File Preview</h2>
@@ -45,10 +53,14 @@ function PreviewPanel({
             Preview Colors
           </button>
         </div>
-        <span className="preview-filename">{fileName}</span>
+        <span className="preview-filename">
+          <span className="filename-prompt">~/</span>
+          {fileName}
+          <span className="cursor-blink">_</span>
+        </span>
       </div>
       <div className="preview-content">
-        <pre className="code-preview">
+        <pre className="code-preview" style={fontFamily ? { fontFamily } : undefined}>
           {lines.map((line, index) => {
             const lineNum = index + 1;
             const inRange = isLineInRange(lineNum);
@@ -63,7 +75,13 @@ function PreviewPanel({
                 className={`code-line ${inRange ? "in-range" : ""} ${inGroup ? "in-group" : ""}`}
               >
                 <span className="line-number">{paddedLineNum}</span>
-                <span className="line-content">{line || " "}</span>
+                <span className="line-content">
+                  {(highlightedLines[index]?.tokens ?? [{ text: line || " ", color: "#ffffff" }]).map(
+                    (token, tIdx) => (
+                      <span key={tIdx} style={{ color: token.color }}>{token.text}</span>
+                    )
+                  )}
+                </span>
                 <span className="line-group-indicator">{indicatorText}</span>
               </div>
             );
