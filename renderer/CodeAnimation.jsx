@@ -1,4 +1,4 @@
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useCurrentFrame, useVideoConfig, interpolate } from 'remotion';
 import { CodeLine } from './components/CodeLine.jsx';
 import { calculateTotalFrames, QUALITY_DIMS } from './timing.js';
 
@@ -26,6 +26,7 @@ export function CodeAnimation({
   animationTiming = {},
   animationType = 'slide_left',
   font = 'default',
+  language = 'python',
 }) {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
@@ -59,10 +60,37 @@ export function CodeAnimation({
     }
   }
 
-  const LINE_HEIGHT = Math.round(height / 28);
-  const fontSize    = Math.round(LINE_HEIGHT * 0.62);
-  const gutterWidth = String(endLine).length;
-  const fontFamily  = font === 'default' ? 'monospace' : `'${font}', monospace`;
+  const LINE_HEIGHT     = Math.round(height / 28);
+  const fontSize        = Math.round(LINE_HEIGHT * 0.62);
+  const gutterWidth     = String(endLine).length;
+  const gutterCharWidth = fontSize * 0.6; // approximate monospace char width
+  const fontFamily      = font === 'default' ? 'monospace' : `'${font}', monospace`;
+
+  // Scrolling: keep the currently-revealing line visible
+  const TOP_PAD    = LINE_HEIGHT;
+  const BOTTOM_PAD = LINE_HEIGHT;
+  const visibleLines = Math.floor((height - TOP_PAD - BOTTOM_PAD) / LINE_HEIGHT);
+
+  // Find the index of the last line whose animation has started
+  let activeIdx = 0;
+  for (let i = 0; i < timeline.length; i++) {
+    if (timeline[i].startFrame <= frame) activeIdx = i;
+  }
+
+  const needsScroll = timeline.length > visibleLines;
+  let scrollY = 0;
+
+  if (needsScroll && activeIdx >= visibleLines) {
+    const targetScroll = (activeIdx - visibleLines + 2) * LINE_HEIGHT;
+    const prevTarget   = Math.max(0, (activeIdx - 1 - visibleLines + 2) * LINE_HEIGHT);
+    const entry        = timeline[activeIdx];
+    scrollY = interpolate(
+      frame,
+      [entry.startFrame, entry.startFrame + lineFrames],
+      [prevTarget, targetScroll],
+      { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
+    );
+  }
 
   return (
     <div
@@ -76,23 +104,27 @@ export function CodeAnimation({
         overflow: 'hidden',
       }}
     >
-      {timeline.map(({ lineNum, content, startFrame }, i) => (
-        <CodeLine
-          key={lineNum}
-          frame={frame}
-          lineNum={lineNum}
-          content={content}
-          startFrame={startFrame}
-          durationFrames={lineFrames}
-          animationType={animationType}
-          syntaxColors={syntaxColors}
-          index={i}
-          lineHeight={LINE_HEIGHT}
-          fontSize={fontSize}
-          gutterWidth={gutterWidth}
-          compositionWidth={width}
-        />
-      ))}
+      <div style={{ transform: `translateY(${TOP_PAD - scrollY}px)` }}>
+        {timeline.map(({ lineNum, content, startFrame }, i) => (
+          <CodeLine
+            key={lineNum}
+            frame={frame}
+            lineNum={lineNum}
+            content={content}
+            startFrame={startFrame}
+            durationFrames={lineFrames}
+            animationType={animationType}
+            syntaxColors={syntaxColors}
+            index={i}
+            lineHeight={LINE_HEIGHT}
+            fontSize={fontSize}
+            gutterWidth={gutterWidth}
+            gutterCharWidth={gutterCharWidth}
+            compositionWidth={width}
+            language={language}
+          />
+        ))}
+      </div>
     </div>
   );
 }

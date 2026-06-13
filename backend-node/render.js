@@ -46,6 +46,7 @@ export async function renderAnimation({ inputProps, outputName, quality, onProgr
     outputLocation: outputPath,
     inputProps: { ...inputProps, quality },
     concurrency: 2,
+    crf: 10,
     onProgress: ({ progress }) => onProgress(Math.round(progress * 100)),
     overwrite: true,
   });

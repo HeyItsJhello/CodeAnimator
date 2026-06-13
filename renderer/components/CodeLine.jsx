@@ -13,7 +13,9 @@ export function CodeLine({
   lineHeight,
   fontSize,
   gutterWidth,
+  gutterCharWidth,
   compositionWidth,
+  language,
 }) {
   const progress = interpolate(
     frame,
@@ -36,7 +38,7 @@ export function CodeLine({
       opacity = progress;
       break;
     case 'drop_in': {
-      const y = interpolate(progress, [0, 1], [-200, 0]);
+      const y = interpolate(progress, [0, 1], [-lineHeight * 3, 0]);
       transform = `translateY(${y}px)`;
       break;
     }
@@ -55,6 +57,10 @@ export function CodeLine({
     }
   }
 
+  const gutterColor = '#555566';
+  const gutterStr   = String(lineNum).padStart(gutterWidth, ' ');
+  const gutterPx    = gutterWidth * gutterCharWidth + 32; // 24px left pad + 8px gap
+
   return (
     <div
       style={{
@@ -65,21 +71,46 @@ export function CodeLine({
         height: lineHeight,
         display: 'flex',
         alignItems: 'center',
-        paddingLeft: 24,
-        paddingRight: 24,
-        transform,
-        opacity,
         overflow: 'hidden',
-        boxSizing: 'border-box',
       }}
     >
-      <SyntaxTokens
-        lineNum={lineNum}
-        content={displayContent}
-        syntaxColors={syntaxColors}
-        gutterWidth={gutterWidth}
-        fontSize={fontSize}
-      />
+      {/* Gutter — always visible, never animated */}
+      <span
+        style={{
+          display: 'inline-block',
+          width: gutterPx,
+          paddingLeft: 24,
+          paddingRight: 8,
+          flexShrink: 0,
+          color: gutterColor,
+          fontSize,
+          fontVariantNumeric: 'tabular-nums',
+          whiteSpace: 'pre',
+          lineHeight: 1,
+          userSelect: 'none',
+        }}
+      >
+        {gutterStr}
+      </span>
+
+      {/* Code content — animated */}
+      <div
+        style={{
+          transform,
+          opacity,
+          overflow: 'hidden',
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        <SyntaxTokens
+          content={displayContent}
+          syntaxColors={syntaxColors}
+          language={language}
+          fontSize={fontSize}
+        />
+      </div>
     </div>
   );
 }

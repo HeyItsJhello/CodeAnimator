@@ -43,7 +43,6 @@ import {
   SubmitSection,
   AnimationTypeSelector,
   FontSelector,
-  RoughPreviewModal,
   DryRunModal,
 } from "../Components";
 
@@ -106,14 +105,8 @@ function AppPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingStatus, setLoadingStatus] = useState("starting");
-  const [loadingPhase, setLoadingPhase] = useState(null); // "rough" | "full" | null
   const [queuePosition, setQueuePosition] = useState(null);
   const [queueTotal, setQueueTotal] = useState(null);
-
-  // Rough preview state
-  const [roughVideoUrl, setRoughVideoUrl] = useState(null);
-  const [showRoughModal, setShowRoughModal] = useState(false);
-  const roughConfirmRef = useRef(null);
 
   // Dry-run state
   const [dryRunResult, setDryRunResult] = useState(null);
@@ -403,7 +396,6 @@ function AppPage() {
   }, [file, fileName, startLine, endLine, includeComments, orientation, quality,
       lineGroups, syntaxColors, animationTiming, animationType, font]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Form submit handler — two-pass: rough preview → user confirms → full quality
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -411,47 +403,22 @@ function AppPage() {
     if (lineGroups.length === 0) { alert("Please add at least one line group"); return; }
 
     const timingConfig = buildTimingConfig(animationTiming);
-    const baseConfig = {
+    const config = {
       scriptPath: fileName,
-      startLine, endLine, includeComments, orientation,
+      startLine, endLine, includeComments, orientation, quality,
       lineGroups: buildLineGroupsForApi(lineGroups),
       syntaxColors, animationTiming: timingConfig, animationType, font,
     };
 
     try {
-      if (quality !== "fast") {
-        // Phase 1: quick 480p preview
-        setIsLoading(true);
-        setLoadingProgress(0);
-        setLoadingStatus("starting");
-        setLoadingPhase("rough");
-
-        const rough = await runRender({ ...baseConfig, quality: "fast" });
-
-        setIsLoading(false);
-        setRoughVideoUrl(rough.videoUrl);
-        setShowRoughModal(true);
-
-        const confirmed = await new Promise((resolve) => {
-          roughConfirmRef.current = resolve;
-        });
-
-        setShowRoughModal(false);
-        setRoughVideoUrl(null);
-        if (!confirmed) return;
-      }
-
-      // Phase 2 (or only pass for fast quality): full quality render
       setIsLoading(true);
       setLoadingProgress(0);
       setLoadingStatus("starting");
-      setLoadingPhase("full");
 
-      const result = await runRender({ ...baseConfig, quality });
+      const result = await runRender(config);
 
       setIsLoading(false);
       setLoadingProgress(0);
-      setLoadingPhase(null);
       setFromCache(result.cached);
       setCompletedVideoUrl(result.videoUrl);
       setCompletedVideoFilename(result.filename);
@@ -463,7 +430,6 @@ function AppPage() {
       alert(`Error: ${error.message}`);
       setIsLoading(false);
       setLoadingProgress(0);
-      setLoadingPhase(null);
     }
   };
 
@@ -628,7 +594,6 @@ function AppPage() {
           isLoading={isLoading}
           loadingProgress={loadingProgress}
           loadingStatus={loadingStatus}
-          loadingPhase={loadingPhase}
           queuePosition={queuePosition}
           queueTotal={queueTotal}
         />
@@ -667,21 +632,6 @@ function AppPage() {
           onClose={handleCloseVideoModal}
           onDownload={handleDownloadVideo}
           onUploadNew={resetForNewFile}
-        />
-
-        <RoughPreviewModal
-          show={showRoughModal}
-          videoUrl={roughVideoUrl}
-          onConfirm={() => {
-            if (roughConfirmRef.current) roughConfirmRef.current(true);
-            roughConfirmRef.current = null;
-          }}
-          onCancel={() => {
-            if (roughConfirmRef.current) roughConfirmRef.current(false);
-            roughConfirmRef.current = null;
-            setShowRoughModal(false);
-            setRoughVideoUrl(null);
-          }}
         />
 
         <DryRunModal
