@@ -18,17 +18,17 @@ Prism.languages.gdscript = {
 // ── Token → user-color-key mapping ──────────────────────────────────────────
 
 const PRISM_TO_KEY = {
-  keyword:      'keywords',
-  'class-name': 'types',
-  builtin_type: 'types',
-  builtin:      'types',
-  function:     'functions',
-  string:       'strings',
+  keyword:           'keywords',
+  'class-name':      'types',
+  builtin_type:      'types',
+  builtin:           'types',
+  function:          'functions',
+  string:            'strings',
   'template-string': 'strings',
-  number:       'numbers',
-  comment:      'comments',
-  decorator:    'decorators',
-  node_path:    'types',
+  number:            'numbers',
+  comment:           'comments',
+  decorator:         'decorators',
+  node_path:         'types',
 };
 
 const DEFAULTS = {
@@ -52,23 +52,36 @@ function resolveColor(types, userColors) {
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
+//
+// charLimit: if set, only the first N characters are rendered (typewriter mode).
+// The full content is always tokenized so colors are correct even for partial chars.
 
-export function SyntaxTokens({ content, syntaxColors, language = 'python', fontSize }) {
+export function SyntaxTokens({ content, syntaxColors, language = 'python', fontSize, charLimit }) {
   const lang = Prism.languages[language] ? language : 'python';
 
   return (
-    <span style={{ display: 'inline', whiteSpace: 'pre', fontSize, lineHeight: 1 }}>
-      <Highlight code={content || ''} language={lang} theme={{ plain: {}, styles: [] }}>
-        {({ tokens, getTokenProps }) =>
-          (tokens[0] || []).map((token, i) => (
-            <span
-              key={i}
-              {...getTokenProps({ token })}
-              style={{ color: resolveColor(token.types, syntaxColors) }}
-            />
-          ))
-        }
-      </Highlight>
-    </span>
+    <Highlight code={content || ''} language={lang} theme={{ plain: {}, styles: [] }}>
+      {({ tokens }) => {
+        const line = tokens[0] || [];
+        let remaining = charLimit !== undefined ? charLimit : Infinity;
+
+        return (
+          <span style={{ display: 'inline', whiteSpace: 'pre', fontSize, lineHeight: 1 }}>
+            {line.map((token, i) => {
+              if (remaining <= 0) return null;
+              const text = charLimit !== undefined
+                ? token.content.slice(0, remaining)
+                : token.content;
+              remaining -= token.content.length;
+              return (
+                <span key={i} style={{ color: resolveColor(token.types, syntaxColors) }}>
+                  {text}
+                </span>
+              );
+            })}
+          </span>
+        );
+      }}
+    </Highlight>
   );
 }

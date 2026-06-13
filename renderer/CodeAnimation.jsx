@@ -16,6 +16,9 @@ export async function calculateMetadata({ props }) {
   };
 }
 
+// Minimum font size before we give up scaling and start scrolling instead
+const MIN_FONT_SIZE = 11;
+
 export function CodeAnimation({
   code = '',
   startLine = 1,
@@ -43,7 +46,7 @@ export function CodeAnimation({
 
   const codeLines = code.split('\n').slice(startLine - 1, endLine);
 
-  // Build flat timeline: one entry per visible line with its startFrame
+  // Build flat timeline
   const timeline = [];
   let currentFrame = initialFrames;
 
@@ -60,36 +63,42 @@ export function CodeAnimation({
     }
   }
 
-  const LINE_HEIGHT     = Math.round(height / 28);
+  const V_PAD          = Math.round(height * 0.03); // vertical padding top+bottom
+  const availableH     = height - V_PAD * 2;
+  const naturalLH      = Math.round(height / 28);   // ideal line height at natural size
+  const MIN_LH         = Math.ceil(MIN_FONT_SIZE / 0.62);
+
+  // Scale down to fit all lines; never exceed natural size; scroll if too small
+  const fittedLH       = timeline.length > 0
+    ? Math.floor(availableH / timeline.length)
+    : naturalLH;
+  const LINE_HEIGHT    = Math.max(MIN_LH, Math.min(fittedLH, naturalLH));
+  const shouldScroll   = fittedLH < MIN_LH;
+
   const fontSize        = Math.round(LINE_HEIGHT * 0.62);
   const gutterWidth     = String(endLine).length;
-  const gutterCharWidth = fontSize * 0.6; // approximate monospace char width
+  const gutterCharWidth = fontSize * 0.6;
   const fontFamily      = font === 'default' ? 'monospace' : `'${font}', monospace`;
 
-  // Scrolling: keep the currently-revealing line visible
-  const TOP_PAD    = LINE_HEIGHT;
-  const BOTTOM_PAD = LINE_HEIGHT;
-  const visibleLines = Math.floor((height - TOP_PAD - BOTTOM_PAD) / LINE_HEIGHT);
-
-  // Find the index of the last line whose animation has started
-  let activeIdx = 0;
-  for (let i = 0; i < timeline.length; i++) {
-    if (timeline[i].startFrame <= frame) activeIdx = i;
-  }
-
-  const needsScroll = timeline.length > visibleLines;
+  // Scrolling (only when scaled-down still doesn't fit)
   let scrollY = 0;
-
-  if (needsScroll && activeIdx >= visibleLines) {
-    const targetScroll = (activeIdx - visibleLines + 2) * LINE_HEIGHT;
-    const prevTarget   = Math.max(0, (activeIdx - 1 - visibleLines + 2) * LINE_HEIGHT);
-    const entry        = timeline[activeIdx];
-    scrollY = interpolate(
-      frame,
-      [entry.startFrame, entry.startFrame + lineFrames],
-      [prevTarget, targetScroll],
-      { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-    );
+  if (shouldScroll) {
+    const visibleLines = Math.floor(availableH / LINE_HEIGHT);
+    let activeIdx = 0;
+    for (let i = 0; i < timeline.length; i++) {
+      if (timeline[i].startFrame <= frame) activeIdx = i;
+    }
+    if (activeIdx >= visibleLines) {
+      const targetScroll = (activeIdx - visibleLines + 2) * LINE_HEIGHT;
+      const prevTarget   = Math.max(0, (activeIdx - 1 - visibleLines + 2) * LINE_HEIGHT);
+      const entry        = timeline[activeIdx];
+      scrollY = interpolate(
+        frame,
+        [entry.startFrame, entry.startFrame + lineFrames],
+        [prevTarget, targetScroll],
+        { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
+      );
+    }
   }
 
   return (
@@ -104,7 +113,7 @@ export function CodeAnimation({
         overflow: 'hidden',
       }}
     >
-      <div style={{ transform: `translateY(${TOP_PAD - scrollY}px)` }}>
+      <div style={{ transform: `translateY(${V_PAD - scrollY}px)` }}>
         {timeline.map(({ lineNum, content, startFrame }, i) => (
           <CodeLine
             key={lineNum}

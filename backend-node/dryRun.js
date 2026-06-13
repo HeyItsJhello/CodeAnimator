@@ -1,4 +1,4 @@
-const FPS_BY_QUALITY = { fast: 24, standard: 30, high: 30 };
+const FPS_BY_QUALITY = { fast: 30, standard: 60, high: 60 };
 
 export function computeDryRun({ lineGroups, animationTiming, quality = 'standard' }) {
   const fps = FPS_BY_QUALITY[quality] || 30;

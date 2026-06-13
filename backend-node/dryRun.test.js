@@ -12,20 +12,20 @@ test('computes frames and duration from timing config', () => {
     },
     quality: 'standard',
   });
-  // 30 + 3*24 + 18 + 2*24 + 90 = 258
-  expect(result.fps).toBe(30);
-  expect(result.totalFrames).toBe(258);
+  // fps=60: 60 + 3*48 + 36 + 2*48 + 180 = 60+144+36+96+180 = 516
+  expect(result.fps).toBe(60);
+  expect(result.totalFrames).toBe(516);
   expect(result.estimatedDuration).toBeCloseTo(8.6, 0);
   expect(result.groups).toHaveLength(2);
   expect(result.groups[0].lineCount).toBe(3);
 });
 
-test('fast quality uses 24 fps', () => {
+test('fast quality uses 30 fps', () => {
   const result = computeDryRun({
     lineGroups: [{ lines: [1], lineCount: 1 }],
     animationTiming: { initialDelay: 0, lineSlideIn: 1, pauseBetweenGroups: 0, finalPause: 0 },
     quality: 'fast',
   });
-  expect(result.fps).toBe(24);
-  expect(result.totalFrames).toBe(24);
+  expect(result.fps).toBe(30);
+  expect(result.totalFrames).toBe(30);
 });
