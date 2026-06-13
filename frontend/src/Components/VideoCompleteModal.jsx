@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 function VideoCompleteModal({
   show,
   completedVideoUrl,
-  fromCache,
   onClose,
   onDownload,
   onUploadNew,
@@ -28,9 +27,6 @@ function VideoCompleteModal({
           >
             <div className="upload-another-header">
               <span className="upload-another-title">Video Complete!</span>
-              {fromCache && (
-                <span className="cache-badge">CACHED</span>
-              )}
             </div>
             <div className="upload-another-body">
               {completedVideoUrl && (

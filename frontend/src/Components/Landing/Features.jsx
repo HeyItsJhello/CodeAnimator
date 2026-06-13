@@ -9,7 +9,7 @@ const features = [
   {
     icon: "/Paint.png",
     title: "Syntax Highlighting",
-    description: "Beautiful, customizable syntax colors for 12+ programming languages including Python, JS, Go, Rust."
+    description: "Beautiful, customizable syntax colors for 20+ programming languages including Python, JS, Go, Rust, GDScript, and more."
   },
   {
     icon: "/Chain.png",
@@ -18,8 +18,8 @@ const features = [
   },
   {
     icon: "/Movie.png",
-    title: "1080p60 Output",
-    description: "Professional quality videos rendered with Manim. Crisp text, smooth animations, no artifacts."
+    title: "Up to 4K60 Output",
+    description: "Professional quality videos up to 4K60. Crisp text, smooth animations, lossless output."
   },
   {
     icon: "/Shield.png",

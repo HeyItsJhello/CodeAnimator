@@ -12,10 +12,10 @@ test('computes frames and duration from timing config', () => {
     },
     quality: 'standard',
   });
-  // fps=60: 60 + 3*48 + 36 + 2*48 + 180 = 60+144+36+96+180 = 516
+  // fps=60: 60 + 48 + 36 + 48 + 180 = 372 (groups animate simultaneously, not per-line)
   expect(result.fps).toBe(60);
-  expect(result.totalFrames).toBe(516);
-  expect(result.estimatedDuration).toBeCloseTo(8.6, 0);
+  expect(result.totalFrames).toBe(372);
+  expect(result.estimatedDuration).toBeCloseTo(6.2, 0);
   expect(result.groups).toHaveLength(2);
   expect(result.groups[0].lineCount).toBe(3);
 });

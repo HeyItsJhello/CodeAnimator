@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { QUALITY_OPTIONS } from "../data/constants";
 
 function QualityPreset({ quality, onQualityChange }) {
   return (
@@ -14,30 +15,17 @@ function QualityPreset({ quality, onQualityChange }) {
         Choose rendering quality. Lower quality renders faster.
       </p>
       <div className="quality-toggle">
-        <button
-          type="button"
-          className={`quality-btn ${quality === "fast" ? "active" : ""}`}
-          onClick={() => onQualityChange("fast")}
-        >
-          <span className="quality-label">Fast</span>
-          <span className="quality-size">480p @ 60fps</span>
-        </button>
-        <button
-          type="button"
-          className={`quality-btn ${quality === "standard" ? "active" : ""}`}
-          onClick={() => onQualityChange("standard")}
-        >
-          <span className="quality-label">Standard</span>
-          <span className="quality-size">720p @ 60fps</span>
-        </button>
-        <button
-          type="button"
-          className={`quality-btn ${quality === "high" ? "active" : ""}`}
-          onClick={() => onQualityChange("high")}
-        >
-          <span className="quality-label">High</span>
-          <span className="quality-size">1080p @ 60fps</span>
-        </button>
+        {QUALITY_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            className={`quality-btn ${quality === opt.value ? "active" : ""}`}
+            onClick={() => onQualityChange(opt.value)}
+          >
+            <span className="quality-label">{opt.label}</span>
+            <span className="quality-size">{opt.size}</span>
+          </button>
+        ))}
       </div>
     </motion.div>
   );

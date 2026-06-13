@@ -14,8 +14,8 @@ test('sums initialDelay + per-group lines + pauses + finalPause', () => {
     ],
     fps: 30,
   });
-  // 30 + (3*24) + 18 + (2*24) + 90 = 30+72+18+48+90 = 258
-  expect(result).toBe(258);
+  // 30 + 24 + 18 + 24 + 90 = 186 (groups animate simultaneously, not per-line)
+  expect(result).toBe(186);
 });
 
 test('enforces minimum of fps frames', () => {
@@ -33,6 +33,6 @@ test('single group has no inter-group pause', () => {
     lineGroups: [{ lines: [1, 2], lineCount: 2 }],
     fps: 30,
   });
-  // 0 + 2*30 + 0 = 60 (no inter-group pause, no finalPause)
-  expect(result).toBe(60);
+  // 0 + 30 + 0 = 30 (one group, lineSlideIn=1s, fps=30; clamped to min=fps)
+  expect(result).toBe(30);
 });

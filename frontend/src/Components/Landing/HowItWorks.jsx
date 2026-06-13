@@ -16,7 +16,7 @@ const steps = [
   {
     number: "03",
     title: "Download Your Video",
-    description: "Click generate and get a professional 1080p60 MP4 video in seconds. Ready to share anywhere.",
+    description: "Click generate and get a professional up-to-4K60 MP4 video in seconds. Ready to share anywhere.",
     icon: "/Movie.png"
   }
 ]

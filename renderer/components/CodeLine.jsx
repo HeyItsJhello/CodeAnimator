@@ -59,7 +59,10 @@ export function CodeLine({
 
   const gutterColor = '#555566';
   const gutterStr   = String(lineNum).padStart(gutterWidth, ' ');
-  const gutterPx    = gutterWidth * gutterCharWidth + 32;
+  // Padding scales with font size so the gap looks right at every resolution
+  const gutterPadL  = Math.round(fontSize * 1.2);
+  const gutterPadR  = Math.round(fontSize * 2.5);
+  const gutterPx    = gutterWidth * gutterCharWidth + gutterPadL + gutterPadR;
 
   return (
     <div
@@ -79,8 +82,8 @@ export function CodeLine({
         style={{
           display: 'inline-block',
           width: gutterPx,
-          paddingLeft: 24,
-          paddingRight: 8,
+          paddingLeft: gutterPadL,
+          paddingRight: gutterPadR,
           flexShrink: 0,
           color: gutterColor,
           fontSize,
