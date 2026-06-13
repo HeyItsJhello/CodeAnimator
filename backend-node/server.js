@@ -113,6 +113,7 @@ app.post('/api/animate', upload.single('file'), async (req, res) => {
       animationType:   config.animationType   || 'slide_left',
       font:            config.font            || 'default',
       orientation:     config.orientation     || 'landscape',
+      language:        detectLanguage(req.file.originalname),
     };
 
     setProgress(taskId, { progress: 5, status: 'rendering' });
@@ -191,6 +192,18 @@ app.get('/api/download/:videoId', (req, res) => {
 });
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
+
+const EXT_TO_LANG = {
+  py: 'python', gd: 'gdscript', js: 'javascript', ts: 'typescript',
+  jsx: 'jsx', tsx: 'tsx', rs: 'rust', go: 'go', cpp: 'cpp', c: 'c',
+  java: 'java', cs: 'csharp', rb: 'ruby', php: 'php', swift: 'swift',
+  kt: 'kotlin', css: 'css', html: 'html', json: 'json', sh: 'bash',
+};
+
+function detectLanguage(filename) {
+  const ext = (filename || '').split('.').pop().toLowerCase();
+  return EXT_TO_LANG[ext] || 'python';
+}
 
 function buildStructuredGroups(lineGroupStrings, startLine, endLine) {
   const consumed = new Set();
