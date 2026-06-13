@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 
-function LoadingModal({ isLoading, loadingProgress, loadingStatus }) {
+function LoadingModal({ isLoading, loadingProgress, loadingStatus, queuePosition, queueTotal }) {
   return (
     <AnimatePresence>
       {isLoading && (
@@ -31,9 +31,13 @@ function LoadingModal({ isLoading, loadingProgress, loadingStatus }) {
               </p>
               <div className="progress-bar-container">
                 <div className="progress-status">
+                  {loadingStatus === "queued" && (
+                    queuePosition
+                      ? `Queued — position ${queuePosition}${queueTotal ? ` of ${queueTotal}` : ""}`
+                      : "Waiting for available slot..."
+                  )}
                   {loadingStatus === "starting" && "Starting..."}
-                  {loadingStatus === "generating SVGs" &&
-                    "Generating text elements..."}
+                  {loadingStatus === "generating SVGs" && "Generating text elements..."}
                   {loadingStatus === "rendering frames" && "Rendering frames..."}
                   {loadingStatus === "compiling video" && "Compiling video..."}
                   {loadingStatus === "finalizing" && "Finalizing..."}

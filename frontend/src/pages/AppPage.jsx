@@ -104,6 +104,8 @@ function AppPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingStatus, setLoadingStatus] = useState("starting");
+  const [queuePosition, setQueuePosition] = useState(null);
+  const [queueTotal, setQueueTotal] = useState(null);
 
   // Modal state
   const [showSplitModal, setShowSplitModal] = useState(false);
@@ -115,6 +117,7 @@ function AppPage() {
   // Video state
   const [completedVideoUrl, setCompletedVideoUrl] = useState(null);
   const [completedVideoFilename, setCompletedVideoFilename] = useState("");
+  const [fromCache, setFromCache] = useState(false);
 
   // API state
   const [apiStatus, setApiStatus] = useState("awake");
@@ -358,8 +361,17 @@ function AppPage() {
             setLoadingProgress(data.progress ?? 0);
             setLoadingStatus(data.status || "processing");
 
+            if (data.status === "queued") {
+              setQueuePosition(data.queue_position ?? null);
+              setQueueTotal(data.queue_total ?? null);
+            } else {
+              setQueuePosition(null);
+              setQueueTotal(null);
+            }
+
             if (data.status === "complete") {
               es.close();
+              setFromCache(!!data.cached);
               setCompletedVideoUrl(`${API_URL}/api/stream/${data.videoId}`);
               setCompletedVideoFilename(data.filename);
               window._videoDownloadUrl = `${API_URL}/api/download/${data.videoId}`;
@@ -396,15 +408,27 @@ function AppPage() {
   // Memoized values
   const fileExtension = fileName ? "." + fileName.split(".").pop() : "";
 
+  // Debounced inputs for the tokenizer — avoids re-tokenizing on every keystroke
+  const [debouncedContent, setDebouncedContent] = useState(fileContent);
+  const [debouncedColors, setDebouncedColors]   = useState(syntaxColors);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedContent(fileContent), 150);
+    return () => clearTimeout(t);
+  }, [fileContent]);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedColors(syntaxColors), 150);
+    return () => clearTimeout(t);
+  }, [syntaxColors]);
+
   const highlightedLines = useMemo(() => {
-    if (!fileContent) return [];
-    const lines = fileContent.split("\n");
+    if (!debouncedContent) return [];
+    const lines    = debouncedContent.split("\n");
     const patterns = getTokenPatterns(fileExtension);
     return lines.map((line, idx) => ({
       lineNum: idx + 1,
-      tokens: tokenizeLine(line, patterns, syntaxColors),
+      tokens: tokenizeLine(line, patterns, debouncedColors),
     }));
-  }, [fileContent, fileExtension, syntaxColors]);
+  }, [debouncedContent, fileExtension, debouncedColors]);
 
   const lineGroupMap = useMemo(() => {
     return calculateLineGroupMap(lineGroups, startLine, endLine);
@@ -542,6 +566,8 @@ function AppPage() {
           isLoading={isLoading}
           loadingProgress={loadingProgress}
           loadingStatus={loadingStatus}
+          queuePosition={queuePosition}
+          queueTotal={queueTotal}
         />
 
         <SplitModal
@@ -574,6 +600,7 @@ function AppPage() {
         <VideoCompleteModal
           show={showUploadAnotherModal}
           completedVideoUrl={completedVideoUrl}
+          fromCache={fromCache}
           onClose={handleCloseVideoModal}
           onDownload={handleDownloadVideo}
           onUploadNew={resetForNewFile}

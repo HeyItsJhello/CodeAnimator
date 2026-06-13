@@ -1930,6 +1930,19 @@ h3 {
     display: flex;
     justify-content: center;
     align-items: center;
+    gap: 0.75rem;
+}
+
+.cache-badge {
+    background: #e63946;
+    color: white;
+    font-family: "Jersey 15", monospace;
+    font-size: 0.7rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    padding: 0.2rem 0.5rem;
+    border: 2px solid #fff;
+    box-shadow: 2px 2px 0 #333;
 }
 
 .upload-another-title {

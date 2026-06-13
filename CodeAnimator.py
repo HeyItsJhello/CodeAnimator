@@ -60,10 +60,15 @@ else:
 class CodeAnimation(Scene):
 
     def _load_config(self):
+        # Worker path: config was injected directly to avoid stdin conflicts
+        if hasattr(self.__class__, "_worker_config"):
+            cfg = dict(self.__class__._worker_config)
+            cfg["line_groups"] = self._parse_line_groups(cfg.get("line_groups", []))
+            return cfg
+
         if not sys.stdin.isatty():
             try:
                 anim_config = json.load(sys.stdin)
-                print("DEBUG: Config loaded from stdin")
                 anim_config["line_groups"] = self._parse_line_groups(
                     anim_config.get("line_groups", [])
                 )
@@ -75,7 +80,6 @@ class CodeAnimation(Scene):
         try:
             with open("/tmp/anim_config.txt") as f:
                 content = f.read()
-            print("DEBUG: Config loaded from file (fallback)")
             return self._parse_legacy_config(content)
         except FileNotFoundError:
             print("ERROR: Config file not found at /tmp/anim_config.txt")

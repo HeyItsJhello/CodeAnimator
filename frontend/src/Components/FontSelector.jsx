@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FONT_OPTIONS } from "../data/constants";
+import { ensureFontsLoaded } from "../utils/fonts";
 
 const CATEGORIES = [
   { key: "system",    label: "System"    },
@@ -50,7 +51,10 @@ function FontSelector({ font, onFontChange }) {
         <button
           type="button"
           className={`font-trigger ${open ? "open" : ""}`}
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => {
+            if (!open) ensureFontsLoaded(FONT_OPTIONS.map((f) => f.value));
+            setOpen((o) => !o);
+          }}
         >
           <span className="font-trigger-preview" style={{ fontFamily: current.family }}>
             {current.label}
