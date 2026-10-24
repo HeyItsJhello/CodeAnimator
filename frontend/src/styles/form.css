@@ -18,10 +18,7 @@
     line-height: 1;
     background: #ff5e5b;
     color: white;
-    border: 3px solid #333;
-    box-shadow:
-        3px 3px 0 #333,
-        5px 5px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     font-size: 1rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
@@ -34,18 +31,8 @@
 
 .support-btn:hover {
     background: #ff4744;
-    transform: translate(-2px, -2px);
-    box-shadow:
-        5px 5px 0 #333,
-        7px 7px 0 rgba(0, 0, 0, 0.1);
 }
 
-.support-btn:active {
-    transform: translate(3px, 3px);
-    box-shadow:
-        0 0 0 #333,
-        2px 2px 0 rgba(0, 0, 0, 0.1);
-}
 
 /* Feedback Button */
 .feedback-btn {
@@ -53,10 +40,7 @@
     padding: 0.6rem 1.2rem;
     background: #3498db;
     color: white;
-    border: 3px solid #333;
-    box-shadow:
-        3px 3px 0 #333,
-        5px 5px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     font-size: 1rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
@@ -70,24 +54,14 @@
 
 .feedback-btn:hover {
     background: #2980b9;
-    transform: translate(-2px, -2px);
-    box-shadow:
-        5px 5px 0 #333,
-        7px 7px 0 rgba(0, 0, 0, 0.1);
 }
 
-.feedback-btn:active {
-    transform: translate(3px, 3px);
-    box-shadow:
-        0 0 0 #333,
-        2px 2px 0 rgba(0, 0, 0, 0.1);
-}
 
 .form-section {
     margin-bottom: 2.5rem;
     padding-bottom: 2rem;
     border-bottom: 2px dashed #ddd;
-    border-left: 3px solid transparent;
+    border-left: 2px solid transparent;
     padding-left: 0.75rem;
     margin-left: -0.75rem;
     transition: border-left-color 0.25s ease;
@@ -145,10 +119,7 @@ h3 {
     padding: 1rem 1.5rem;
     background: #e63946;
     color: white;
-    border: 4px solid #333;
-    box-shadow:
-        4px 4px 0 #333,
-        8px 8px 0 rgba(0, 0, 0, 0.15);
+    border: 2px solid #333;
     cursor: pointer;
     text-align: center;
     transition: all 0.1s ease;
@@ -158,36 +129,10 @@ h3 {
     letter-spacing: 1px;
 }
 
-.file-upload-label::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -80%;
-    width: 60%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
-    transform: skewX(-15deg);
-    pointer-events: none;
-}
-
-.file-upload-label:hover::after {
-    animation: shimmer 0.65s ease forwards;
-}
-
 .file-upload-label:hover {
     background: #d62839;
-    transform: translate(-2px, -2px);
-    box-shadow:
-        6px 6px 0 #333,
-        10px 10px 0 rgba(0, 0, 0, 0.15);
 }
 
-.file-upload-label:active {
-    transform: translate(4px, 4px);
-    box-shadow:
-        0 0 0 #333,
-        4px 4px 0 rgba(0, 0, 0, 0.15);
-}
 
 .file-info {
     color: #2a9d8f;
@@ -223,20 +168,18 @@ h3 {
 
 .input-group input[type="number"] {
     padding: 0.75rem;
-    border: 3px solid #333;
+    border: 2px solid #333;
     background: white;
     color: #333;
     font-size: 1.15rem;
     font-family: "Jersey 15", monospace;
     font-weight: bold;
     transition: all 0.2s ease;
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .input-group input[type="number"]:focus {
     outline: none;
     border-color: #e63946;
-    box-shadow: 3px 3px 0 rgba(230, 57, 70, 0.2);
 }
 
 /* Checkbox */
@@ -253,7 +196,7 @@ h3 {
     margin-right: 0.75rem;
     cursor: pointer;
     accent-color: #e63946;
-    border: 3px solid #333;
+    border: 2px solid #333;
 }
 
 .checkbox-label span {
@@ -287,30 +230,25 @@ h3 {
 .line-group-input input[type="text"] {
     flex: 1;
     padding: 0.75rem;
-    border: 3px solid #333;
+    border: 2px solid #333;
     background: white;
     color: #333;
     font-size: 1.1rem;
     font-family: "Jersey 15", monospace;
     font-weight: bold;
     transition: all 0.2s ease;
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .line-group-input input[type="text"]:focus {
     outline: none;
     border-color: #e63946;
-    box-shadow: 3px 3px 0 rgba(230, 57, 70, 0.2);
 }
 
 .btn-add {
     padding: 0.75rem 1.5rem;
     background: #2a9d8f;
     color: white;
-    border: 3px solid #333;
-    box-shadow:
-        4px 4px 0 #333,
-        6px 6px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     font-size: 1.05rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
@@ -323,27 +261,14 @@ h3 {
 
 .btn-add:hover {
     background: #238276;
-    transform: translate(-2px, -2px);
-    box-shadow:
-        6px 6px 0 #333,
-        8px 8px 0 rgba(0, 0, 0, 0.1);
 }
 
-.btn-add:active {
-    transform: translate(4px, 4px);
-    box-shadow:
-        0 0 0 #333,
-        2px 2px 0 rgba(0, 0, 0, 0.1);
-}
 
 .btn-split {
     padding: 0.75rem 1.5rem;
     background: #f4a261;
     color: white;
-    border: 3px solid #333;
-    box-shadow:
-        4px 4px 0 #333,
-        6px 6px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     font-size: 1.05rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
@@ -356,23 +281,13 @@ h3 {
 
 .btn-split:hover {
     background: #e08d4a;
-    transform: translate(-2px, -2px);
-    box-shadow:
-        6px 6px 0 #333,
-        8px 8px 0 rgba(0, 0, 0, 0.1);
 }
 
-.btn-split:active {
-    transform: translate(4px, 4px);
-    box-shadow:
-        0 0 0 #333,
-        2px 2px 0 rgba(0, 0, 0, 0.1);
-}
 
 /* Line Groups List */
 .line-groups-list {
     background: #fafafa;
-    border: 3px solid #e0e0e0;
+    border: 2px solid #e0e0e0;
     padding: 1.5rem;
 }
 
@@ -381,9 +296,8 @@ h3 {
     align-items: center;
     padding: 1rem;
     background: white;
-    border: 3px solid #333;
+    border: 2px solid #333;
     margin-bottom: 0.75rem;
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .line-group-item:last-child {
@@ -415,10 +329,7 @@ h3 {
     padding: 0.5rem 0.75rem;
     background: #e63946;
     color: white;
-    border: 3px solid #333;
-    box-shadow:
-        3px 3px 0 #333,
-        4px 4px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     cursor: pointer;
     transition: all 0.1s ease;
     font-size: 1.1rem;
@@ -429,18 +340,8 @@ h3 {
 
 .btn-remove:hover {
     background: #d62839;
-    transform: translate(-1px, -1px);
-    box-shadow:
-        4px 4px 0 #333,
-        5px 5px 0 rgba(0, 0, 0, 0.1);
 }
 
-.btn-remove:active {
-    transform: translate(3px, 3px);
-    box-shadow:
-        0 0 0 #333,
-        1px 1px 0 rgba(0, 0, 0, 0.1);
-}
 
 /* Submit Button */
 .btn-submit {
@@ -449,10 +350,7 @@ h3 {
     padding: 1.25rem;
     background: #e63946;
     color: white;
-    border: 4px solid #333;
-    box-shadow:
-        6px 6px 0 #333,
-        10px 10px 0 rgba(0, 0, 0, 0.15);
+    border: 2px solid #333;
     font-size: 1.3rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
@@ -464,7 +362,7 @@ h3 {
 }
 
 .btn-submit:not(:disabled) {
-    animation: pulse-submit 2.5s ease-in-out infinite;
+    box-shadow: 3px 3px 0 var(--shadow-ink);
 }
 
 .btn-submit::before,
@@ -500,17 +398,11 @@ h3 {
 
 .btn-submit:hover {
     background: #d62839;
-    transform: translate(-2px, -2px);
-    box-shadow:
-        8px 8px 0 #333,
-        12px 12px 0 rgba(0, 0, 0, 0.15);
 }
 
-.btn-submit:active {
-    transform: translate(6px, 6px);
-    box-shadow:
-        0 0 0 #333,
-        4px 4px 0 rgba(0, 0, 0, 0.15);
+.btn-submit:not(:disabled):active {
+    transform: translate(3px, 3px);
+    box-shadow: none;
 }
 
 .btn-submit:disabled {
@@ -536,10 +428,7 @@ h3 {
     padding: 0.5rem 1rem;
     background: #e63946;
     color: white;
-    border: 3px solid #333;
-    box-shadow:
-        3px 3px 0 #333,
-        4px 4px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     font-size: 0.9rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
@@ -551,16 +440,6 @@ h3 {
 
 .btn-clear-all:hover {
     background: #d62839;
-    transform: translate(-1px, -1px);
-    box-shadow:
-        4px 4px 0 #333,
-        5px 5px 0 rgba(0, 0, 0, 0.1);
 }
 
-.btn-clear-all:active {
-    transform: translate(3px, 3px);
-    box-shadow:
-        0 0 0 #333,
-        1px 1px 0 rgba(0, 0, 0, 0.1);
-}
 

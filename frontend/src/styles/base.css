@@ -7,39 +7,8 @@
     font-style: normal;
 }
 
-@keyframes shimmer {
-    from { left: -80%; }
-    to   { left: 160%; }
-}
-
-@keyframes blink {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0; }
-}
-
-@keyframes glitch {
-    0%   { text-shadow: 3px 3px 0 rgba(0,0,0,0.12); }
-    15%  { text-shadow: -4px 2px 0 rgba(42,157,143,0.65), 5px -1px 0 rgba(230,57,70,0.5); }
-    30%  { text-shadow: 4px -3px 0 rgba(230,57,70,0.6), -3px 1px 0 rgba(42,157,143,0.45); }
-    50%  { text-shadow: -3px 3px 0 rgba(230,57,70,0.45), 5px 2px 0 rgba(42,157,143,0.55); }
-    70%  { text-shadow: 5px -1px 0 rgba(42,157,143,0.5), -4px 2px 0 rgba(230,57,70,0.4); }
-    85%  { text-shadow: -2px -2px 0 rgba(230,57,70,0.35); }
-    100% { text-shadow: 3px 3px 0 rgba(0,0,0,0.12); }
-}
-
-@keyframes pulse-submit {
-    0%, 100% { box-shadow: 6px 6px 0 #333, 10px 10px 0 rgba(0,0,0,0.15); }
-    50%       { box-shadow: 6px 6px 0 #333, 10px 10px 0 rgba(0,0,0,0.15), 0 0 28px rgba(230,57,70,0.25); }
-}
-
-@keyframes scanlines-move {
-    from { background-position: 0 0; }
-    to   { background-position: 0 4px; }
-}
-
-@keyframes grid-drift {
-    from { background-position: 0 0; }
-    to   { background-position: 20px 20px; }
+:root {
+    --shadow-ink: #333;
 }
 
 @keyframes bracket-left {
@@ -69,26 +38,12 @@ body,
     width: 100%;
 }
 
-.app::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 9998;
-    background: radial-gradient(
-        ellipse 130% 90% at 50% 50%,
-        transparent 45%,
-        rgba(0, 0, 0, 0.18) 100%
-    );
-}
-
 .app {
     min-height: 100vh;
     height: 100%;
     background: #f0f0f0;
     background-image: radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px);
     background-size: 20px 20px;
-    animation: grid-drift 14s linear infinite;
     padding: 1rem;
     font-family: "Jersey 15", "Courier New", monospace;
     font-weight: bold;
@@ -125,10 +80,7 @@ body,
 
 .container {
     background: white;
-    border: 4px solid #333;
-    box-shadow:
-        4px 4px 0 #333,
-        8px 8px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     padding: 2rem;
     overflow-y: auto;
     position: relative;
@@ -153,20 +105,6 @@ h1 {
     text-align: center;
     letter-spacing: 2px;
     font-weight: bold;
-    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.12);
-    cursor: default;
-    transition: letter-spacing 0.15s ease;
-}
-
-h1:hover {
-    animation: glitch 0.45s steps(1, end) forwards;
-    letter-spacing: 3px;
-}
-
-.cursor-blink {
-    color: #e63946;
-    animation: blink 1s step-end infinite;
-    margin-left: 2px;
 }
 
 .subtitle {

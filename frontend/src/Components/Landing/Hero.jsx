@@ -46,10 +46,10 @@ function Hero() {
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           <div className="hero__buttons-row">
-            <Link to="/downloads" className="retro-btn retro-btn--primary">
+            <Link to="/downloads" className="pixel-btn pixel-btn--primary">
               Downloads →
             </Link>
-            <Link to="/" className="retro-btn retro-btn--primary">
+            <Link to="/" className="pixel-btn pixel-btn--primary">
               Try It Online →
             </Link>
           </div>
@@ -57,7 +57,7 @@ function Hero() {
             href="https://github.com/HeyItsJhello/CodeAnimator"
             target="_blank"
             rel="noopener noreferrer"
-            className="retro-btn retro-btn--secondary"
+            className="pixel-btn pixel-btn--secondary"
           >
             View on GitHub
           </a>

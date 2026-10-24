@@ -50,7 +50,7 @@ function HowItWorks() {
                 <span className="step__number">{step.number}</span>
                 {index < steps.length - 1 && <div className="step__connector"></div>}
               </div>
-              <div className="step__content retro-card">
+              <div className="step__content pixel-card">
                 <img src={step.icon} alt={step.title} className="step__icon" />
                 <h3 className="step__title">{step.title}</h3>
                 <p className="step__description">{step.description}</p>

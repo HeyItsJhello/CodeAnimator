@@ -40,7 +40,7 @@ function DownloadsPage() {
                 key={download.filename}
                 href={download.path}
                 download
-                className="retro-card download-card"
+                className="pixel-card download-card"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 * (index + 1) }}
@@ -58,7 +58,7 @@ function DownloadsPage() {
                   </p>
                 </div>
                 <div className="download-card__action">
-                  <span className="retro-btn retro-btn--primary">
+                  <span className="pixel-btn pixel-btn--primary">
                     Download →
                   </span>
                 </div>
@@ -80,7 +80,7 @@ function DownloadsPage() {
               href="https://github.com/HeyItsJhello/CodeAnimator/releases"
               target="_blank"
               rel="noopener noreferrer"
-              className="retro-btn retro-btn--secondary"
+              className="pixel-btn pixel-btn--secondary"
             >
               View All Releases on GitHub
             </a>

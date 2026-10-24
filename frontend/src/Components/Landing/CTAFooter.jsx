@@ -19,7 +19,7 @@ function CTAFooter() {
             </p>
             <Link
               to="/"
-              className="retro-btn retro-btn--primary retro-btn--large"
+              className="pixel-btn pixel-btn--primary pixel-btn--large"
             >
               Start Creating — It's Free
             </Link>

@@ -189,7 +189,7 @@ function AppPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
           >
-            Code Animator<span className="cursor-blink">_</span>
+            Code Animator
           </motion.h1>
           <motion.p
             className="subtitle"
@@ -197,7 +197,7 @@ function AppPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.1, delay: 0.3 }}
           >
-            {typed}<span className="cursor-blink">_</span>
+            {typed}
           </motion.p>
 
           <ApiStatusBanner apiStatus={apiStatus} onRetry={checkApiStatus} />
