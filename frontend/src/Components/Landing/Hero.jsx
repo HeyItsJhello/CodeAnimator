@@ -1,98 +1,76 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+
+const HEADLINE = "Turn a code file into a video of it being typed.";
+
+// The one animated moment on the page: the headline types itself in,
+// the same way the rendered videos reveal code.
+function useTypedText(text, msPerChar = 35) {
+  const [count, setCount] = useState(() =>
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches ? text.length : 0
+  );
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCount((c) => {
+        if (c >= text.length) {
+          clearInterval(id);
+          return c;
+        }
+        return c + 1;
+      });
+    }, msPerChar);
+    return () => clearInterval(id);
+  }, [text, msPerChar]);
+
+  return text.slice(0, count);
+}
 
 function Hero() {
+  const typed = useTypedText(HEADLINE);
+
   return (
     <section className="hero">
-      <div className="hero__container">
-        <motion.span
-          className="hero__eyebrow"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          Open Source • Free Forever
-        </motion.span>
+      <div className="hero__band" aria-hidden="true" />
 
-        <motion.h1
-          className="hero__headline"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          Turn Your Code Into
-          <br />
-          <span className="hero__headline--accent">
-            Amazing Animated Videos
+      <div className="hero__copy">
+        <h1 className="hero__headline" aria-label={HEADLINE}>
+          <span aria-hidden="true">{typed}</span>
+          {/* Reserves the final height so the layout doesn't jump while typing */}
+          <span className="hero__headline-ghost" aria-hidden="true">
+            {HEADLINE}
           </span>
-        </motion.h1>
+        </h1>
 
-        <motion.p
-          className="hero__subheadline"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          Create professional code animations instantly.
-          <br />
-          No video editing skills required. Just upload, configure, and
-          download.
-        </motion.p>
+        <p className="hero__lede">
+          Pick the lines, group them, set the timing. You get an MP4 up to
+          4K60. Free, open source, and no account.
+        </p>
 
-        <motion.div
-          className="hero__buttons"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <div className="hero__buttons-row">
-            <Link to="/downloads" className="pixel-btn pixel-btn--primary">
-              Downloads →
-            </Link>
-            <Link to="/" className="pixel-btn pixel-btn--primary">
-              Try It Online →
-            </Link>
-          </div>
-          <a
-            href="https://github.com/HeyItsJhello/CodeAnimator"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="pixel-btn pixel-btn--secondary"
-          >
-            View on GitHub
-          </a>
-        </motion.div>
-
-        <motion.div
-          className="hero__demo"
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
-          <div className="hero__demo-container">
-            <div className="hero__demo-header">
-              <span className="hero__demo-dot hero__demo-dot--red"></span>
-              <span className="hero__demo-dot hero__demo-dot--yellow"></span>
-              <span className="hero__demo-dot hero__demo-dot--green"></span>
-              <span className="hero__demo-title">code_animation.mp4</span>
-            </div>
-            <div className="hero__demo-content">
-              {/* Video placeholder - replace src with your demo video */}
-              <video
-                className="hero__demo-video"
-                autoPlay
-                loop
-                muted
-                playsInline
-                poster=""
-              >
-                {/* Add your video source here */}
-                <source src="/demo.mp4" type="video/mp4" />
-              </video>
-            </div>
-          </div>
-        </motion.div>
+        <div className="hero__actions">
+          <Link to="/" className="pixel-btn pixel-btn--primary">
+            Try it online
+          </Link>
+          <Link to="/downloads" className="pixel-btn pixel-btn--secondary">
+            Download the app
+          </Link>
+        </div>
       </div>
+
+      <figure className="hero__demo">
+        <video
+          className="hero__demo-video"
+          autoPlay
+          loop
+          muted
+          playsInline
+        >
+          <source src="/demo.mp4" type="video/mp4" />
+        </video>
+        <figcaption className="hero__demo-caption">
+          Rendered with Code Animator
+        </figcaption>
+      </figure>
     </section>
   );
 }

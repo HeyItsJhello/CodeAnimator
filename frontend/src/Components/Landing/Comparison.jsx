@@ -1,5 +1,3 @@
-import { motion } from 'framer-motion'
-
 const competitors = ["Code Animator", "Screen Recording", "Static Images", "Video Editors"]
 
 const criteria = [
@@ -71,61 +69,40 @@ const criteria = [
 function Comparison() {
   return (
     <section id="comparison" className="comparison">
-      <div className="comparison__container">
-        <motion.div 
-          className="comparison__header"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-        >
-          <h2 className="section-title">Why Code Animator?</h2>
-          <p className="section-subtitle">See how we compare to the alternatives</p>
-        </motion.div>
-        
-        <motion.div 
-          className="comparison__table-wrapper pixel-card"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <table className="comparison__table">
-            <thead>
-              <tr>
-                <th className="comparison__header-cell comparison__header-cell--label">Compare</th>
-                {competitors.map((comp, index) => (
-                  <th 
-                    key={index} 
-                    className={`comparison__header-cell ${index === 0 ? 'comparison__header-cell--highlight' : ''}`}
+      <h2 className="section-title">Compared to the usual options</h2>
+
+      <div className="comparison__table-wrapper">
+        <table className="comparison__table">
+          <thead>
+            <tr>
+              <td />
+              {competitors.map((comp, index) => (
+                <th
+                  key={comp}
+                  scope="col"
+                  className={index === 0 ? "comparison__ours" : undefined}
+                >
+                  {comp}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {criteria.map((row) => (
+              <tr key={row.label}>
+                <th scope="row">{row.label}</th>
+                {row.values.map((value, colIndex) => (
+                  <td
+                    key={colIndex}
+                    className={`comparison__value--${value.status}${colIndex === 0 ? " comparison__ours" : ""}`}
                   >
-                    {comp}
-                  </th>
+                    {value.text}
+                  </td>
                 ))}
               </tr>
-            </thead>
-            <tbody>
-              {criteria.map((row, rowIndex) => (
-                <tr key={rowIndex}>
-                  <td className="comparison__label-cell">{row.label}</td>
-                  {row.values.map((value, colIndex) => (
-                    <td 
-                      key={colIndex} 
-                      className={`comparison__value-cell comparison__value-cell--${value.status} ${colIndex === 0 ? 'comparison__value-cell--highlight' : ''}`}
-                    >
-                      <img 
-                        src={value.status === 'good' ? '/Check.png' : value.status === 'bad' ? '/X.png' : '/Wrench.png'} 
-                        alt={value.status}
-                        className="comparison__status-icon"
-                      />
-                      {value.text}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </motion.div>
+            ))}
+          </tbody>
+        </table>
       </div>
     </section>
   )
