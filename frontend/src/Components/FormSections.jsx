@@ -1,12 +1,47 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ANIMATION_TYPES, QUALITY_OPTIONS } from "../config/constants";
+import FontSelector from "./FontSelector";
 
-export function Section({ title, help, className = "form-section", children }) {
+// A collapsible group of settings in the sidebar.
+function Panel({ title, children }) {
   return (
-    <div className={className}>
-      {title && <h2>{title}</h2>}
-      {help && <p className="help-text">{help}</p>}
+    <details className="panel" open>
+      <summary className="panel__title">{title}</summary>
+      <div className="panel__body">{children}</div>
+    </details>
+  );
+}
+
+// A labelled row inside a panel.
+function Field({ label, htmlFor, hint, children }) {
+  return (
+    <div className="field">
+      {htmlFor
+        ? <label className="field__label" htmlFor={htmlFor}>{label}</label>
+        : <span className="field__label">{label}</span>}
       {children}
+      {hint && <p className="field__hint">{hint}</p>}
+    </div>
+  );
+}
+
+// One-of-many choice rendered as a row (or list) of buttons.
+function Choice({ label, options, value, onChange, layout = "row" }) {
+  return (
+    <div className={`choice choice--${layout}`} role="radiogroup" aria-label={label}>
+      {options.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          role="radio"
+          aria-checked={value === opt.value}
+          className="choice__option"
+          onClick={() => onChange(opt.value)}
+        >
+          <span className="choice__name">{opt.label}</span>
+          {opt.meta && <span className="choice__meta">{opt.meta}</span>}
+        </button>
+      ))}
     </div>
   );
 }
@@ -25,12 +60,12 @@ export function ApiStatusBanner({ apiStatus, onRetry }) {
           {apiStatus === "waking" ? (
             <>
               <span className="status-spinner"></span>
-              <span>Server is waking up... (this may take up to a minute)</span>
+              <span>The render server is starting up. This can take up to a minute.</span>
             </>
           ) : (
             <>
-              <span>Server unavailable. </span>
-              <button type="button" onClick={onRetry} className="retry-btn">Retry</button>
+              <span>Can't reach the render server.</span>
+              <button type="button" onClick={onRetry} className="retry-btn">Try again</button>
             </>
           )}
         </motion.div>
@@ -39,231 +74,180 @@ export function ApiStatusBanner({ apiStatus, onRetry }) {
   );
 }
 
-export function LineRangeSection({ startLine, endLine, totalLines, onStartLineChange, onEndLineChange }) {
-  return (
-    <Section title="Line range">
-      <div className="line-range">
-        <div className="input-group">
-          <label htmlFor="start-line">From line</label>
-          <input
-            type="number" id="start-line" min="1" max={totalLines} value={startLine} required
-            onChange={(e) => onStartLineChange(parseInt(e.target.value))}
-          />
-        </div>
-        <div className="input-group">
-          <label htmlFor="end-line">To line</label>
-          <input
-            type="number" id="end-line" min={startLine} max={totalLines} value={endLine} required
-            onChange={(e) => onEndLineChange(parseInt(e.target.value))}
-          />
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-export function CommentSettings({ includeComments, onIncludeCommentsChange }) {
-  return (
-    <Section title="Comments">
-      <label className="checkbox-label">
-        <input
-          type="checkbox"
-          checked={includeComments}
-          onChange={(e) => onIncludeCommentsChange(e.target.checked)}
-        />
-        <span>Include comments in the video</span>
-      </label>
-    </Section>
-  );
-}
-
-export function ColorSettings({ syntaxColors, onOpenColorModal }) {
-  return (
-    <Section
-      title="Colors"
-    >
-      <div className="color-preview-row">
-        {Object.entries(syntaxColors).map(([key, color]) => (
-          <div key={key} className="color-preview-chip" style={{ backgroundColor: color }}>
-            <span className="color-preview-label">{key}</span>
-          </div>
-        ))}
-      </div>
-      <button type="button" onClick={onOpenColorModal} className="btn-colors">
-        Edit colors
-      </button>
-    </Section>
-  );
-}
-
-const ORIENTATIONS = [
-  { value: "landscape", label: "Landscape", size: "1920×1080" },
-  { value: "portrait",  label: "Portrait",  size: "1080×1920" },
-];
-
-export function OrientationToggle({ orientation, onOrientationChange }) {
-  return (
-    <Section title="Video size">
-      <div className="orientation-toggle">
-        {ORIENTATIONS.map((o) => (
-          <button
-            key={o.value}
-            type="button"
-            className={`orientation-btn ${orientation === o.value ? "active" : ""}`}
-            onClick={() => onOrientationChange(o.value)}
-          >
-            <span className={`orientation-icon ${o.value}-icon`}></span>
-            <span className="orientation-label">{o.label}</span>
-            <span className="orientation-size">{o.size}</span>
-          </button>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-export function QualityPreset({ quality, onQualityChange }) {
-  return (
-    <Section title="Quality" help="Lower quality renders faster.">
-      <div className="quality-toggle">
-        {QUALITY_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            className={`quality-btn ${quality === opt.value ? "active" : ""}`}
-            onClick={() => onQualityChange(opt.value)}
-          >
-            <span className="quality-label">{opt.label}</span>
-            <span className="quality-size">{opt.size}</span>
-          </button>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-const TIMING_FIELDS = [
-  { key: "initialDelay",       id: "initial-delay", label: "Initial delay" },
-  { key: "lineSlideIn",        id: "line-slide",    label: "Line slide-in" },
-  { key: "pauseBetweenGroups", id: "group-pause",   label: "Pause between groups" },
-  { key: "finalPause",         id: "final-pause",   label: "Final pause" },
-];
-
-export function TimingSettings({ animationTiming, onUpdateTiming, onResetTiming }) {
-  return (
-    <Section
-      title="Timing"
-      help="How long each part lasts, in seconds."
-    >
-      <div className="timing-inputs-grid">
-        {TIMING_FIELDS.map(({ key, id, label }) => (
-          <div key={key} className="timing-input-group">
-            <label htmlFor={id}>{label}</label>
-            <input
-              type="number" id={id} min="0" step="0.1"
-              value={animationTiming[key]}
-              onChange={(e) => onUpdateTiming(key, e.target.value)}
-            />
-            <span className="input-suffix">sec</span>
-          </div>
-        ))}
-      </div>
-      <div className="timing-actions">
-        <button type="button" className="btn-reset" onClick={onResetTiming}>Reset timing</button>
-      </div>
-    </Section>
-  );
-}
-
-export function AnimationTypeSelector({ animationType, onAnimationTypeChange }) {
-  return (
-    <Section
-      title="Animation"
-      help="How each group of lines appears."
-    >
-      <div className="animation-type-toggle">
-        {ANIMATION_TYPES.map((type) => (
-          <button
-            key={type.value}
-            type="button"
-            className={`animation-type-btn ${animationType === type.value ? "active" : ""}`}
-            onClick={() => onAnimationTypeChange(type.value)}
-          >
-            <span className="animation-type-label">{type.label}</span>
-            <span className="animation-type-desc">{type.desc}</span>
-          </button>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
 const describeGroup = (group) =>
   group === "ALL_REMAINING" ? "All remaining lines"
     : group.type === "SPLIT" ? `Split at line ${group.line}`
       : `Lines ${group.join(", ")}`;
 
-export function LineGroupsSection({
+export function LinesPanel({
+  startLine, endLine, totalLines, onStartLineChange, onEndLineChange,
   lineGroups, currentGroup, onCurrentGroupChange,
   onAddLineGroup, onRemoveLineGroup, onClearAllGroups, onOpenSplitModal,
 }) {
   return (
-    <Section
-      title="Line groups"
-      help="Each group appears together. Leave the field empty and add to show all remaining lines."
-    >
-      <p className="help-text example">For example: 1-5 or 21 34 38</p>
+    <Panel title="Lines">
+      <Field label="Range">
+        <div className="range-row">
+          <input
+            type="number" aria-label="From line" min="1" max={totalLines} value={startLine} required
+            onChange={(e) => onStartLineChange(parseInt(e.target.value))}
+          />
+          <span>to</span>
+          <input
+            type="number" aria-label="To line" min={startLine} max={totalLines} value={endLine} required
+            onChange={(e) => onEndLineChange(parseInt(e.target.value))}
+          />
+          <span className="range-row__total">of {totalLines}</span>
+        </div>
+      </Field>
 
-      <div className="line-group-input">
-        <input
-          type="text"
-          placeholder="Line numbers, e.g. 1-5"
-          value={currentGroup}
-          onChange={(e) => onCurrentGroupChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); onAddLineGroup(); }
-          }}
-        />
-        <button type="button" onClick={onAddLineGroup} className="btn-add">Add group</button>
-        <button type="button" onClick={onOpenSplitModal} className="btn-split">Split</button>
-      </div>
+      <Field
+        label="Groups"
+        htmlFor="group-input"
+        hint="Lines in a group appear together. Click line numbers in the editor to fill this in, or leave it empty to add all remaining lines."
+      >
+        <div className="group-entry">
+          <input
+            type="text"
+            id="group-input"
+            placeholder="e.g. 1-5 or 21 34"
+            value={currentGroup}
+            onChange={(e) => onCurrentGroupChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); onAddLineGroup(); }
+            }}
+          />
+          <button type="button" onClick={onAddLineGroup} className="ui-btn ui-btn--accent">Add</button>
+          <button type="button" onClick={onOpenSplitModal} className="ui-btn">Split</button>
+        </div>
+      </Field>
 
-      <AnimatePresence>
-        {lineGroups.length > 0 && (
-          <motion.div
-            className="line-groups-list"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="groups-header">
-              <h3>Groups</h3>
-              <button type="button" onClick={onClearAllGroups} className="btn-clear-all">Clear all</button>
-            </div>
-            <AnimatePresence mode="popLayout">
-              {lineGroups.map((group, index) => (
-                <motion.div
-                  key={index}
-                  className="line-group-item"
-                  initial={{ opacity: 0, x: -20, scale: 0.8 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: 20, scale: 0.8 }}
-                  transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
-                  layout
+      {lineGroups.length > 0 && (
+        <div className="group-list">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {lineGroups.map((group, index) => (
+              <motion.div
+                key={`${index}-${describeGroup(group)}`}
+                className={`group-list__item${group.type === "SPLIT" ? " group-list__item--split" : ""}`}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 12 }}
+                transition={{ duration: 0.18 }}
+                layout
+              >
+                <span className="group-list__number">{index + 1}</span>
+                <span className="group-list__lines">{describeGroup(group)}</span>
+                <button
+                  type="button"
+                  onClick={() => onRemoveLineGroup(index)}
+                  className="group-list__remove"
+                  aria-label={`Remove group ${index + 1}`}
                 >
-                  <span className="group-number">{index + 1}</span>
-                  <span className={`group-lines ${group.type === "SPLIT" ? "split-group" : ""}`}>
-                    {describeGroup(group)}
-                  </span>
-                  <button type="button" onClick={() => onRemoveLineGroup(index)} className="btn-remove" aria-label={`Remove group ${index + 1}`}>✕</button>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Section>
+                  ✕
+                </button>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          <button type="button" onClick={onClearAllGroups} className="text-btn">Clear all groups</button>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+const TIMING_FIELDS = [
+  { key: "initialDelay",       id: "initial-delay", label: "Start delay" },
+  { key: "lineSlideIn",        id: "line-slide",    label: "Line entrance" },
+  { key: "pauseBetweenGroups", id: "group-pause",   label: "Between groups" },
+  { key: "finalPause",         id: "final-pause",   label: "Hold at end" },
+];
+
+export function AnimationPanel({
+  animationType, onAnimationTypeChange, animationTiming, onUpdateTiming, onResetTiming,
+}) {
+  return (
+    <Panel title="Animation">
+      <Field label="Entrance">
+        <Choice
+          label="Entrance"
+          layout="list"
+          value={animationType}
+          onChange={onAnimationTypeChange}
+          options={ANIMATION_TYPES.map((t) => ({ value: t.value, label: t.label, meta: t.desc }))}
+        />
+      </Field>
+
+      <Field label="Timing, in seconds">
+        <div className="timing-grid">
+          {TIMING_FIELDS.map(({ key, id, label }) => (
+            <label key={key} htmlFor={id} className="timing-grid__item">
+              <span>{label}</span>
+              <input
+                type="number" id={id} min="0" step="0.1"
+                value={animationTiming[key]}
+                onChange={(e) => onUpdateTiming(key, e.target.value)}
+              />
+            </label>
+          ))}
+        </div>
+        <button type="button" className="text-btn" onClick={onResetTiming}>Reset timing</button>
+      </Field>
+    </Panel>
+  );
+}
+
+const ORIENTATIONS = [
+  { value: "landscape", label: "Landscape", meta: "1920×1080" },
+  { value: "portrait",  label: "Portrait",  meta: "1080×1920" },
+];
+
+export function VideoPanel({ orientation, onOrientationChange, quality, onQualityChange }) {
+  return (
+    <Panel title="Video">
+      <Field label="Shape">
+        <Choice label="Shape" options={ORIENTATIONS} value={orientation} onChange={onOrientationChange} />
+      </Field>
+      <Field label="Quality" hint="Lower quality renders faster.">
+        <Choice
+          label="Quality"
+          value={quality}
+          onChange={onQualityChange}
+          options={QUALITY_OPTIONS.map((q) => ({ value: q.value, label: q.label, meta: q.size }))}
+        />
+      </Field>
+    </Panel>
+  );
+}
+
+export function LookPanel({
+  syntaxColors, onOpenColorModal, font, onFontChange, includeComments, onIncludeCommentsChange,
+}) {
+  return (
+    <Panel title="Look">
+      <Field label="Colors">
+        <button type="button" className="swatch-strip" onClick={onOpenColorModal}>
+          <span className="swatch-strip__chips" aria-hidden="true">
+            {Object.entries(syntaxColors).map(([key, color]) => (
+              <span key={key} style={{ backgroundColor: color }} />
+            ))}
+          </span>
+          <span>Edit colors</span>
+        </button>
+      </Field>
+
+      <Field label="Font">
+        <FontSelector font={font} onFontChange={onFontChange} />
+      </Field>
+
+      <label className="check-row">
+        <input
+          type="checkbox"
+          checked={includeComments}
+          onChange={(e) => onIncludeCommentsChange(e.target.checked)}
+        />
+        <span>Show code comments in the video</span>
+      </label>
+    </Panel>
   );
 }
 

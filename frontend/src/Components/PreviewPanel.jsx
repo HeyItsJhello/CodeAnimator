@@ -7,13 +7,17 @@ const MIN_FONT_SIZE     = 7;    // px — below this is unreadable; clip instead
 const CHAR_RATIO        = 0.60; // approx char-width / font-size for monospace
 
 function PreviewPanel({
+  fileName,
   fileContent,
   highlightedLines,
   startLine,
   endLine,
   lineGroupMap,
   fontFamily,
-  onOpenPreviewModal,
+  background,
+  statusItems,
+  onLineClick,
+  onEditColors,
 }) {
   const containerRef = useRef(null);
 
@@ -57,8 +61,8 @@ function PreviewPanel({
   const lineNumWidth = String(maxLineNum).length;
 
   // Estimate space consumed by gutter (line numbers) and group indicator
-  const gutterPx    = lineNumWidth * NATURAL_FONT_SIZE * CHAR_RATIO + 56; // 56 ≈ paddings
-  const indicatorPx = 80;
+  const gutterPx    = lineNumWidth * NATURAL_FONT_SIZE * CHAR_RATIO + 76; // number + group marker + paddings
+  const indicatorPx = 0;
   const hPad        = 16;
   const available   = Math.max(60, viewWidth - gutterPx - indicatorPx - hPad);
 
@@ -84,25 +88,17 @@ function PreviewPanel({
 
   return (
     <div className="preview-panel">
-      <div className="preview-header">
-        <span className="preview-legend">
-          <span className="legend-swatch legend-swatch--range" aria-hidden="true" />
-          In range
-          <span className="legend-swatch legend-swatch--group" aria-hidden="true" />
-          In a group
-        </span>
-        <button
-          type="button"
-          className="btn-preview-colors"
-          onClick={onOpenPreviewModal}
-        >
-          Preview colors
+      <div className="editor-tabs">
+        <span className="editor-tab">{fileName}</span>
+        <button type="button" className="editor-tabs__action" onClick={onEditColors}>
+          Edit colors
         </button>
       </div>
 
       <div
         className="preview-content"
         ref={containerRef}
+        style={{ background }}
         onScroll={isVirtual ? (e) => setScrollTop(e.currentTarget.scrollTop) : undefined}
       >
         <pre
@@ -117,21 +113,28 @@ function PreviewPanel({
           )}
 
           {lines.slice(firstIdx, lastIdx + 1).map((line, i) => {
-            const lineNum       = firstIdx + i + 1;
-            const dataIdx       = firstIdx + i;
-            const inRange       = lineNum >= startLine && lineNum <= endLine;
-            const groupNums     = lineGroupMap.get(lineNum);
-            const inGroup       = groupNums !== undefined;
-            const indicatorText = groupNums?.length ? `G${groupNums.join(",")}` : "";
-            const paddedNum     = String(lineNum).padStart(lineNumWidth, " ");
+            const lineNum   = firstIdx + i + 1;
+            const dataIdx   = firstIdx + i;
+            const inRange   = lineNum >= startLine && lineNum <= endLine;
+            const groupNums = lineGroupMap.get(lineNum);
+            const paddedNum = String(lineNum).padStart(lineNumWidth, " ");
 
             return (
               <div
                 key={lineNum}
                 ref={i === 0 ? measureRef : undefined}
-                className={`code-line${inRange ? " in-range" : ""}${inGroup ? " in-group" : ""}`}
+                className={`code-line${inRange ? "" : " is-dimmed"}${groupNums ? " is-grouped" : ""}`}
               >
-                <span className="line-number">{paddedNum}</span>
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="line-gutter"
+                  title={`Add line ${lineNum} to the group field`}
+                  onClick={() => onLineClick(lineNum)}
+                >
+                  <span className="line-group-marker">{groupNums ? groupNums.join(",") : ""}</span>
+                  <span className="line-number">{paddedNum}</span>
+                </button>
                 <span className="line-content">
                   {(highlightedLines[dataIdx]?.tokens ?? [{ text: line || " ", color: "#ffffff" }]).map(
                     (token, tIdx) => (
@@ -139,7 +142,6 @@ function PreviewPanel({
                     ),
                   )}
                 </span>
-                <span className="line-group-indicator">{indicatorText}</span>
               </div>
             );
           })}
@@ -148,6 +150,12 @@ function PreviewPanel({
             <div aria-hidden style={{ height: bottomPad }} />
           )}
         </pre>
+      </div>
+
+      <div className="status-bar">
+        {statusItems.map((item, i) => (
+          <span key={i} className="status-bar__item">{item}</span>
+        ))}
       </div>
     </div>
   );

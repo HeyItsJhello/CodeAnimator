@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import "../App.css";
 
-import { API_URL, DEFAULT_TIMING, FONT_OPTIONS } from "../config/constants";
+import { API_URL, DEFAULT_TIMING, FONT_OPTIONS, QUALITY_OPTIONS } from "../config/constants";
 import { getTokenPatterns, tokenizeLine } from "../config/tokenizer";
 import { useFileUpload }        from "../hooks/useFileUpload";
 import { useAnimationSettings } from "../hooks/useAnimationSettings";
@@ -10,15 +10,18 @@ import { useLineGroups, toApiGroups } from "../hooks/useLineGroups";
 import { useRender }            from "../hooks/useRender";
 
 import {
-  ApiStatusBanner, LineRangeSection, CommentSettings,
-  ColorSettings, OrientationToggle, QualityPreset, TimingSettings,
-  AnimationTypeSelector, LineGroupsSection, SidebarLinks,
+  ApiStatusBanner, LinesPanel, AnimationPanel, VideoPanel, LookPanel, SidebarLinks,
 } from "../Components/FormSections";
-import FontSelector from "../Components/FontSelector";
 import PreviewPanel from "../Components/PreviewPanel";
 import {
-  LoadingModal, SplitModal, ColorModal, PreviewModal, VideoCompleteModal, DryRunModal,
+  LoadingModal, SplitModal, ColorModal, VideoCompleteModal, DryRunModal,
 } from "../Components/Modals";
+
+const LANGUAGES = {
+  py: "Python", js: "JavaScript", jsx: "JavaScript", ts: "TypeScript", tsx: "TypeScript",
+  java: "Java", cpp: "C++", c: "C", h: "C", go: "Go", rs: "Rust", rb: "Ruby",
+  php: "PHP", swift: "Swift", kt: "Kotlin", gd: "GDScript",
+};
 
 const ACCEPTED_EXTENSIONS = ".py,.js,.jsx,.ts,.tsx,.java,.cpp,.c,.h,.go,.rs,.rb,.php,.swift,.kt,.gd";
 
@@ -99,7 +102,7 @@ function AppPage() {
 
   const [apiStatus, checkApiStatus] = useApiStatus();
 
-  // null | "split" | "color" | "preview" | "video" | "dryRun"
+  // null | "split" | "color" | "video" | "dryRun"
   const [modal, setModal] = useState(null);
   const [dryRunResult, setDryRunResult] = useState(null);
   const closeModal = () => setModal(null);
@@ -191,6 +194,18 @@ function AppPage() {
 
   const fontFamily = FONT_OPTIONS.find((f) => f.value === font)?.family ?? "monospace";
   const loadFiles = (files) => handleFileUpload({ target: { files } });
+
+  // Clicking a line number in the editor adds it to the group being typed.
+  const addLineToGroup = (lineNum) =>
+    setCurrentGroup((prev) => (prev.trim() ? `${prev.trim()} ${lineNum}` : String(lineNum)));
+
+  const qualityLabel = QUALITY_OPTIONS.find((q) => q.value === quality)?.size ?? quality;
+  const statusItems = [
+    `Lines ${startLine}–${endLine}`,
+    `${lineGroups.length} ${lineGroups.length === 1 ? "group" : "groups"}`,
+    LANGUAGES[fileExtension.slice(1)] ?? fileExtension.slice(1),
+    `${orientation === "portrait" ? "Portrait" : "Landscape"}, ${qualityLabel}`,
+  ];
   const ready = apiStatus === "awake";
 
   return (
@@ -237,11 +252,16 @@ function AppPage() {
         <section className="editor" aria-label="Code preview">
           {fileContent ? (
             <PreviewPanel
+              fileName={fileName}
               fileContent={fileContent}
               highlightedLines={highlightedLines}
               startLine={startLine} endLine={endLine}
               lineGroupMap={lineGroupMap}
-              fontFamily={fontFamily} onOpenPreviewModal={() => setModal("preview")}
+              fontFamily={fontFamily}
+              background={syntaxColors.background}
+              statusItems={statusItems}
+              onLineClick={addLineToGroup}
+              onEditColors={() => setModal("color")}
             />
           ) : (
             <EmptyEditor onFiles={loadFiles} />
@@ -251,33 +271,38 @@ function AppPage() {
         {fileContent && (
           <aside className="sidebar" aria-label="Video settings">
             <form id="render-form" onSubmit={(e) => { e.preventDefault(); startRender(); }}>
-              <LineRangeSection
+              <LinesPanel
                 startLine={startLine} endLine={endLine} totalLines={totalLines}
                 onStartLineChange={setStartLine} onEndLineChange={setEndLine}
-              />
-              <LineGroupsSection
                 lineGroups={lineGroups} currentGroup={currentGroup}
                 onCurrentGroupChange={setCurrentGroup}
                 onAddLineGroup={addLineGroup} onRemoveLineGroup={removeLineGroup}
                 onClearAllGroups={clearAll} onOpenSplitModal={() => setModal("split")}
               />
-              <AnimationTypeSelector animationType={animationType} onAnimationTypeChange={setAnimationType} />
-              <TimingSettings
+              <AnimationPanel
+                animationType={animationType} onAnimationTypeChange={setAnimationType}
                 animationTiming={animationTiming}
                 onUpdateTiming={updateTiming} onResetTiming={resetTiming}
               />
-              <OrientationToggle orientation={orientation} onOrientationChange={setOrientation} />
-              <QualityPreset quality={quality} onQualityChange={setQuality} />
-              <ColorSettings syntaxColors={syntaxColors} onOpenColorModal={() => setModal("color")} />
-              <FontSelector font={font} onFontChange={setFont} />
-              <CommentSettings includeComments={includeComments} onIncludeCommentsChange={setIncludeComments} />
+              <VideoPanel
+                orientation={orientation} onOrientationChange={setOrientation}
+                quality={quality} onQualityChange={setQuality}
+              />
+              <LookPanel
+                syntaxColors={syntaxColors} onOpenColorModal={() => setModal("color")}
+                font={font} onFontChange={setFont}
+                includeComments={includeComments} onIncludeCommentsChange={setIncludeComments}
+              />
             </form>
             <SidebarLinks />
           </aside>
         )}
       </main>
 
-      <LoadingModal isLoading={isLoading} loadingProgress={loadingProgress} loadingStatus={loadingStatus} />
+      <LoadingModal
+        isLoading={isLoading} loadingProgress={loadingProgress} loadingStatus={loadingStatus}
+        fileName={fileName}
+      />
       <SplitModal
         show={modal === "split"} startLine={startLine} endLine={endLine}
         onAddSplit={addSplit} onClose={closeModal}
@@ -285,11 +310,8 @@ function AppPage() {
       <ColorModal
         show={modal === "color"} syntaxColors={syntaxColors}
         onSyntaxColorsChange={setSyntaxColors} onClose={closeModal}
-      />
-      <PreviewModal
-        show={modal === "preview"} highlightedLines={highlightedLines}
-        syntaxColors={syntaxColors} startLine={startLine} endLine={endLine}
-        onClose={closeModal} onEditColors={() => setModal("color")}
+        previewLines={highlightedLines.filter(({ lineNum }) => lineNum >= startLine && lineNum <= endLine)}
+        fontFamily={fontFamily}
       />
       <VideoCompleteModal
         show={modal === "video"} videoUrl={videoUrl}
