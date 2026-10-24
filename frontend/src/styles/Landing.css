@@ -329,36 +329,6 @@
     object-fit: cover;
 }
 
-.hero__demo-placeholder {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #666;
-}
-
-.hero__demo-placeholder-icon {
-    margin-bottom: 1rem;
-}
-
-.hero__demo-placeholder-img {
-    width: 80px;
-    height: 80px;
-}
-
-.hero__demo-placeholder-text {
-    font-size: 1.5rem;
-    color: #999;
-}
-
-.hero__demo-placeholder-subtext {
-    font-size: 0.9rem;
-    color: #666;
-    margin-top: 0.5rem;
-}
-
 /* ===================================
    Features Section
    =================================== */
@@ -866,12 +836,6 @@
 .footer__logo-icon {
     width: 24px;
     height: 24px;
-}
-
-.footer__heart-icon {
-    width: 18px;
-    height: 18px;
-    vertical-align: middle;
 }
 
 .footer__links {

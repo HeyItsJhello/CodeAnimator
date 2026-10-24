@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { usedInVideos } from './UsedIn'
+import { USED_IN_VIDEOS } from '../../config/constants'
 
 function Navbar({ showSectionLinks = true }) {
   const [scrolled, setScrolled] = useState(false)
@@ -29,7 +29,7 @@ function Navbar({ showSectionLinks = true }) {
       transition={{ duration: 0.5 }}
     >
       <div className="navbar__container">
-        <Link to="/" className="navbar__logo">
+        <Link to="/landing" className="navbar__logo">
           <img src="/Movie.png" alt="" className="navbar__logo-icon" />
           Code Animator
         </Link>
@@ -46,7 +46,7 @@ function Navbar({ showSectionLinks = true }) {
               <button onClick={() => scrollToSection('why-i-made-this')} className="navbar__link">
                 Why I Made This
               </button>
-              {usedInVideos.length > 0 && (
+              {USED_IN_VIDEOS.length > 0 && (
                 <button onClick={() => scrollToSection('used-in')} className="navbar__link">
                   Used In
                 </button>
@@ -64,7 +64,7 @@ function Navbar({ showSectionLinks = true }) {
           >
             GitHub
           </a>
-          <Link to="/app" className="navbar__cta">
+          <Link to="/" className="navbar__cta">
             Try It Free →
           </Link>
         </div>

@@ -1,0 +1,111 @@
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .main-layout {
+        flex-direction: column;
+    }
+
+    .preview-panel {
+        max-width: 100%;
+        max-height: 500px;
+    }
+
+    h1 {
+        font-size: 1.6rem;
+    }
+
+    .subtitle {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1.5rem 1rem;
+    }
+
+    h1 {
+        font-size: 1.3rem;
+    }
+
+    h2 {
+        font-size: 0.95rem;
+    }
+
+    .subtitle {
+        font-size: 0.75rem;
+    }
+
+    .line-range {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .line-group-input {
+        flex-direction: column;
+    }
+
+    .btn-add {
+        width: 100%;
+    }
+
+    .line-group-item {
+        flex-wrap: wrap;
+    }
+
+    .group-number {
+        min-width: auto;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .group-lines {
+        width: calc(100% - 60px);
+        margin-right: 0.5rem;
+    }
+
+    .preview-panel {
+        max-height: 400px;
+        min-width: 100%;
+    }
+
+    .code-preview {
+        font-size: 0.75rem;
+    }
+
+    .line-number {
+        min-width: 50px;
+        padding: 0 0.5rem;
+    }
+
+    .file-upload-label,
+    .btn-add,
+    .btn-submit {
+        font-size: 0.85rem;
+    }
+
+    .loading-modal {
+        width: 95%;
+        max-width: none;
+    }
+
+    .loading-body {
+        padding: 1.5rem 1rem;
+    }
+
+    .loading-icon {
+        font-size: 3rem;
+    }
+
+    .loading-text {
+        font-size: 1.2rem;
+    }
+
+    .loading-subtext {
+        font-size: 0.9rem;
+    }
+
+    .progress-bar-bg {
+        height: 32px;
+    }
+}
+

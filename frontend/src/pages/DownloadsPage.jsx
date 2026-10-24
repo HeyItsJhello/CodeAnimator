@@ -25,7 +25,7 @@ function DownloadsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Link to="/" className="back-to-home">
+            <Link to="/landing" className="back-to-home">
               ← Back to Home
             </Link>
             <h1 className="section-title">Downloads</h1>

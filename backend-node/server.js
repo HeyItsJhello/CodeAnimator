@@ -1,210 +1,231 @@
+// HTTP API and video rendering. All request-config logic lives in config.js.
+//
+// Flow: POST /api/animate → render job starts in the background → client
+// follows /api/progress-stream/:taskId → fetches /api/stream or /api/download.
+
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
+import { bundle } from '@remotion/bundler';
+import { renderMedia, selectComposition } from '@remotion/renderer';
 
-import { initBundle, renderAnimation, OUTPUTS_DIR } from './render.js';
-import { validateConfig } from './validate.js';
-import { computeDryRun } from './dryRun.js';
-import { detectLanguage, buildStructuredGroups } from './lineGroups.js';
+import { validateConfig, buildStructuredGroups, computeDryRun, toRenderProps } from './config.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname   = path.dirname(fileURLToPath(import.meta.url));
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const OUTPUTS_DIR = path.join(__dirname, 'outputs');
+const PORT        = process.env.PORT || 8000;
+
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+fs.mkdirSync(OUTPUTS_DIR, { recursive: true });
+
+// ── Rendering ──────────────────────────────────────────────────────────────
+
+// Remotion bundles the renderer once at startup; every render reuses it.
+let bundleLocation = null;
+
+async function renderVideo(inputProps, outputPath, onProgress) {
+  const composition = await selectComposition({
+    serveUrl: bundleLocation,
+    id: 'CodeAnimation',
+    inputProps,
+  });
+
+  await renderMedia({
+    composition,
+    serveUrl: bundleLocation,
+    codec: 'h264',
+    outputLocation: outputPath,
+    inputProps,
+    concurrency: 2,
+    crf: 1,             // near-lossless H264 — minimal DCT artifacts
+    imageFormat: 'png', // lossless intermediate frames (vs default JPEG)
+    onProgress: ({ progress }) => onProgress(Math.round(progress * 100)),
+    overwrite: true,
+  });
+}
+
+// ── Job progress (in memory, kept 30 minutes) ──────────────────────────────
+
+// taskId → { progress, status: 'rendering' | 'complete' | 'error', videoId?, error?, updatedAt }
+const jobs = new Map();
+const JOB_TTL_MS = 30 * 60 * 1000;
+
+const setJob = (taskId, data) => jobs.set(taskId, { ...data, updatedAt: Date.now() });
+
+setInterval(() => {
+  const cutoff = Date.now() - JOB_TTL_MS;
+  for (const [id, job] of jobs) if (job.updatedAt < cutoff) jobs.delete(id);
+}, 60_000).unref();
+
+// ── Request helpers ────────────────────────────────────────────────────────
+
+const upload = multer({ dest: UPLOADS_DIR });
+
+// Reads the uploaded file into memory, parses the JSON `config` field, and
+// always deletes the temp upload. Either value is null when missing/invalid.
+function readUpload(req) {
+  let fileContent = null;
+  let config = null;
+  try {
+    if (req.file) fileContent = fs.readFileSync(req.file.path);
+    const parsed = JSON.parse(req.body?.config);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) config = parsed;
+  } catch {
+    config = null;
+  } finally {
+    if (req.file) fs.rmSync(req.file.path, { force: true });
+  }
+  return { fileContent, config };
+}
+
+// Path of a rendered video, or null if :videoId isn't a plain filename
+// (blocks path traversal out of OUTPUTS_DIR).
+function videoPath(videoId) {
+  if (path.basename(videoId) !== videoId || videoId.startsWith('.')) return null;
+  return path.join(OUTPUTS_DIR, videoId);
+}
+
+const MISSING_FILE   = 'A source file upload is required';
+const INVALID_CONFIG = 'config must be a valid JSON object';
+
+// ── Routes ─────────────────────────────────────────────────────────────────
 
 export const app = express();
 app.use(cors());
 app.use(express.json());
 
-const upload = multer({ dest: UPLOADS_DIR });
-
-// In-memory progress store (keyed by taskId)
-const progress = {};
-function setProgress(taskId, data) { progress[taskId] = data; }
-
-// ── Health ──────────────────────────────────────────────────────────────────
-
 app.get('/', (_req, res) => res.json({ status: 'ok' }));
 
-// ── Validate ────────────────────────────────────────────────────────────────
-
 app.post('/api/validate', upload.single('file'), (req, res) => {
-  const uploadPath = req.file?.path;
-  try {
-    const config      = JSON.parse(req.body.config);
-    const fileContent = fs.readFileSync(uploadPath);
-    fs.unlinkSync(uploadPath);
-    const errors = validateConfig(fileContent, config);
-    res.json({ valid: errors.length === 0, errors });
-  } catch (e) {
-    if (uploadPath) try { fs.unlinkSync(uploadPath); } catch (_) {}
-    res.status(400).json({ valid: false, errors: [e.message] });
+  const { fileContent, config } = readUpload(req);
+  if (!fileContent || !config) {
+    return res.status(400).json({ valid: false, errors: [!fileContent ? MISSING_FILE : INVALID_CONFIG] });
   }
+  const errors = validateConfig(fileContent, config);
+  res.json({ valid: errors.length === 0, errors });
 });
-
-// ── Dry run ─────────────────────────────────────────────────────────────────
 
 app.post('/api/dry-run', upload.single('file'), (req, res) => {
-  try {
-    const config = JSON.parse(req.body.config);
-    if (req.file) fs.unlinkSync(req.file.path);
+  const { config } = readUpload(req);
+  if (!config) return res.status(400).json({ error: INVALID_CONFIG });
 
-    const structured = buildStructuredGroups(
-      config.lineGroups, config.startLine, config.endLine
-    );
-    const timing = computeDryRun({
-      lineGroups:      structured,
-      animationTiming: config.animationTiming,
-      quality:         config.quality,
-    });
+  const timing = computeDryRun({
+    lineGroups:      buildStructuredGroups(config.lineGroups, config.startLine, config.endLine),
+    animationTiming: config.animationTiming,
+    quality:         config.quality,
+  });
 
-    res.json({
-      ...timing,
-      quality:       config.quality       || 'standard',
-      font:          config.font          || 'default',
-      animationType: config.animationType || 'slide_left',
-      orientation:   config.orientation   || 'landscape',
-      lineRange:     [config.startLine, config.endLine],
-    });
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
+  res.json({
+    ...timing,
+    quality:       config.quality       || 'standard',
+    font:          config.font          || 'default',
+    animationType: config.animationType || 'slide_left',
+    orientation:   config.orientation   || 'landscape',
+    lineRange:     [config.startLine, config.endLine],
+  });
 });
 
-// ── Animate ─────────────────────────────────────────────────────────────────
+// Responds immediately with a taskId; the render continues in the background.
+app.post('/api/animate', upload.single('file'), (req, res) => {
+  const { fileContent, config } = readUpload(req);
+  if (!fileContent) return res.status(400).json({ errors: [MISSING_FILE] });
+  if (!config) return res.status(400).json({ errors: [INVALID_CONFIG] });
 
-app.post('/api/animate', upload.single('file'), async (req, res) => {
-  let uploadPath;
-  try {
-    const config = JSON.parse(req.body.config);
-    uploadPath = req.file.path;
-    const fileContent = fs.readFileSync(uploadPath);
+  const errors = validateConfig(fileContent, config);
+  if (errors.length) return res.status(422).json({ errors });
 
-    const errors = validateConfig(fileContent, config);
-    if (errors.length) {
-      fs.unlinkSync(uploadPath);
-      return res.status(422).json({ errors });
-    }
+  const filename = req.file.originalname || 'animation';
+  const taskId   = `${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  const stem     = path.basename(filename, path.extname(filename));
+  const videoId  = `${stem}_${config.startLine}-${config.endLine}_${taskId}.mp4`;
 
-    const taskId        = `${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-    const originalName  = req.file.originalname || 'animation';
-    const stem          = path.basename(originalName, path.extname(originalName));
-    const outputName    = `${stem}_${config.startLine}-${config.endLine}_${taskId}`;
-    const videoFilename = `${outputName}.mp4`;
+  setJob(taskId, { progress: 5, status: 'rendering' });
+  res.json({ success: true, taskId });
+  console.log(`Render started ${taskId}`);
 
-    setProgress(taskId, { progress: 0, status: 'queued' });
-    res.json({ success: true, taskId });
-
-    const lineGroups = buildStructuredGroups(
-      config.lineGroups, config.startLine, config.endLine
-    );
-    const inputProps = {
-      code:            fileContent.toString(),
-      startLine:       config.startLine,
-      endLine:         config.endLine,
-      includeComments: config.includeComments !== false,
-      lineGroups,
-      syntaxColors:    config.syntaxColors    || {},
-      animationTiming: config.animationTiming || {},
-      animationType:   config.animationType   || 'slide_left',
-      font:            config.font            || 'default',
-      orientation:     config.orientation     || 'landscape',
-      language:        detectLanguage(req.file.originalname),
-    };
-
-    // Delete upload immediately — code is never stored beyond this point
-    try { fs.unlinkSync(uploadPath); } catch (_) {}
-    uploadPath = null;
-
-    setProgress(taskId, { progress: 5, status: 'rendering' });
-
-    renderAnimation({
-      inputProps,
-      outputName,
-      quality:    config.quality || 'standard',
-      onProgress: (pct) => setProgress(taskId, { progress: pct, status: 'rendering' }),
-    }).then((outputPath) => {
-      setProgress(taskId, {
-        progress: 100, status: 'complete',
-        videoId: videoFilename, filename: videoFilename,
-      });
-    }).catch((err) => {
-      setProgress(taskId, { progress: 0, status: 'error', error: err.message });
-      console.error('[render error]', err.message);
-    });
-
-  } catch (e) {
-    if (uploadPath) try { fs.unlinkSync(uploadPath); } catch (_) {}
-    if (!res.headersSent) res.status(500).json({ error: e.message });
-  }
+  renderVideo(
+    toRenderProps(fileContent, config, filename),
+    path.join(OUTPUTS_DIR, videoId),
+    (pct) => setJob(taskId, { progress: pct, status: 'rendering' }),
+  ).then(() => {
+    setJob(taskId, { progress: 100, status: 'complete', videoId, filename: videoId });
+    console.log(`Render complete ${taskId}`);
+  }).catch((err) => {
+    setJob(taskId, { progress: 0, status: 'error', error: err.message });
+    console.error(`Render failed ${taskId}: ${err.message}`);
+  });
 });
 
-// ── Progress polling ────────────────────────────────────────────────────────
-
-app.get('/api/progress/:taskId', (req, res) => {
-  const data = progress[req.params.taskId];
-  if (!data) return res.status(404).json({ error: 'Task not found' });
-  res.json(data);
-});
-
-// ── Progress SSE ────────────────────────────────────────────────────────────
-
+// Server-sent progress events every 500ms. Ends on complete/error, or after
+// ~10s if the task never appears (otherwise a bad taskId would poll forever).
 app.get('/api/progress-stream/:taskId', (req, res) => {
-  const { taskId } = req.params;
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  let interval;
-
-  const sendSnapshot = () => {
-    const data = progress[taskId] || { progress: 0, status: 'queued' };
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
-    if (data.status === 'complete' || data.status === 'error') {
-      clearInterval(interval);
-      res.end();
-    }
+  let unknownPolls = 0;
+  const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  const end = (data) => {
+    send(data);
+    clearInterval(interval);
+    res.end();
   };
 
-  interval = setInterval(sendSnapshot, 500);
-  sendSnapshot();
+  const tick = () => {
+    const job = jobs.get(req.params.taskId);
+    if (!job) {
+      if (++unknownPolls >= 20) return end({ progress: 0, status: 'error', error: 'Task not found' });
+      return send({ progress: 0, status: 'queued' });
+    }
+    unknownPolls = 0;
+    const { updatedAt: _, ...data } = job;
+    if (data.status === 'complete' || data.status === 'error') return end(data);
+    send(data);
+  };
+
+  const interval = setInterval(tick, 500);
+  tick();
   req.on('close', () => clearInterval(interval));
 });
 
-// ── Stream / Download ───────────────────────────────────────────────────────
-
 app.get('/api/stream/:videoId', (req, res) => {
-  const videoPath = path.join(OUTPUTS_DIR, req.params.videoId);
-  if (!fs.existsSync(videoPath)) return res.status(404).json({ error: 'Not found' });
+  const file = videoPath(req.params.videoId);
+  if (!file) return res.status(400).json({ error: 'Invalid filename' });
+  if (!fs.existsSync(file)) return res.status(404).json({ error: 'Not found' });
   res.setHeader('Content-Type', 'video/mp4');
-  fs.createReadStream(videoPath).pipe(res);
+  fs.createReadStream(file).pipe(res);
 });
 
-// Delete the output file immediately after download
+// The video is deleted once downloaded.
 app.get('/api/download/:videoId', (req, res) => {
-  const { videoId } = req.params;
-  const videoPath   = path.join(OUTPUTS_DIR, videoId);
-  if (!fs.existsSync(videoPath)) return res.status(404).json({ error: 'Not found' });
-  res.download(videoPath, videoId, () => {
-    try { fs.unlinkSync(videoPath); } catch (_) {}
-  });
+  const file = videoPath(req.params.videoId);
+  if (!file) return res.status(400).json({ error: 'Invalid filename' });
+  if (!fs.existsSync(file)) return res.status(404).json({ error: 'Not found' });
+  res.download(file, req.params.videoId, () => fs.rmSync(file, { force: true }));
 });
 
-// ── Start ───────────────────────────────────────────────────────────────────
+app.use((err, _req, res, _next) => {
+  console.error(err.stack);
+  if (!res.headersSent) res.status(err.status || 500).json({ error: err.message });
+});
 
-const PORT = process.env.PORT || 8000;
+// ── Startup ────────────────────────────────────────────────────────────────
 
 if (process.env.NODE_ENV !== 'test') {
-  initBundle().then(() => {
-    app.listen(PORT, () =>
-      console.log(`[server] Listening on http://localhost:${PORT}`)
-    );
-  }).catch((err) => {
-    console.error('[server] Bundle failed:', err);
-    process.exit(1);
-  });
+  console.log('Bundling Remotion compositions...');
+  bundle({ entryPoint: path.resolve(__dirname, '../renderer/index.jsx') })
+    .then((location) => {
+      bundleLocation = location;
+      app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+    })
+    .catch((err) => {
+      console.error(`Bundle failed: ${err.message}`);
+      process.exit(1);
+    });
 }

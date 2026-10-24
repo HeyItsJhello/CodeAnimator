@@ -49,7 +49,7 @@ function Hero() {
             <Link to="/downloads" className="retro-btn retro-btn--primary">
               Downloads →
             </Link>
-            <Link to="/app" className="retro-btn retro-btn--primary">
+            <Link to="/" className="retro-btn retro-btn--primary">
               Try It Online →
             </Link>
           </div>

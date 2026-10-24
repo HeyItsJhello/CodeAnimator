@@ -1,0 +1,181 @@
+@import url("https://fonts.googleapis.com/css2?family=Jersey+15&display=swap");
+
+@font-face {
+    font-family: 'Pixel Code';
+    src: url('/fonts/PixelCode.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@keyframes shimmer {
+    from { left: -80%; }
+    to   { left: 160%; }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}
+
+@keyframes glitch {
+    0%   { text-shadow: 3px 3px 0 rgba(0,0,0,0.12); }
+    15%  { text-shadow: -4px 2px 0 rgba(42,157,143,0.65), 5px -1px 0 rgba(230,57,70,0.5); }
+    30%  { text-shadow: 4px -3px 0 rgba(230,57,70,0.6), -3px 1px 0 rgba(42,157,143,0.45); }
+    50%  { text-shadow: -3px 3px 0 rgba(230,57,70,0.45), 5px 2px 0 rgba(42,157,143,0.55); }
+    70%  { text-shadow: 5px -1px 0 rgba(42,157,143,0.5), -4px 2px 0 rgba(230,57,70,0.4); }
+    85%  { text-shadow: -2px -2px 0 rgba(230,57,70,0.35); }
+    100% { text-shadow: 3px 3px 0 rgba(0,0,0,0.12); }
+}
+
+@keyframes pulse-submit {
+    0%, 100% { box-shadow: 6px 6px 0 #333, 10px 10px 0 rgba(0,0,0,0.15); }
+    50%       { box-shadow: 6px 6px 0 #333, 10px 10px 0 rgba(0,0,0,0.15), 0 0 28px rgba(230,57,70,0.25); }
+}
+
+@keyframes scanlines-move {
+    from { background-position: 0 0; }
+    to   { background-position: 0 4px; }
+}
+
+@keyframes grid-drift {
+    from { background-position: 0 0; }
+    to   { background-position: 20px 20px; }
+}
+
+@keyframes bracket-left {
+    from { transform: translateY(-50%) translateX(0); }
+    to   { transform: translateY(-50%) translateX(-5px); }
+}
+
+@keyframes bracket-right {
+    from { transform: translateY(-50%) translateX(0); }
+    to   { transform: translateY(-50%) translateX(5px); }
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    border-radius: 0 !important;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+    width: 100%;
+}
+
+.app::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    background: radial-gradient(
+        ellipse 130% 90% at 50% 50%,
+        transparent 45%,
+        rgba(0, 0, 0, 0.18) 100%
+    );
+}
+
+.app {
+    min-height: 100vh;
+    height: 100%;
+    background: #f0f0f0;
+    background-image: radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    animation: grid-drift 14s linear infinite;
+    padding: 1rem;
+    font-family: "Jersey 15", "Courier New", monospace;
+    font-weight: bold;
+}
+
+/* Back to Home Link */
+.back-to-home {
+    display: inline-block;
+    margin-bottom: 1rem;
+    color: #666;
+    text-decoration: none;
+    font-size: 1rem;
+    font-family: "Jersey 15", "Courier New", monospace;
+    transition: color 0.2s ease;
+}
+
+.back-to-home:hover {
+    color: #ff5e5b;
+}
+
+.main-layout {
+    display: flex;
+    gap: 1rem;
+    max-width: 100%;
+    margin: 0 auto;
+    width: 100%;
+    min-height: calc(100vh - 2rem);
+}
+
+.main-layout.centered {
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    background: white;
+    border: 4px solid #333;
+    box-shadow:
+        4px 4px 0 #333,
+        8px 8px 0 rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    overflow-y: auto;
+    position: relative;
+}
+
+.main-layout:not(.centered) .container {
+    flex: 1;
+    min-width: 500px;
+    max-height: calc(100vh - 2rem);
+}
+
+.main-layout.centered .container {
+    width: 100%;
+    max-width: 800px;
+    min-width: 500px;
+}
+
+h1 {
+    color: #222;
+    font-size: 2.8rem;
+    margin: 0 0 0.5rem 0;
+    text-align: center;
+    letter-spacing: 2px;
+    font-weight: bold;
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.12);
+    cursor: default;
+    transition: letter-spacing 0.15s ease;
+}
+
+h1:hover {
+    animation: glitch 0.45s steps(1, end) forwards;
+    letter-spacing: 3px;
+}
+
+.cursor-blink {
+    color: #e63946;
+    animation: blink 1s step-end infinite;
+    margin-left: 2px;
+}
+
+.subtitle {
+    color: #777;
+    text-align: center;
+    font-size: 0.95rem;
+    margin: 0 0 2rem 0;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    font-family: "Jersey 15", monospace;
+}
+

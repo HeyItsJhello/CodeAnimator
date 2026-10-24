@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FONT_OPTIONS } from "../data/constants";
+import { FONT_OPTIONS } from "../config/constants";
 import { ensureFontsLoaded } from "../utils/fonts";
+import { Section } from "./FormSections";
 
 const CATEGORIES = [
   { key: "system",    label: "System"    },
@@ -35,18 +36,11 @@ function FontSelector({ font, onFontChange }) {
   }, []);
 
   return (
-    <motion.div
-      className="form-section"
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.4, delay: 0.25 }}
+    <Section
+      title="9. Font Style"
+      help="Choose the monospace font for the rendered video. The preview updates live."
+      delay={0.25}
     >
-      <h2>9. Font Style</h2>
-      <p className="help-text">
-        Choose the monospace font for the rendered video. The preview updates live.
-      </p>
-
       <div className="font-selector" ref={containerRef}>
         <button
           type="button"
@@ -103,7 +97,7 @@ function FontSelector({ font, onFontChange }) {
           )}
         </AnimatePresence>
       </div>
-    </motion.div>
+    </Section>
   );
 }
 

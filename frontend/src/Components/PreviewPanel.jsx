@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 
 const OVERSCAN          = 30;
@@ -13,20 +13,18 @@ function PreviewPanel({
   highlightedLines,
   startLine,
   endLine,
-  shownLines,
   lineGroupMap,
   fontFamily,
   onOpenPreviewModal,
 }) {
-  const containerRef  = useRef(null);
-  const lineHeightRef = useRef(26);
-  const measuredRef   = useRef(false);
+  const containerRef = useRef(null);
 
+  const [lineHeight, setLineHeight] = useState(null); // measured from the first rendered line
   const [scrollTop,  setScrollTop]  = useState(0);
   const [viewHeight, setViewHeight] = useState(500);
   const [viewWidth,  setViewWidth]  = useState(800);
 
-  const lines     = fileContent ? fileContent.split("\n") : [];
+  const lines     = useMemo(() => (fileContent ? fileContent.split("\n") : []), [fileContent]);
   const isVirtual = lines.length > VIRTUAL_THRESHOLD;
 
   // Always observe container size (for both font scaling and virtual scroll)
@@ -43,19 +41,13 @@ function PreviewPanel({
     return () => obs.disconnect();
   }, []);
 
-  const measureRef = useCallback((node) => {
-    if (node && !measuredRef.current) {
+  const measureRef = (node) => {
+    if (node && lineHeight === null) {
       const h = node.getBoundingClientRect().height;
-      if (h > 0) {
-        lineHeightRef.current = h;
-        measuredRef.current   = true;
-      }
+      if (h > 0) setLineHeight(h);
     }
-  }, []);
-
-  const handleScroll = useCallback((e) => {
-    setScrollTop(e.currentTarget.scrollTop);
-  }, []);
+  };
+  const lh = lineHeight ?? 26;
 
   // Longest line in the whole file — stable so font doesn't jump while scrolling
   const maxLineLength = useMemo(
@@ -78,22 +70,19 @@ function PreviewPanel({
 
   const { firstIdx, lastIdx } = useMemo(() => {
     if (!isVirtual) return { firstIdx: 0, lastIdx: lines.length - 1 };
-    const lh   = lineHeightRef.current;
     const first = Math.max(0, Math.floor(scrollTop / lh) - OVERSCAN);
     const last  = Math.min(
       lines.length - 1,
       Math.ceil((scrollTop + viewHeight) / lh) + OVERSCAN,
     );
     return { firstIdx: first, lastIdx: last };
-  }, [isVirtual, scrollTop, viewHeight, lines.length]);
+  }, [isVirtual, scrollTop, viewHeight, lines.length, lh]);
 
-  const topPad    = isVirtual ? firstIdx * lineHeightRef.current : 0;
+  const topPad    = isVirtual ? firstIdx * lh : 0;
   const bottomPad = isVirtual
-    ? Math.max(0, (lines.length - 1 - lastIdx) * lineHeightRef.current)
+    ? Math.max(0, (lines.length - 1 - lastIdx) * lh)
     : 0;
 
-  const isLineInRange = (n) => n >= startLine && n <= endLine;
-  const isLineInGroup = (n) => shownLines.has(n);
 
   return (
     <motion.div
@@ -136,7 +125,7 @@ function PreviewPanel({
       <div
         className="preview-content"
         ref={containerRef}
-        onScroll={isVirtual ? handleScroll : undefined}
+        onScroll={isVirtual ? (e) => setScrollTop(e.currentTarget.scrollTop) : undefined}
       >
         <pre
           className="code-preview"
@@ -152,9 +141,9 @@ function PreviewPanel({
           {lines.slice(firstIdx, lastIdx + 1).map((line, i) => {
             const lineNum       = firstIdx + i + 1;
             const dataIdx       = firstIdx + i;
-            const inRange       = isLineInRange(lineNum);
-            const inGroup       = isLineInGroup(lineNum);
+            const inRange       = lineNum >= startLine && lineNum <= endLine;
             const groupNums     = lineGroupMap.get(lineNum);
+            const inGroup       = groupNums !== undefined;
             const indicatorText = groupNums?.length ? `G${groupNums.join(",")}` : "";
             const paddedNum     = String(lineNum).padStart(lineNumWidth, " ");
 

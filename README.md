@@ -1,370 +1,75 @@
 # Code Animator 🎬
 
-Create beautiful animated videos of your code with the use of Manim (A Python based Animation Library)! Available as both a **web application** and a **command-line tool**.
+Turn a source file into an animated video of its code appearing line by line, group by group.
 
-This was originally created to help with some Godot / Xogot showcases for my code, editting line after line of code became tedious so I decided to learn MANIM to create this project for my exact needs.
+Originally built for Godot / Xogot showcases: editing in line after line of code by hand got tedious, so this does it for you.
 
----
-
-![Python](https://img.shields.io/badge/python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Manim](https://img.shields.io/badge/Manim-orange?style=for-the-badge)
+![Remotion](https://img.shields.io/badge/Remotion-0B84F3?style=for-the-badge)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
-![GitHub Stars](https://img.shields.io/github/stars/HeyItsJhello/CodeAnimator?style=for-the-badge)
 
----
-# Deployment
+Try it at https://codemation.dev/
 
-You can find Code Animator deployed at https://codemation.dev/
+https://github.com/user-attachments/assets/ed7b0d6c-e840-499b-a7b9-a5f8b1194bd0
 
-This was achieved through a Hugging Face Space for the backend, so that we can have a server to communicate with the Frontend Deployment on Vercel.
-Give it a try and see how you like it!
+## Features
 
----
-## Getting Started
+- Upload a code file (Python, JavaScript/TypeScript, C/C++, Java, Go, Rust, GDScript, and more) with a live preview
+- Pick a line range and group lines to appear together
+- Toggle comments, customize syntax colors, choose from 14 monospace fonts
+- Animations: slide in, fade in, typewriter, drop in, scale in
+- Landscape or portrait; 720p30, 1080p60, or 4K60
+- Dry run to check timing before rendering
+- Uploads are deleted immediately; videos are deleted once downloaded
 
-### 1. Clone the Repository
+## Running locally
+
+Requires Node.js 20.19+.
 
 ```bash
 git clone https://github.com/HeyItsJhello/CodeAnimator.git
 cd CodeAnimator
+
+(cd renderer && npm install)       # Remotion composition, bundled by the backend
+(cd backend-node && npm install && npm start)   # API on http://localhost:8000
+(cd frontend && npm install && npm run dev)     # UI on http://localhost:5173
 ```
 
-### 2. Choose Your Setup
+The frontend reads the API URL from `VITE_API_URL` (default `http://localhost:8000`).
 
-You can use Code Animator in two ways:
-- **Web Application** (Recommended) - Full-featured browser interface with live preview
-- **Command-Line Tool** - Traditional CLI for local use
+Tests: `npm test` in `backend-node/` and `renderer/`.
 
-See the sections below for setup instructions for each option.
+## Line groups
 
----
+Each group is revealed together; groups play in order.
 
-## Features
+- `3 5-7` shows lines 3, 5, 6, 7
+- An empty group shows every remaining line in the range
+- **Split** starts a new group at a single line
 
-- **Web Interface**: Easy-to-use browser-based UI with live code preview
-- **CLI Tool**: Traditional command-line interface for local use
-- Animate any code file (Python, JavaScript, Java, C++, GDScript, and more)
-- Choose specific line ranges to animate
-- Group lines to appear together in sequences
-- Option to include/exclude comments
-- Customizable syntax highlighting with line numbers
-- **Privacy-focused**: Uploaded files are automatically deleted after processing
-- **High Quality**: All videos rendered at 1080p60
+## API
 
----
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/` | Health check |
+| `POST` | `/api/validate` | Validate `file` + `config` (multipart) |
+| `POST` | `/api/dry-run` | Frame counts and duration, no render |
+| `POST` | `/api/animate` | Start a render; returns `taskId` |
+| `GET` | `/api/progress-stream/:taskId` | Server-sent progress events |
+| `GET` | `/api/stream/:videoId` | Stream the finished video |
+| `GET` | `/api/download/:videoId` | Download (then delete) the video |
 
-## Example
-
-https://github.com/user-attachments/assets/ed7b0d6c-e840-499b-a7b9-a5f8b1194bd0
-
----
-
-## Web Application (Recommended)
-
-### Prerequisites
-
-Make sure you have Node.js and Python installed on your system.
-
-**Backend:**
-```bash
-pip install fastapi uvicorn manim --break-system-packages
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm install
-```
-
-### Quick Start
-
-1. **Start the Backend:**
-```bash
-cd backend
-python main.py
-# Server runs on http://localhost:8000
-```
-
-2. **Start the Frontend:**
-```bash
-cd frontend
-npm run dev
-# UI runs on http://localhost:5173
-```
-
-3. **Use the Web Interface:**
-- Open http://localhost:5173 in your browser
-- Upload your code file
-- Select line range (start/end lines)
-- Customize Syntax Highlighting for your preference
-- Choose whether to include comments
-- Define animation groups (or press "Add Group" with empty input for all remaining lines)
-- Click "Generate Animation"
-- Your video downloads automatically!
-
-3.5. **EXAMPLE**:
-<img width="1773" height="1105" alt="Screenshot 2026-01-13 at 11 15 25 PM" src="https://github.com/user-attachments/assets/17c2e873-e9a0-4566-90ed-b6611202ba86" />
-
-### Privacy & Security
-
-The web application is designed with privacy in mind:
-- Uploaded code files are deleted immediately after video generation
-- All temporary media files are cleaned up automatically
-- Generated videos are deleted from the server after download
-- **No user data is retained on the server**
-
-### Supported File Types
-
-- Python (`.py`)
-- JavaScript (`.js`, `.jsx`)
-- TypeScript (`.ts`, `.tsx`)
-- Java (`.java`)
-- C/C++ (`.c`, `.cpp`, `.h`)
-- Go (`.go`)
-- Rust (`.rs`)
-- Ruby (`.rb`)
-- PHP (`.php`)
-- Swift (`.swift`)
-- Kotlin (`.kt`)
-- GDScript (`.gd`) - Godot Engine scripts
-
----
-
-## Command-Line Tool
-
-- If you want to use this for a class or something (I have no clue sometimes)
-
-### Prerequisites
-
-```bash
-pip install manim --break-system-packages
-```
-
-Or with a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install manim
-```
-
-### Quick Start
-
-**Step 1: Run the interactive setup**
-
-```bash
-python CodeAnimator.py
-```
-
-**Step 2: Answer the prompts**
+## Project structure
 
 ```
-Enter the path to the script file: example_script.py
-✓ File found: 35 lines total
-
---- Line Range ---
-Starting line: 6
-Ending line: 20
-
-Include comments in the video? (y/n): n
-
---- Line Groups ---
-Enter line numbers for each group (space-separated)
-Press Enter without input to show all remaining lines
-
-Group 1 lines: 8 9 10
-Group 2 lines: 13 14
-Group 3 lines: 17 18 19
-Group 4 lines: [press enter to finish]
+backend-node/   server.js: HTTP API + rendering; config.js: pure request logic (tested)
+renderer/       Remotion composition: layout, timing, syntax highlighting
+frontend/       React + Vite web app
+TestingScripts/ Sample source files for trying the app
 ```
 
-**Step 3: Render the animation**
+## License
 
-The script will output the command to run. For example:
-
-Low quality (fast preview):
-```bash
-manim -pql --disable_caching --flush_cache -o example_6-20 CodeAnimator.py CodeAnimation
-```
-
-High quality (production):
-```bash
-manim -pqh --disable_caching --flush_cache -o example_6-20 CodeAnimator.py CodeAnimation
-```
-
-### CLI Usage Examples
-
-<img width="1191" height="596" alt="Screenshot 2026-01-13 at 11 16 48 PM" src="https://github.com/user-attachments/assets/e97c3201-86b2-411e-b9ad-2c8a139a9849" />
-
-**Example 1: Animate a function definition**
-```
-File: my_script.py
-Starting line: 1
-Ending line: 15
-Include comments: y
-
-Group 1: 1 2 3          # Function signature and docstring
-Group 2: 5 6 7 8        # First logical block
-Group 3: 10 11 12       # Second logical block
-Group 4: 14 15          # Return statement
-```
-
-**Example 2: Show algorithm steps**
-```
-File: algorithm.py
-Starting line: 20
-Ending line: 45
-Include comments: n
-
-Group 1: 22 23 24       # Initialization
-Group 2: 26 27 28 29    # Main loop
-Group 3: 31 32          # Condition check
-Group 4: [press enter]  # All remaining lines
-```
-
----
-
-## How It Works 
-
-### Web Application
-1. **Upload**: User uploads code file through web interface
-2. **Configure**: User selects line ranges and animation groups with live preview
-3. **Process**: Backend receives file and configuration
-4. **Render**: Manim generates 1080p60 video with syntax highlighting
-5. **Download**: Video is sent to user and all data is deleted from server
-
-### CLI Tool
-1. **Interactive Input**: Script prompts for all necessary information
-2. **Configuration**: Saves choices to temporary config file at `/tmp/anim_config.txt`
-3. **Code Parsing**: Reads source file and filters based on settings
-4. **Animation**: Creates Manim scene with syntax highlighting and line numbers
-5. **Video Output**: Generates MP4 file in `media/videos/CodeAnimator/[quality]/`
-
----
-
-## Line Grouping Tips 
-
-- **Logical blocks**: Group lines that form a complete thought
-- **Related operations**: Lines that work together
-- **Sequential reveals**: Build up complexity gradually
-- **Highlight changes**: Show before/after states
-
-Example grouping strategies:
-- Variable declarations together
-- Loop/condition + body
-- Function calls with their setup
-- Error handling blocks
-- Leave input empty to show all remaining lines at once
-
----
-
-## Manim Quality Flags 
-
-- `-ql`: Low quality (480p15, faster rendering)
-- `-qm`: Medium quality (720p30)
-- `-qh`: High quality (1080p60) ← **Web app uses this**
-- `-qk`: 4K quality (2160p60)
-
-Additional flags:
-- `-p`: Preview after rendering
-- `--disable_caching`: Disable caching for clean renders
-- `--flush_cache`: Clean up SVG files after rendering
-
----
-
-## Troubleshooting 
-
-### Web Application
-
-**Problem**: Backend not connecting
-- Solution: Make sure backend is running on port 8000: `cd backend && python main.py`
-
-**Problem**: Frontend not loading
-- Solution: Make sure you ran `npm install` and `npm run dev` in the frontend folder
-
-**Problem**: Video generation fails
-- Solution: Check that Manim is installed correctly with `manim --version`
-
-### CLI Tool
-
-**Problem**: "File not found"
-- Solution: Use absolute path or ensure you're in the correct directory
-
-**Problem**: "Line X is outside range"
-- Solution: Check that line numbers are within the starting/ending range
-
-**Problem**: "No lines appear in video"
-- Solution: Make sure you entered at least one group of lines
-
-**Problem**: Manim not found
-- Solution: Install with `pip install manim --break-system-packages`
-
----
-
-## API Endpoints 
-
-For those who want to integrate programmatically:
-
-- `POST /api/animate` - Upload file and generate animation
-- `GET /api/download/{video_id}` - Download generated video
-- `GET /api/videos` - List all videos (usually empty due to auto-cleanup)
-- `DELETE /api/videos/{video_id}` - Delete a specific video
-
----
-
-## Project Structure 
-
-```
-CodeAnimator/
-├── CodeAnimator.py          # Main CLI animation script
-├── backend/
-│   ├── main.py             # FastAPI backend server
-│   ├── requirements.txt    # Python dependencies
-│   ├── uploads/            # Temporary file uploads (auto-cleaned)
-│   ├── outputs/            # Generated videos (auto-cleaned)
-│   └── media/              # Manim media files (auto-cleaned)
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx        # Main React component
-│   │   └── main.jsx       # React entry point
-│   ├── package.json       # Node dependencies
-│   └── vite.config.js     # Vite configuration
-└── README.md              # This file
-```
-
----
-
-## Video Output 
-
-**Web Application:**
-- Videos are automatically downloaded to your browser's download folder
-- Named as: `{filename}_{startLine}-{endLine}.mp4`
-- Quality: 1080p60 (always)
-
-**CLI Tool:**
-- Videos are saved to: `media/videos/CodeAnimator/{quality}/{filename}_{startLine}-{endLine}.mp4`
-- Quality: Depends on the flag you used (`-ql`, `-qm`, `-qh`, `-qk`)
-
----
-
-## License 
-
-This project is licensed under the **MIT License** 
-### MIT License
-
-
-## Contributing 
-
-Contributions are welcome! Feel free to:
-- Report bugs or issues
-- Suggest new features
-- Submit pull requests
-- Improve documentation
-
-Visit the [GitHub repository](https://github.com/HeyItsJhello/CodeAnimator) to contribute!
-
----
-
-**Happy Animating!**
+MIT, see [LICENSE](LICENSE).
