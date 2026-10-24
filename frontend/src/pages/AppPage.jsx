@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import "../App.css";
 
@@ -11,9 +10,9 @@ import { useLineGroups, toApiGroups } from "../hooks/useLineGroups";
 import { useRender }            from "../hooks/useRender";
 
 import {
-  ApiStatusBanner, FileUploadSection, LineRangeSection, CommentSettings,
+  ApiStatusBanner, LineRangeSection, CommentSettings,
   ColorSettings, OrientationToggle, QualityPreset, TimingSettings,
-  AnimationTypeSelector, LineGroupsSection, SubmitSection,
+  AnimationTypeSelector, LineGroupsSection, SidebarLinks,
 } from "../Components/FormSections";
 import FontSelector from "../Components/FontSelector";
 import PreviewPanel from "../Components/PreviewPanel";
@@ -21,16 +20,44 @@ import {
   LoadingModal, SplitModal, ColorModal, PreviewModal, VideoCompleteModal, DryRunModal,
 } from "../Components/Modals";
 
-const SUBTITLE = "> render your code as animation // powered by remotion";
+const ACCEPTED_EXTENSIONS = ".py,.js,.jsx,.ts,.tsx,.java,.cpp,.c,.h,.go,.rs,.rb,.php,.swift,.kt,.gd";
 
-function useTypewriter(text, intervalMs = 28) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (count >= text.length) return;
-    const id = setTimeout(() => setCount(count + 1), intervalMs);
-    return () => clearTimeout(id);
-  }, [count, text, intervalMs]);
-  return text.slice(0, count);
+// Shown in the editor before a file is loaded: an empty file you drop code into.
+function EmptyEditor({ onFiles }) {
+  const [dragging, setDragging] = useState(false);
+
+  const lines = [
+    "",
+    "Drop a code file here",
+    "or click to browse.",
+    "",
+    "// Python, JavaScript, TypeScript, Go, Rust,",
+    "// C++, Java, Swift, GDScript and more",
+    "", "", "", "", "", "",
+  ];
+
+  return (
+    <label
+      htmlFor="file-upload"
+      className={`empty-editor${dragging ? " empty-editor--dragging" : ""}`}
+      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        onFiles(e.dataTransfer.files);
+      }}
+    >
+      {lines.map((text, i) => (
+        <span key={i} className="empty-editor__line">
+          <span className="empty-editor__number">{i + 1}</span>
+          <span className={text.startsWith("//") ? "empty-editor__comment" : "empty-editor__text"}>
+            {text}
+          </span>
+        </span>
+      ))}
+    </label>
+  );
 }
 
 // Sets "awake", "error", or "waking" (request timed out — retries every 3s).
@@ -70,7 +97,6 @@ function AppPage() {
     setIsDark(!isDark);
   };
 
-  const typed = useTypewriter(SUBTITLE);
   const [apiStatus, checkApiStatus] = useApiStatus();
 
   // null | "split" | "color" | "preview" | "video" | "dryRun"
@@ -164,113 +190,116 @@ function AppPage() {
   }, [fileContent, fileExtension, syntaxColors]);
 
   const fontFamily = FONT_OPTIONS.find((f) => f.value === font)?.family ?? "monospace";
+  const loadFiles = (files) => handleFileUpload({ target: { files } });
+  const ready = apiStatus === "awake";
 
   return (
     <div className={`app${isDark ? " dark-theme" : ""}`}>
-      <div className={`main-layout ${!fileContent ? "centered" : ""}`}>
-        <motion.div
-          className="container"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        >
-          <span className="corner-tl" aria-hidden="true" />
-          <span className="corner-tr" aria-hidden="true" />
+      <input
+        type="file" id="file-upload" className="visually-hidden"
+        accept={ACCEPTED_EXTENSIONS} onChange={handleFileUpload}
+      />
 
-          <div className="nav-row">
-            <Link to="/landing" className="back-to-home">← Back to Home</Link>
-            <button type="button" className="theme-toggle" onClick={toggleTheme}>
-              {isDark ? "☀ Light" : "☾ Dark"}
-            </button>
+      <header className="topbar">
+        <Link to="/landing" className="topbar__logo">
+          <span className="logo-mark" aria-hidden="true" />
+          Code Animator
+        </Link>
+
+        {fileName && (
+          <div className="topbar__file">
+            <span className="topbar__filename">{fileName}</span>
+            <span className="topbar__meta">{totalLines} lines</span>
+            <label htmlFor="file-upload" className="topbar__change">Change file</label>
           </div>
+        )}
 
-          <motion.h1
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            Code Animator
-          </motion.h1>
-          <motion.p
-            className="subtitle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.1, delay: 0.3 }}
-          >
-            {typed}
-          </motion.p>
-
-          <ApiStatusBanner apiStatus={apiStatus} onRetry={checkApiStatus} />
-
-          <form onSubmit={(e) => { e.preventDefault(); startRender(); }}>
-            <FileUploadSection fileName={fileName} totalLines={totalLines} onFileUpload={handleFileUpload} />
-
-            <AnimatePresence>
-              {totalLines > 0 && (
-                <>
-                  <LineRangeSection
-                    startLine={startLine} endLine={endLine} totalLines={totalLines}
-                    onStartLineChange={setStartLine} onEndLineChange={setEndLine}
-                  />
-                  <CommentSettings includeComments={includeComments} onIncludeCommentsChange={setIncludeComments} />
-                  <ColorSettings syntaxColors={syntaxColors} onOpenColorModal={() => setModal("color")} />
-                  <OrientationToggle orientation={orientation} onOrientationChange={setOrientation} />
-                  <QualityPreset quality={quality} onQualityChange={setQuality} />
-                  <TimingSettings
-                    animationTiming={animationTiming}
-                    onUpdateTiming={updateTiming} onResetTiming={resetTiming}
-                  />
-                  <AnimationTypeSelector animationType={animationType} onAnimationTypeChange={setAnimationType} />
-                  <FontSelector font={font} onFontChange={setFont} />
-                  <LineGroupsSection
-                    lineGroups={lineGroups} currentGroup={currentGroup}
-                    onCurrentGroupChange={setCurrentGroup}
-                    onAddLineGroup={addLineGroup} onRemoveLineGroup={removeLineGroup}
-                    onClearAllGroups={clearAll} onOpenSplitModal={() => setModal("split")}
-                  />
-                  <SubmitSection apiStatus={apiStatus} onDryRun={handleDryRun} />
-                </>
-              )}
-            </AnimatePresence>
-          </form>
-        </motion.div>
-
-        <AnimatePresence>
+        <div className="topbar__actions">
+          <button type="button" className="theme-toggle" onClick={toggleTheme}>
+            {isDark ? "Light mode" : "Dark mode"}
+          </button>
           {fileContent && (
+            <>
+              <button type="button" className="btn-dry-run" disabled={!ready} onClick={handleDryRun}>
+                Dry run
+              </button>
+              <button type="submit" form="render-form" className="btn-submit" disabled={!ready}>
+                {ready ? "Generate video" : "Waiting for server…"}
+              </button>
+            </>
+          )}
+        </div>
+      </header>
+
+      <ApiStatusBanner apiStatus={apiStatus} onRetry={checkApiStatus} />
+
+      <main className={`workspace${fileContent ? "" : " workspace--empty"}`}>
+        <section className="editor" aria-label="Code preview">
+          {fileContent ? (
             <PreviewPanel
-              fileName={fileName} fileContent={fileContent}
+              fileContent={fileContent}
               highlightedLines={highlightedLines}
               startLine={startLine} endLine={endLine}
               lineGroupMap={lineGroupMap}
               fontFamily={fontFamily} onOpenPreviewModal={() => setModal("preview")}
             />
+          ) : (
+            <EmptyEditor onFiles={loadFiles} />
           )}
-        </AnimatePresence>
+        </section>
 
-        <LoadingModal isLoading={isLoading} loadingProgress={loadingProgress} loadingStatus={loadingStatus} />
-        <SplitModal
-          show={modal === "split"} startLine={startLine} endLine={endLine}
-          onAddSplit={addSplit} onClose={closeModal}
-        />
-        <ColorModal
-          show={modal === "color"} syntaxColors={syntaxColors}
-          onSyntaxColorsChange={setSyntaxColors} onClose={closeModal}
-        />
-        <PreviewModal
-          show={modal === "preview"} highlightedLines={highlightedLines}
-          syntaxColors={syntaxColors} startLine={startLine} endLine={endLine}
-          onClose={closeModal} onEditColors={() => setModal("color")}
-        />
-        <VideoCompleteModal
-          show={modal === "video"} videoUrl={videoUrl}
-          onClose={closeVideoModal} onDownload={download} onUploadNew={resetForNewFile}
-        />
-        <DryRunModal
-          show={modal === "dryRun"} result={dryRunResult}
-          onClose={closeModal}
-          onRender={() => { closeModal(); startRender(); }}
-        />
-      </div>
+        {fileContent && (
+          <aside className="sidebar" aria-label="Video settings">
+            <form id="render-form" onSubmit={(e) => { e.preventDefault(); startRender(); }}>
+              <LineRangeSection
+                startLine={startLine} endLine={endLine} totalLines={totalLines}
+                onStartLineChange={setStartLine} onEndLineChange={setEndLine}
+              />
+              <LineGroupsSection
+                lineGroups={lineGroups} currentGroup={currentGroup}
+                onCurrentGroupChange={setCurrentGroup}
+                onAddLineGroup={addLineGroup} onRemoveLineGroup={removeLineGroup}
+                onClearAllGroups={clearAll} onOpenSplitModal={() => setModal("split")}
+              />
+              <AnimationTypeSelector animationType={animationType} onAnimationTypeChange={setAnimationType} />
+              <TimingSettings
+                animationTiming={animationTiming}
+                onUpdateTiming={updateTiming} onResetTiming={resetTiming}
+              />
+              <OrientationToggle orientation={orientation} onOrientationChange={setOrientation} />
+              <QualityPreset quality={quality} onQualityChange={setQuality} />
+              <ColorSettings syntaxColors={syntaxColors} onOpenColorModal={() => setModal("color")} />
+              <FontSelector font={font} onFontChange={setFont} />
+              <CommentSettings includeComments={includeComments} onIncludeCommentsChange={setIncludeComments} />
+            </form>
+            <SidebarLinks />
+          </aside>
+        )}
+      </main>
+
+      <LoadingModal isLoading={isLoading} loadingProgress={loadingProgress} loadingStatus={loadingStatus} />
+      <SplitModal
+        show={modal === "split"} startLine={startLine} endLine={endLine}
+        onAddSplit={addSplit} onClose={closeModal}
+      />
+      <ColorModal
+        show={modal === "color"} syntaxColors={syntaxColors}
+        onSyntaxColorsChange={setSyntaxColors} onClose={closeModal}
+      />
+      <PreviewModal
+        show={modal === "preview"} highlightedLines={highlightedLines}
+        syntaxColors={syntaxColors} startLine={startLine} endLine={endLine}
+        onClose={closeModal} onEditColors={() => setModal("color")}
+      />
+      <VideoCompleteModal
+        show={modal === "video"} videoUrl={videoUrl}
+        onClose={closeVideoModal} onDownload={download} onUploadNew={resetForNewFile}
+      />
+      <DryRunModal
+        show={modal === "dryRun"} result={dryRunResult}
+        onClose={closeModal}
+        onRender={() => { closeModal(); startRender(); }}
+      />
     </div>
   );
 }

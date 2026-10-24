@@ -36,11 +36,7 @@ function FontSelector({ font, onFontChange }) {
   }, []);
 
   return (
-    <Section
-      title="9. Font Style"
-      help="Choose the monospace font for the rendered video. The preview updates live."
-      delay={0.25}
-    >
+    <Section title="Font" help="Used in the video. The preview updates as you pick.">
       <div className="font-selector" ref={containerRef}>
         <button
           type="button"

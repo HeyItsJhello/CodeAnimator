@@ -74,13 +74,23 @@
     text-align: left;
 }
 
-/* Logo mark: one coral pixel block */
-.logo-mark {
-    display: inline-block;
-    width: 18px;
-    height: 18px;
-    background: var(--coral);
-    border: 2px solid #333;
+/* Content sections: heading in a left margin column, content fills the rest */
+.features,
+.how-it-works,
+.comparison,
+.why-i-made-this {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) minmax(0, 3fr);
+    column-gap: clamp(2rem, 4vw, 4rem);
+    align-items: start;
+}
+
+.features > .section-title,
+.how-it-works > .section-title,
+.comparison > .section-title,
+.why-i-made-this > .section-title {
+    position: sticky;
+    top: 6rem;
 }
 
 /* ===================================
@@ -306,7 +316,6 @@
 }
 
 .spec {
-    max-width: 960px;
     margin: 0;
     padding: 2rem 2.5rem;
     overflow-x: auto;
@@ -342,13 +351,21 @@
     display: grid;
     grid-template-columns: 4rem 1fr;
     gap: 1.25rem;
-    max-width: 34rem;
+    max-width: 30rem;
     padding: 1.5rem 0 2.5rem;
     border-top: 2px solid #333;
 }
 
-.stairs__step:nth-child(2) { margin-left: clamp(0rem, 12vw, 11rem); }
-.stairs__step:nth-child(3) { margin-left: clamp(0rem, 24vw, 22rem); }
+.stairs__step:nth-child(2) { margin-left: 33%; }
+.stairs__step:nth-child(3) { margin-left: 66%; }
+
+.stairs__step:nth-child(n + 2) {
+    max-width: 34%;
+}
+
+.stairs__step:nth-child(1) {
+    max-width: 34%;
+}
 
 .stairs__number {
     color: var(--coral);
@@ -380,7 +397,6 @@
 }
 
 .comparison__table-wrapper {
-    max-width: 960px;
     overflow-x: auto;
 }
 
@@ -428,8 +444,8 @@
 
 .note {
     position: relative;
-    max-width: 38rem;
-    margin-left: clamp(0rem, 6vw, 5rem);
+    max-width: 46rem;
+    margin: 1rem 0 0 clamp(0rem, 4vw, 3rem);
     padding: 2.75rem 2.5rem 2rem;
     background: white;
     border: 2px solid #333;
@@ -812,7 +828,22 @@
         display: none;
     }
 
+    .features,
+    .how-it-works,
+    .comparison,
+    .why-i-made-this {
+        grid-template-columns: 1fr;
+    }
+
+    .features > .section-title,
+    .how-it-works > .section-title,
+    .comparison > .section-title,
+    .why-i-made-this > .section-title {
+        position: static;
+    }
+
     .stairs__step:nth-child(n) {
+        max-width: none;
         margin-left: 0;
     }
 

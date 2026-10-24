@@ -1,19 +1,13 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ANIMATION_TYPES, QUALITY_OPTIONS } from "../config/constants";
 
-export function Section({ title, help, delay, className = "form-section", children }) {
+export function Section({ title, help, className = "form-section", children }) {
   return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.4, delay }}
-    >
+    <div className={className}>
       {title && <h2>{title}</h2>}
       {help && <p className="help-text">{help}</p>}
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -45,51 +39,19 @@ export function ApiStatusBanner({ apiStatus, onRetry }) {
   );
 }
 
-export function FileUploadSection({ fileName, totalLines, onFileUpload }) {
-  return (
-    <Section title="1. Upload Code File" delay={0.3}>
-      <div className="file-upload-wrapper">
-        <input
-          type="file"
-          id="file-upload"
-          accept=".py,.js,.jsx,.ts,.tsx,.java,.cpp,.c,.h,.go,.rs,.rb,.php,.swift,.kt,.gd"
-          onChange={onFileUpload}
-          required
-        />
-        <label htmlFor="file-upload" className="file-upload-label">
-          {fileName || "Choose a file..."}
-        </label>
-      </div>
-      <AnimatePresence>
-        {totalLines > 0 && (
-          <motion.p
-            className="file-info"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-          >
-            File loaded: {totalLines} lines total
-          </motion.p>
-        )}
-      </AnimatePresence>
-    </Section>
-  );
-}
-
 export function LineRangeSection({ startLine, endLine, totalLines, onStartLineChange, onEndLineChange }) {
   return (
-    <Section title="2. Select Line Range" delay={0.1}>
+    <Section title="Line range">
       <div className="line-range">
         <div className="input-group">
-          <label htmlFor="start-line">Starting Line:</label>
+          <label htmlFor="start-line">From line</label>
           <input
             type="number" id="start-line" min="1" max={totalLines} value={startLine} required
             onChange={(e) => onStartLineChange(parseInt(e.target.value))}
           />
         </div>
         <div className="input-group">
-          <label htmlFor="end-line">Ending Line:</label>
+          <label htmlFor="end-line">To line</label>
           <input
             type="number" id="end-line" min={startLine} max={totalLines} value={endLine} required
             onChange={(e) => onEndLineChange(parseInt(e.target.value))}
@@ -102,7 +64,7 @@ export function LineRangeSection({ startLine, endLine, totalLines, onStartLineCh
 
 export function CommentSettings({ includeComments, onIncludeCommentsChange }) {
   return (
-    <Section title="3. Comment Settings" delay={0.2}>
+    <Section title="Comments">
       <label className="checkbox-label">
         <input
           type="checkbox"
@@ -118,9 +80,7 @@ export function CommentSettings({ includeComments, onIncludeCommentsChange }) {
 export function ColorSettings({ syntaxColors, onOpenColorModal }) {
   return (
     <Section
-      title="4. Syntax Highlighting Colors"
-      help="Customize the colors used for syntax highlighting in the animation."
-      delay={0.25}
+      title="Colors"
     >
       <div className="color-preview-row">
         {Object.entries(syntaxColors).map(([key, color]) => (
@@ -130,7 +90,7 @@ export function ColorSettings({ syntaxColors, onOpenColorModal }) {
         ))}
       </div>
       <button type="button" onClick={onOpenColorModal} className="btn-colors">
-        Customize Colors
+        Edit colors
       </button>
     </Section>
   );
@@ -143,7 +103,7 @@ const ORIENTATIONS = [
 
 export function OrientationToggle({ orientation, onOrientationChange }) {
   return (
-    <Section title="5. Video Orientation" help="Choose the aspect ratio for your video output." delay={0.28}>
+    <Section title="Video size">
       <div className="orientation-toggle">
         {ORIENTATIONS.map((o) => (
           <button
@@ -164,7 +124,7 @@ export function OrientationToggle({ orientation, onOrientationChange }) {
 
 export function QualityPreset({ quality, onQualityChange }) {
   return (
-    <Section title="6. Quality Preset" help="Choose rendering quality. Lower quality renders faster." delay={0.29}>
+    <Section title="Quality" help="Lower quality renders faster.">
       <div className="quality-toggle">
         {QUALITY_OPTIONS.map((opt) => (
           <button
@@ -192,9 +152,8 @@ const TIMING_FIELDS = [
 export function TimingSettings({ animationTiming, onUpdateTiming, onResetTiming }) {
   return (
     <Section
-      title="7. Animation Timing"
-      help="Fine-tune how long each part of the animation lasts (seconds)."
-      delay={0.3}
+      title="Timing"
+      help="How long each part lasts, in seconds."
     >
       <div className="timing-inputs-grid">
         {TIMING_FIELDS.map(({ key, id, label }) => (
@@ -210,7 +169,7 @@ export function TimingSettings({ animationTiming, onUpdateTiming, onResetTiming 
         ))}
       </div>
       <div className="timing-actions">
-        <button type="button" className="btn-reset" onClick={onResetTiming}>Reset to defaults</button>
+        <button type="button" className="btn-reset" onClick={onResetTiming}>Reset timing</button>
       </div>
     </Section>
   );
@@ -219,9 +178,8 @@ export function TimingSettings({ animationTiming, onUpdateTiming, onResetTiming 
 export function AnimationTypeSelector({ animationType, onAnimationTypeChange }) {
   return (
     <Section
-      title="8. Animation Type"
-      help="Choose how lines appear on screen during the animation."
-      delay={0.36}
+      title="Animation"
+      help="How each group of lines appears."
     >
       <div className="animation-type-toggle">
         {ANIMATION_TYPES.map((type) => (
@@ -242,7 +200,7 @@ export function AnimationTypeSelector({ animationType, onAnimationTypeChange }) 
 
 const describeGroup = (group) =>
   group === "ALL_REMAINING" ? "All remaining lines"
-    : group.type === "SPLIT" ? `SPLIT at line ${group.line}`
+    : group.type === "SPLIT" ? `Split at line ${group.line}`
       : `Lines ${group.join(", ")}`;
 
 export function LineGroupsSection({
@@ -251,23 +209,22 @@ export function LineGroupsSection({
 }) {
   return (
     <Section
-      title="10. Define Line Groups"
-      help={'Enter line numbers for each animation group (space-separated). Leave empty and click "Add Group" to show all remaining lines.'}
-      delay={0.3}
+      title="Line groups"
+      help="Each group appears together. Leave the field empty and add to show all remaining lines."
     >
-      <p className="help-text example">Example: 21 38 34 or 1-5 15-23 9-13</p>
+      <p className="help-text example">For example: 1-5 or 21 34 38</p>
 
       <div className="line-group-input">
         <input
           type="text"
-          placeholder="e.g., 1 2 3 or leave empty for all remaining"
+          placeholder="Line numbers, e.g. 1-5"
           value={currentGroup}
           onChange={(e) => onCurrentGroupChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") { e.preventDefault(); onAddLineGroup(); }
           }}
         />
-        <button type="button" onClick={onAddLineGroup} className="btn-add">Add Group</button>
+        <button type="button" onClick={onAddLineGroup} className="btn-add">Add group</button>
         <button type="button" onClick={onOpenSplitModal} className="btn-split">Split</button>
       </div>
 
@@ -281,8 +238,8 @@ export function LineGroupsSection({
             transition={{ duration: 0.3 }}
           >
             <div className="groups-header">
-              <h3>Animation Groups:</h3>
-              <button type="button" onClick={onClearAllGroups} className="btn-clear-all">Clear All</button>
+              <h3>Groups</h3>
+              <button type="button" onClick={onClearAllGroups} className="btn-clear-all">Clear all</button>
             </div>
             <AnimatePresence mode="popLayout">
               {lineGroups.map((group, index) => (
@@ -295,11 +252,11 @@ export function LineGroupsSection({
                   transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
                   layout
                 >
-                  <span className="group-number">Group {index + 1}:</span>
+                  <span className="group-number">{index + 1}</span>
                   <span className={`group-lines ${group.type === "SPLIT" ? "split-group" : ""}`}>
                     {describeGroup(group)}
                   </span>
-                  <button type="button" onClick={() => onRemoveLineGroup(index)} className="btn-remove">✕</button>
+                  <button type="button" onClick={() => onRemoveLineGroup(index)} className="btn-remove" aria-label={`Remove group ${index + 1}`}>✕</button>
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -310,30 +267,11 @@ export function LineGroupsSection({
   );
 }
 
-export function SubmitSection({ apiStatus, onDryRun }) {
-  const ready = apiStatus === "awake";
+export function SidebarLinks() {
   return (
-    <motion.div
-      className="form-section submit-section"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      transition={{ duration: 0.4, delay: 0.4 }}
-    >
-      <div className="submit-row">
-        <button type="button" className="btn-dry-run" disabled={!ready} onClick={onDryRun}>Dry Run</button>
-        <button type="submit" className="btn-submit" disabled={!ready}>
-          {ready ? "Generate Animation" : "Waiting for server..."}
-        </button>
-      </div>
-      <div className="footer-links">
-        <a href="https://ko-fi.com/heyitsjhello" target="_blank" rel="noopener noreferrer" className="support-btn">
-          ♥ Support this project
-        </a>
-        <a href="https://github.com/HeyItsJhello/CodeAnimator/issues" target="_blank" rel="noopener noreferrer" className="feedback-btn">
-          ? Send Feedback
-        </a>
-      </div>
-    </motion.div>
+    <p className="sidebar-links">
+      <a href="https://ko-fi.com/heyitsjhello" target="_blank" rel="noopener noreferrer">Support this project</a>
+      <a href="https://github.com/HeyItsJhello/CodeAnimator/issues" target="_blank" rel="noopener noreferrer">Send feedback</a>
+    </p>
   );
 }

@@ -1,66 +1,7 @@
-/* Submit Section */
-.submit-section {
-    text-align: center;
-}
-
-.footer-links {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-}
-
-/* Support Button */
-.support-btn {
-    display: inline-block;
-    padding: 0.6rem 1.2rem;
-    line-height: 1;
-    background: #ff5e5b;
-    color: white;
-    border: 2px solid #333;
-    font-size: 1rem;
-    font-weight: bold;
-    font-family: "Jersey 15", monospace;
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.1s ease;
-}
-
-.support-btn:hover {
-    background: #ff4744;
-}
-
-
-/* Feedback Button */
-.feedback-btn {
-    display: inline-block;
-    padding: 0.6rem 1.2rem;
-    background: #3498db;
-    color: white;
-    border: 2px solid #333;
-    font-size: 1rem;
-    font-weight: bold;
-    font-family: "Jersey 15", monospace;
-    text-decoration: none;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.1s ease;
-    line-height: 1;
-}
-
-.feedback-btn:hover {
-    background: #2980b9;
-}
-
-
 .form-section {
-    margin-bottom: 2.5rem;
-    padding-bottom: 2rem;
-    border-bottom: 2px dashed #ddd;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #eee;
     border-left: 2px solid transparent;
     padding-left: 0.75rem;
     margin-left: -0.75rem;
@@ -78,7 +19,7 @@
 
 h2 {
     color: #333;
-    font-size: 1.4rem;
+    font-size: 1.25rem;
     margin: 0 0 1rem 0;
     font-weight: bold;
 }
@@ -95,56 +36,6 @@ h3 {
     font-size: 1.2rem;
     margin: 1.5rem 0 1rem 0;
     font-weight: bold;
-}
-
-/* File Upload */
-.file-upload-wrapper {
-    position: relative;
-    margin-bottom: 1rem;
-}
-
-#file-upload {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
-    overflow: hidden;
-    z-index: -1;
-}
-
-.file-upload-label {
-    display: block;
-    position: relative;
-    overflow: hidden;
-    padding: 1rem 1.5rem;
-    background: #e63946;
-    color: white;
-    border: 2px solid #333;
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.1s ease;
-    font-size: 1.2rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.file-upload-label:hover {
-    background: #d62839;
-}
-
-
-.file-info {
-    color: #2a9d8f;
-    font-weight: bold;
-    margin: 0.5rem 0 0 0;
-    font-size: 1.05rem;
-}
-
-.file-info::before {
-    content: '[OK] ';
-    font-size: 0.85rem;
-    opacity: 0.7;
 }
 
 /* Line Range */
@@ -223,12 +114,13 @@ h3 {
 /* Line Group Input */
 .line-group-input {
     display: flex;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
     margin-bottom: 1.5rem;
 }
 
 .line-group-input input[type="text"] {
-    flex: 1;
+    flex: 1 1 100%;
     padding: 0.75rem;
     border: 2px solid #333;
     background: white;

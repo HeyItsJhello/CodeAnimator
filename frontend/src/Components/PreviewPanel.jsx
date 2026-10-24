@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
 
 const OVERSCAN          = 30;
 const VIRTUAL_THRESHOLD = 250;
@@ -8,7 +7,6 @@ const MIN_FONT_SIZE     = 7;    // px — below this is unreadable; clip instead
 const CHAR_RATIO        = 0.60; // approx char-width / font-size for monospace
 
 function PreviewPanel({
-  fileName,
   fileContent,
   highlightedLines,
   startLine,
@@ -85,40 +83,21 @@ function PreviewPanel({
 
 
   return (
-    <motion.div
-      className="preview-panel"
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-    >
-      <div className="preview-chrome">
-        <span className="chrome-dot red"    />
-        <span className="chrome-dot yellow" />
-        <span className="chrome-dot green"  />
-        <span className="chrome-label">preview</span>
-        {isVirtual && (
-          <span className="virtual-badge" title="Windowed rendering active">
-            virtual
-          </span>
-        )}
-      </div>
-
+    <div className="preview-panel">
       <div className="preview-header">
-        <div className="preview-header-top">
-          <h2>File Preview</h2>
-          <button
-            type="button"
-            className="btn-preview-colors"
-            onClick={onOpenPreviewModal}
-          >
-            Preview Colors
-          </button>
-        </div>
-        <span className="preview-filename">
-          <span className="filename-prompt">~/</span>
-          {fileName}
+        <span className="preview-legend">
+          <span className="legend-swatch legend-swatch--range" aria-hidden="true" />
+          In range
+          <span className="legend-swatch legend-swatch--group" aria-hidden="true" />
+          In a group
         </span>
+        <button
+          type="button"
+          className="btn-preview-colors"
+          onClick={onOpenPreviewModal}
+        >
+          Preview colors
+        </button>
       </div>
 
       <div
@@ -170,7 +149,7 @@ function PreviewPanel({
           )}
         </pre>
       </div>
-    </motion.div>
+    </div>
   );
 }
 

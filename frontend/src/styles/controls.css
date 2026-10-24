@@ -196,13 +196,9 @@
     background: #f0f0f0;
 }
 
-.animation-type-btn:not(.active) {
-    color: #333 !important;
-}
-
 .animation-type-btn.active {
     background: #f4a261;
-    color: white;
+    color: #1a1a1a;
     border-color: #333;
 }
 

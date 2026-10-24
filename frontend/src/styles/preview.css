@@ -1,35 +1,44 @@
-/* Preview Panel */
+/* Preview Panel: fills the editor area */
 .preview-panel {
-    flex: 1.2;
-    min-width: 600px;
-    background: white;
-    border: 2px solid #333;
-    overflow: hidden;
     display: flex;
+    flex: 1;
     flex-direction: column;
-    max-height: calc(100vh - 2rem);
+    min-height: 0;
+    overflow: hidden;
+    background: #1a1a1a;
 }
 
 .preview-header {
-    padding: 1.5rem 2rem;
-    background: white;
-    color: #333;
-    border-bottom: 2px solid #ff5e5b;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 1rem;
+    background: #252525;
+    color: #bbb;
+    border-bottom: 2px solid #333;
 }
 
-.preview-header h2 {
-    color: #333;
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-    font-weight: bold;
+.preview-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
 }
 
-.preview-filename {
-    font-size: 1rem;
-    color: #666;
-    font-family: "Jersey 15", monospace;
-    font-weight: bold;
+.legend-swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-left: 0.75rem;
 }
+
+.legend-swatch:first-child {
+    margin-left: 0;
+}
+
+.legend-swatch--range { background: #e63946; }
+.legend-swatch--group { background: #2a9d8f; }
 
 .preview-content {
     flex: 1;
@@ -106,14 +115,6 @@
 }
 
 
-/* Preview Header with Button */
-.preview-header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-}
-
 .btn-preview-colors {
     padding: 0.5rem 1rem;
     background: #2a9d8f;
@@ -130,60 +131,4 @@
 
 .btn-preview-colors:hover {
     background: #238276;
-}
-
-
-
-/* ── Terminal chrome bar ─────────────────────────────── */
-.preview-chrome {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    background: #111;
-    border-bottom: 2px solid #333;
-    flex-shrink: 0;
-}
-
-.chrome-dot {
-    display: inline-block;
-    width: 11px;
-    height: 11px;
-    border: 1px solid rgba(0,0,0,0.4);
-    flex-shrink: 0;
-}
-
-.chrome-dot.red    { background: #e63946; }
-.chrome-dot.yellow { background: #f4a261; }
-.chrome-dot.green  { background: #2a9d8f; }
-
-.chrome-label {
-    margin-left: auto;
-    font-family: "Jersey 15", monospace;
-    font-size: 0.65rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: #444;
-    user-select: none;
-}
-
-
-/* ── Preview filename terminal path ──────────────────── */
-.filename-prompt {
-    color: #999;
-    font-size: 0.9em;
-}
-
-/* ─── Virtual scroll badge ─── */
-.virtual-badge {
-    margin-left: auto;
-    font-size: 0.6rem;
-    font-family: "Jersey 15", monospace;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    background: #1a1a2e;
-    color: #00ecff;
-    border: 1px solid #00ecff44;
-    padding: 0.1rem 0.4rem;
-    opacity: 0.75;
 }

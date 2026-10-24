@@ -1,38 +1,38 @@
 /* Responsive Design */
-@media (max-width: 1200px) {
-    .main-layout {
-        flex-direction: column;
+/* Below laptop width the settings stack under the code */
+@media (max-width: 1000px) {
+    .app {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
     }
 
-    .preview-panel {
-        max-width: 100%;
-        max-height: 500px;
+    .workspace {
+        grid-template-columns: 1fr;
     }
 
-    h1 {
-        font-size: 1.6rem;
+    .editor {
+        height: 55vh;
     }
 
-    .subtitle {
-        font-size: 0.8rem;
+    .workspace--empty .editor {
+        height: auto;
+        min-height: 70vh;
+    }
+
+    .sidebar {
+        border-top: 2px solid #333;
+        border-left: none;
+    }
+
+    .topbar__actions {
+        margin-left: 0;
     }
 }
 
 @media (max-width: 768px) {
-    .container {
-        padding: 1.5rem 1rem;
-    }
-
-    h1 {
-        font-size: 1.3rem;
-    }
-
     h2 {
         font-size: 0.95rem;
-    }
-
-    .subtitle {
-        font-size: 0.75rem;
     }
 
     .line-range {
@@ -63,11 +63,6 @@
         margin-right: 0.5rem;
     }
 
-    .preview-panel {
-        max-height: 400px;
-        min-width: 100%;
-    }
-
     .code-preview {
         font-size: 0.75rem;
     }
@@ -77,7 +72,6 @@
         padding: 0 0.5rem;
     }
 
-    .file-upload-label,
     .btn-add,
     .btn-submit {
         font-size: 0.85rem;
