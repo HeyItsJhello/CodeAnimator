@@ -9,6 +9,9 @@
 
 :root {
     --shadow-ink: #333;
+    --text: #333;
+    --border: #333;
+    --bg: #fff;
 }
 
 @keyframes bracket-left {
@@ -39,14 +42,189 @@ body,
 }
 
 .app {
-    min-height: 100vh;
-    height: 100%;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
     background: #f0f0f0;
-    background-image: radial-gradient(rgba(0,0,0,0.1) 1px, transparent 1px);
-    background-size: 20px 20px;
-    padding: 1rem;
+    color: #333;
     font-family: "Jersey 15", "Courier New", monospace;
-    font-weight: bold;
+    overflow: hidden;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* Logo mark: one coral pixel block (also used on the landing page) */
+.logo-mark {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background: #ff5e5b;
+    border: 2px solid #333;
+}
+
+/* ── Top bar: identity, current file, and the render actions ── */
+.topbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.75rem;
+    padding: 0.75rem 1.25rem;
+    background: white;
+    border-bottom: 2px solid #333;
+}
+
+.topbar__logo {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: #333;
+    font-size: 1.35rem;
+    text-decoration: none;
+}
+
+.topbar__file {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.topbar__filename {
+    overflow: hidden;
+    color: #333;
+    font-size: 1.15rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.topbar__meta {
+    color: #777;
+    white-space: nowrap;
+}
+
+.topbar__change {
+    color: #d62839;
+    text-decoration: underline;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.topbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+}
+
+.topbar .btn-submit {
+    width: auto;
+    padding: 0.6rem 2.5rem;
+    font-size: 1.1rem;
+}
+
+.topbar .btn-dry-run {
+    padding: 0.6rem 1rem;
+}
+
+/* ── Workspace: code on the left, settings on the right ── */
+.workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 420px;
+    flex: 1;
+    min-height: 0;
+}
+
+.workspace--empty {
+    grid-template-columns: 1fr;
+}
+
+.editor {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: #1e1e1e;
+}
+
+.sidebar {
+    min-height: 0;
+    padding: 1.5rem 1.5rem 2rem;
+    overflow-y: auto;
+    background: white;
+    border-left: 2px solid #333;
+}
+
+.sidebar-links {
+    display: flex;
+    gap: 1.5rem;
+    margin: 0;
+    padding-top: 1rem;
+    font-size: 0.95rem;
+}
+
+.sidebar-links a {
+    color: #777;
+}
+
+.sidebar-links a:hover {
+    color: #d62839;
+}
+
+/* ── Empty editor: the drop zone before a file is loaded ── */
+.empty-editor {
+    display: block;
+    flex: 1;
+    padding: 2rem 0;
+    overflow: hidden;
+    background: #1e1e1e;
+    color: #e8e8e8;
+    font-size: clamp(1.5rem, 3vw, 2.6rem);
+    line-height: 1.6;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.empty-editor__line {
+    display: flex;
+    min-height: 1.6em;
+}
+
+.empty-editor__number {
+    flex-shrink: 0;
+    width: 5rem;
+    margin-right: 1.75rem;
+    padding-right: 1.25rem;
+    border-right: 2px solid #2e2e2e;
+    color: #555;
+    text-align: right;
+    transition: color 0.15s ease;
+}
+
+.empty-editor__comment {
+    color: #7a7a7a;
+}
+
+.empty-editor:hover,
+.empty-editor--dragging {
+    background: #242424;
+}
+
+.empty-editor:hover .empty-editor__number,
+.empty-editor--dragging .empty-editor__number {
+    color: #ff5e5b;
+}
+
+/* Keyboard focus lands on the hidden input; show it on the drop zone */
+#file-upload:focus-visible ~ .workspace .empty-editor {
+    outline: 3px solid #ff5e5b;
+    outline-offset: -3px;
 }
 
 /* Back to Home Link */
@@ -64,40 +242,6 @@ body,
     color: #ff5e5b;
 }
 
-.main-layout {
-    display: flex;
-    gap: 1rem;
-    max-width: 100%;
-    margin: 0 auto;
-    width: 100%;
-    min-height: calc(100vh - 2rem);
-}
-
-.main-layout.centered {
-    justify-content: center;
-    align-items: center;
-}
-
-.container {
-    background: white;
-    border: 2px solid #333;
-    padding: 2rem;
-    overflow-y: auto;
-    position: relative;
-}
-
-.main-layout:not(.centered) .container {
-    flex: 1;
-    min-width: 500px;
-    max-height: calc(100vh - 2rem);
-}
-
-.main-layout.centered .container {
-    width: 100%;
-    max-width: 800px;
-    min-width: 500px;
-}
-
 h1 {
     color: #222;
     font-size: 2.8rem;
@@ -105,15 +249,5 @@ h1 {
     text-align: center;
     letter-spacing: 2px;
     font-weight: bold;
-}
-
-.subtitle {
-    color: #777;
-    text-align: center;
-    font-size: 0.95rem;
-    margin: 0 0 2rem 0;
-    font-weight: bold;
-    letter-spacing: 0.5px;
-    font-family: "Jersey 15", monospace;
 }
 

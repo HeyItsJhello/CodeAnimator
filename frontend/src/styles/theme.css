@@ -63,18 +63,7 @@
     transform: none;
 }
 
-/* ── Theme toggle nav row ─────────────────────────────── */
-.nav-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.nav-row .back-to-home {
-    margin-bottom: 0;
-}
-
+/* ── Theme toggle ── */
 .theme-toggle {
     background: white;
     color: #666;
@@ -98,22 +87,15 @@
 /* ── Dark theme ───────────────────────────────────────── */
 .dark-theme {
     --shadow-ink: #000;
+    --text: #e8e8e8;
+    --border: #555;
+    --bg: #1a1a1a;
     background: #111111;
-    color: #e8e8e8;
-}
-
-.dark-theme .container {
-    background: #1a1a1a;
-    border: 2px solid #333;
     color: #e8e8e8;
 }
 
 .dark-theme h1 {
     color: #e8e8e8;
-}
-
-.dark-theme .subtitle {
-    color: #777;
 }
 
 .dark-theme h2 {
@@ -288,7 +270,7 @@
 .dark-theme .animation-type-btn {
     background: #222;
     border-color: #333;
-    color: #777;
+    color: #bbb;
 }
 
 .dark-theme .animation-type-btn:hover {
@@ -631,10 +613,6 @@
 }
 
 
-.dark-theme .subtitle {
-    color: #555;
-}
-
 .dark-theme .form-section {
     border-bottom-color: #222;
 }
@@ -643,91 +621,36 @@
     border-left-color: #ff3d3d;
 }
 
-.dark-theme .preview-chrome {
-    background: #0a0a0a;
-    border-bottom-color: #222;
-}
-
-.dark-theme .chrome-label {
-    color: #333;
-}
-
-/* ── Container corner brackets ───────────────────────── */
-.corner-tl,
-.corner-tr {
-    position: absolute;
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(230, 57, 70, 0.45);
-    pointer-events: none;
-    z-index: 10;
-    transition: border-color 0.3s ease, width 0.3s ease, height 0.3s ease;
-}
-
-.corner-tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
-.corner-tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
-
-.container:hover .corner-tl,
-.container:hover .corner-tr {
-    border-color: #e63946;
-    width: 22px;
-    height: 22px;
-}
-
-
 /* ── Dark theme additional ───────────────────────────── */
 .dark-theme h2::before {
     color: #ff3d3d;
     opacity: 0.8;
 }
 
-.dark-theme .file-info::before {
-    color: #00ecff;
-}
-
-.dark-theme .file-info {
-    color: #00ecff;
-}
-
 .dark-theme .line-number {
     color: rgba(255, 61, 61, 0.3);
 }
 
-.dark-theme .corner-tl,
-.dark-theme .corner-tr {
-    border-color: rgba(255, 61, 61, 0.35);
-}
-
-.dark-theme .container:hover .corner-tl,
-.dark-theme .container:hover .corner-tr {
-    border-color: #ff3d3d;
-}
-
-.dark-theme .filename-prompt {
-    color: #555;
-}
-
-.dark-theme .preview-header {
+.dark-theme .topbar,
+.dark-theme .sidebar {
     background: #1a1a1a;
+    border-color: #333;
+}
+
+.dark-theme .topbar__logo,
+.dark-theme .topbar__filename {
     color: #e8e8e8;
 }
 
-.dark-theme .preview-header h2 {
-    color: #e8e8e8;
+.dark-theme .topbar__change {
+    color: #ff3d3d;
 }
 
-.dark-theme .preview-filename {
-    color: #999;
+.dark-theme .sidebar-links a {
+    color: #777;
 }
 
-/* ─── Submit row (Dry Run above, Generate full-width below) ─── */
-.submit-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: stretch;
-}
-
+/* ─── Dry run button ─── */
 .btn-dry-run {
     padding: 0.75rem 1.25rem;
     background: transparent;
