@@ -31,37 +31,52 @@ function Modal({ show, className, onClose, children }) {
   );
 }
 
-const LOADING_STATUS = {
-  queued:    "Queued — waiting for slot...",
-  rendering: "Rendering frames...",
-  complete:  "Complete!",
-  error:     "Error",
-};
+const RENDER_STEPS = [
+  { key: "queued",    label: "Waiting for a free render slot" },
+  { key: "rendering", label: "Rendering frames" },
+  { key: "complete",  label: "Done" },
+];
+const PROGRESS_BLOCKS = 24;
 
-export function LoadingModal({ isLoading, loadingProgress, loadingStatus }) {
+export function LoadingModal({ isLoading, loadingProgress, loadingStatus, fileName }) {
+  const percent = Math.round(loadingProgress);
+  const filled = Math.round((percent / 100) * PROGRESS_BLOCKS);
+  const currentStep = RENDER_STEPS.findIndex((step) => step.key === loadingStatus);
+
   return (
-    <Modal show={isLoading} className="loading-modal">
-      <div className="loading-header">
-        <span className="loading-title">Code Animator</span>
+    <Modal show={isLoading} className="render-modal">
+      <div className="modal-tabs">
+        <span className="editor-tab">{fileName}</span>
       </div>
-      <div className="loading-body">
-        <div className="loading-icon">
-          <img src="/Movie.png" alt="" className="icon-sprite" />
+      <div className="render-modal__body">
+        <p className="render-modal__title">
+          {loadingStatus === "error" ? "The render failed" : `Rendering ${fileName}`}
+        </p>
+
+        <div
+          className="pixel-progress"
+          role="progressbar"
+          aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}
+          aria-label="Render progress"
+        >
+          {Array.from({ length: PROGRESS_BLOCKS }, (_, i) => (
+            <span key={i} className={i < filled ? "is-filled" : undefined} />
+          ))}
         </div>
-        <h3 className="loading-text">Generating Animation...</h3>
-        <p className="loading-subtext">Please wait while we render your code animation</p>
-        <div className="progress-bar-container">
-          <div className="progress-status">{LOADING_STATUS[loadingStatus] ?? "Processing..."}</div>
-          <div className="progress-bar-bg">
-            <motion.div
-              className="progress-bar-fill"
-              initial={{ width: 0 }}
-              animate={{ width: `${loadingProgress}%` }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-            />
-            <span className="progress-bar-label">{Math.round(loadingProgress)}%</span>
-          </div>
-        </div>
+        <p className="render-modal__percent">{percent}%</p>
+
+        <ol className="render-steps">
+          {RENDER_STEPS.map((step, i) => (
+            <li
+              key={step.key}
+              className={i < currentStep ? "is-done" : i === currentStep ? "is-current" : undefined}
+            >
+              {step.label}
+            </li>
+          ))}
+        </ol>
+
+        <p className="render-modal__note">This usually takes under a minute. Keep this tab open.</p>
       </div>
     </Modal>
   );
@@ -115,99 +130,78 @@ export function SplitModal({ show, startLine, endLine, onAddSplit, onClose }) {
   );
 }
 
-export function ColorModal({ show, syntaxColors, onSyntaxColorsChange, onClose }) {
+const COLOR_LABELS = {
+  background: "Background",
+  default:    "Plain text",
+  keywords:   "Keywords",
+  types:      "Types",
+  functions:  "Functions",
+  strings:    "Strings",
+  numbers:    "Numbers",
+  comments:   "Comments",
+  decorators: "Decorators",
+};
+const PREVIEW_LINE_LIMIT = 22;
+
+export function ColorModal({ show, syntaxColors, onSyntaxColorsChange, onClose, previewLines, fontFamily }) {
   const setColor = (key, value) => onSyntaxColorsChange((prev) => ({ ...prev, [key]: value }));
 
   return (
-    <Modal show={show} className="color-modal" onClose={onClose}>
-      <div className="color-modal-header">
-        <span className="color-modal-title">Syntax Highlighting Colors</span>
-        <button className="btn-close" onClick={onClose}>✕</button>
+    <Modal show={show} className="colors-modal" onClose={onClose}>
+      <div className="modal-tabs">
+        <span className="editor-tab">Colors</span>
+        <button type="button" className="modal-close" onClick={onClose} aria-label="Close">✕</button>
       </div>
-      <div className="color-modal-body">
-        <p className="color-modal-description">
-          Customize the colors for different code elements in your animation.
-        </p>
-        <div className="color-inputs-grid">
+
+      <div className="colors-modal__body">
+        <div className="color-list">
           {Object.entries(syntaxColors).map(([key, color]) => (
-            <div key={key} className="color-input-group">
-              <label htmlFor={`color-${key}`}>{key.charAt(0).toUpperCase() + key.slice(1)}</label>
-              <div className="color-input-wrapper">
-                <input
-                  type="color"
-                  id={`color-${key}`}
-                  value={color}
-                  onChange={(e) => setColor(key, e.target.value)}
-                />
-                <input
-                  type="text"
-                  value={color}
-                  onChange={(e) => setColor(key, e.target.value)}
-                  placeholder="#000000"
-                />
-              </div>
+            <div key={key} className="color-list__row">
+              <input
+                type="color"
+                id={`color-${key}`}
+                value={color}
+                onChange={(e) => setColor(key, e.target.value)}
+              />
+              <label htmlFor={`color-${key}`}>{COLOR_LABELS[key] ?? key}</label>
+              <input
+                type="text"
+                aria-label={`${COLOR_LABELS[key] ?? key} hex value`}
+                value={color}
+                onChange={(e) => setColor(key, e.target.value)}
+                spellCheck={false}
+              />
             </div>
           ))}
         </div>
-        <div className="color-modal-buttons">
-          <button
-            type="button"
-            className="btn-reset"
-            onClick={() => onSyntaxColorsChange({ ...DEFAULT_SYNTAX_COLORS })}
-          >
-            Reset to Default
-          </button>
-          <button type="button" className="btn-confirm" onClick={onClose}>Done</button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
 
-export function PreviewModal({
-  show, highlightedLines, syntaxColors, startLine, endLine, onClose, onEditColors,
-}) {
-  return (
-    <Modal show={show} className="syntax-preview-modal" onClose={onClose}>
-      <div className="syntax-preview-header">
-        <span className="syntax-preview-title">Color Preview</span>
-        <button className="btn-close" onClick={onClose}>✕</button>
+        <pre
+          className="colors-modal__preview"
+          style={{ background: syntaxColors.background, color: syntaxColors.default, fontFamily }}
+          aria-label="Preview of your code with these colors"
+        >
+          {previewLines.slice(0, PREVIEW_LINE_LIMIT).map(({ lineNum, tokens }) => (
+            <div key={lineNum} className="colors-modal__line">
+              <span className="colors-modal__line-num">{lineNum}</span>
+              <span>
+                {tokens.map((token, idx) => (
+                  <span key={idx} style={{ color: token.color }}>{token.text}</span>
+                ))}
+              </span>
+            </div>
+          ))}
+        </pre>
       </div>
-      <div className="syntax-preview-body">
-        <p className="syntax-preview-description">
-          Preview of how your code will appear with the current color settings.
-        </p>
-        <div className="syntax-preview-code-container">
-          <pre className="syntax-preview-code">
-            {highlightedLines.filter(({ lineNum }) => lineNum >= startLine && lineNum <= endLine).map(({ lineNum, tokens }) => (
-              <div key={lineNum} className="syntax-preview-line">
-                <span className="syntax-preview-line-num">{lineNum}</span>
-                <span className="syntax-preview-line-content">
-                  {tokens.map((token, idx) => (
-                    <span key={idx} style={{ color: token.color }}>{token.text}</span>
-                  ))}
-                </span>
-              </div>
-            ))}
-          </pre>
-        </div>
-        <div className="syntax-preview-legend">
-          <span className="legend-title">Legend:</span>
-          <div className="legend-items">
-            {Object.entries(syntaxColors)
-              .filter(([key]) => key !== "default" && key !== "background")
-              .map(([key, color]) => (
-                <div key={key} className="legend-item">
-                  <span className="legend-color" style={{ backgroundColor: color }}></span>
-                  <span className="legend-label">{key}</span>
-                </div>
-              ))}
-          </div>
-        </div>
-        <div className="syntax-preview-buttons">
-          <button type="button" className="btn-edit-colors" onClick={onEditColors}>Edit Colors</button>
-          <button type="button" className="btn-confirm" onClick={onClose}>Close</button>
-        </div>
+
+      <div className="modal-footer">
+        <button
+          type="button"
+          className="text-btn"
+          onClick={() => onSyntaxColorsChange({ ...DEFAULT_SYNTAX_COLORS })}
+        >
+          Reset to defaults
+        </button>
+        <button type="button" className="ui-btn ui-btn--accent" onClick={onClose}>Done</button>
       </div>
     </Modal>
   );

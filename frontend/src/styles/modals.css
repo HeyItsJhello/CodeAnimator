@@ -22,14 +22,6 @@
     }
 }
 
-.loading-modal {
-    background: white;
-    border: 2px solid #333;
-    width: 90%;
-    max-width: 500px;
-    animation: slideDown 0.3s ease;
-}
-
 @keyframes slideDown {
     from {
         transform: translateY(-50px);
@@ -41,39 +33,6 @@
     }
 }
 
-.loading-header {
-    background: #e63946;
-    color: white;
-    padding: 1rem 1.5rem;
-    border-bottom: 2px solid #333;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.loading-title {
-    font-size: 1.3rem;
-    font-weight: bold;
-    font-family: "Jersey 15", monospace;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.loading-body {
-    padding: 2.5rem 2rem;
-    text-align: center;
-}
-
-.loading-icon {
-    margin-bottom: 1rem;
-    animation: pulse 1.5s ease-in-out infinite;
-}
-
-.loading-icon img {
-    width: 76px;
-    height: 76px;
-}
-
 @keyframes pulse {
     0%,
     100% {
@@ -83,72 +42,6 @@
         transform: scale(1.1);
     }
 }
-
-.loading-text {
-    color: #333;
-    font-size: 1.5rem;
-    margin: 0 0 0.75rem 0;
-    font-weight: bold;
-    font-family: "Jersey 15", monospace;
-}
-
-.loading-subtext {
-    color: #666;
-    font-size: 1.05rem;
-    margin: 0 0 2rem 0;
-    font-weight: bold;
-    font-family: "Jersey 15", monospace;
-}
-
-.progress-bar-container {
-    margin-top: 1.5rem;
-}
-
-.progress-status {
-    color: #333;
-    font-size: 1rem;
-    font-weight: bold;
-    font-family: "Jersey 15", monospace;
-    margin-bottom: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    min-height: 1.4em;
-}
-
-.progress-bar-bg {
-    width: 100%;
-    height: 44px;
-    background: #f0f0f0;
-    border: 2px solid #333;
-    position: relative;
-    overflow: hidden;
-    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.08);
-}
-
-.progress-bar-fill {
-    height: 100%;
-    background: #e63946;
-    position: absolute;
-    top: 0;
-    left: 0;
-}
-
-.progress-bar-label {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.15rem;
-    font-weight: bold;
-    font-family: "Jersey 15", monospace;
-    color: #333;
-    mix-blend-mode: difference;
-    filter: invert(1);
-    pointer-events: none;
-    letter-spacing: 1px;
-}
-
 
 /* Split Modal */
 .split-modal {
@@ -204,34 +97,6 @@
     font-weight: bold;
 }
 
-.split-input-group {
-    margin-bottom: 1.5rem;
-}
-
-.split-input-group label {
-    display: block;
-    color: #333;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    font-size: 1.05rem;
-}
-
-.split-input-group input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 2px solid #333;
-    background: white;
-    color: #333;
-    font-size: 1.15rem;
-    font-family: "Jersey 15", monospace;
-    font-weight: bold;
-}
-
-.split-input-group input:focus {
-    outline: none;
-    border-color: #f4a261;
-}
-
 .split-buttons {
     display: flex;
     gap: 1rem;
@@ -277,334 +142,9 @@
 
 
 
-/* Color Modal */
-.color-modal {
-    background: white;
-    border: 2px solid #333;
-    width: 90%;
-    max-width: 550px;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.color-modal-header {
-    background: #9b59b6;
-    color: white;
-    padding: 1rem 1.5rem;
-    border-bottom: 2px solid #333;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.color-modal-title {
-    font-size: 1.3rem;
-    font-weight: bold;
-    font-family: "Jersey 15", monospace;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.color-modal-body {
-    padding: 1.5rem;
-}
-
-.color-modal-description {
-    color: #666;
-    font-size: 1rem;
-    margin: 0 0 1.5rem 0;
-    line-height: 1.6;
-    font-weight: bold;
-}
-
-.color-inputs-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.color-input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.color-input-group label {
-    color: #333;
-    font-weight: bold;
-    font-size: 1rem;
-    text-transform: capitalize;
-}
-
-.color-input-wrapper {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.color-input-wrapper input[type="color"] {
-    width: 50px;
-    height: 40px;
-    padding: 0;
-    border: 2px solid #333;
-    cursor: pointer;
-    background: transparent;
-}
-
-.color-input-wrapper input[type="color"]::-webkit-color-swatch-wrapper {
-    padding: 2px;
-}
-
-.color-input-wrapper input[type="color"]::-webkit-color-swatch {
-    border: none;
-}
-
-.color-input-wrapper input[type="text"] {
-    flex: 1;
-    padding: 0.5rem;
-    border: 2px solid #333;
-    background: white;
-    color: #333;
-    font-size: 1rem;
-    font-family: "Jersey 15", monospace;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-.color-input-wrapper input[type="text"]:focus {
-    outline: none;
-    border-color: #9b59b6;
-}
-
-.color-modal-buttons {
-    display: flex;
-    gap: 1rem;
-    justify-content: space-between;
-}
-
-.btn-reset {
-    padding: 0.75rem 1.5rem;
-    background: #95a5a6;
-    color: white;
-    border: 2px solid #333;
-    font-size: 1rem;
-    font-weight: bold;
-    font-family: "Jersey 15", monospace;
-    cursor: pointer;
-    transition: all 0.1s ease;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.btn-reset:hover {
-    background: #7f8c8d;
-}
-
-
 @media (max-width: 768px) {
-    .color-inputs-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .color-preview-row {
-        justify-content: center;
-    }
-
-    .color-modal-buttons {
-        flex-direction: column;
-    }
-
-    .btn-reset,
     .btn-confirm {
         width: 100%;
-    }
-}
-
-
-/* Syntax Preview Modal */
-.syntax-preview-modal {
-    background: white;
-    border: 2px solid #333;
-    width: 90%;
-    max-width: 900px;
-    max-height: 90vh;
-    display: flex;
-    flex-direction: column;
-}
-
-.syntax-preview-header {
-    background: #2a9d8f;
-    color: white;
-    padding: 1rem 1.5rem;
-    border-bottom: 2px solid #333;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-}
-
-.syntax-preview-title {
-    font-size: 1.3rem;
-    font-weight: bold;
-    font-family: "Jersey 15", monospace;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.syntax-preview-body {
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    flex: 1;
-}
-
-.syntax-preview-description {
-    color: #666;
-    font-size: 1rem;
-    margin: 0 0 1rem 0;
-    line-height: 1.6;
-    font-weight: bold;
-    flex-shrink: 0;
-}
-
-.syntax-preview-code-container {
-    flex: 1;
-    overflow-y: auto;
-    background: #1e1e1e;
-    border: 2px solid #333;
-    margin-bottom: 1rem;
-    min-height: 200px;
-    max-height: 400px;
-}
-
-.syntax-preview-code {
-    margin: 0;
-    padding: 1rem;
-    font-family: "Courier New", monospace;
-    font-size: 0.95rem;
-    line-height: 1.6;
-}
-
-.syntax-preview-line {
-    display: flex;
-    padding: 0.1rem 0;
-}
-
-.syntax-preview-line-num {
-    display: inline-block;
-    min-width: 50px;
-    padding-right: 1rem;
-    color: #6a737d;
-    text-align: right;
-    user-select: none;
-    flex-shrink: 0;
-}
-
-.syntax-preview-line-content {
-    white-space: pre;
-    flex: 1;
-}
-
-/* Legend */
-.syntax-preview-legend {
-    background: #fafafa;
-    border: 2px solid #e0e0e0;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    flex-shrink: 0;
-}
-
-.legend-title {
-    font-weight: bold;
-    color: #333;
-    margin-right: 1rem;
-    font-size: 1rem;
-}
-
-.legend-items {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 0.5rem;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.legend-color {
-    width: 16px;
-    height: 16px;
-    border: 2px solid #333;
-}
-
-.legend-label {
-    font-size: 0.9rem;
-    font-weight: bold;
-    color: #555;
-    text-transform: capitalize;
-}
-
-.syntax-preview-buttons {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    flex-shrink: 0;
-}
-
-.btn-edit-colors {
-    padding: 0.75rem 1.5rem;
-    background: #9b59b6;
-    color: white;
-    border: 2px solid #333;
-    font-size: 1rem;
-    font-weight: bold;
-    font-family: "Jersey 15", monospace;
-    cursor: pointer;
-    transition: all 0.1s ease;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.btn-edit-colors:hover {
-    background: #8e44ad;
-}
-
-
-@media (max-width: 768px) {
-    .syntax-preview-modal {
-        max-width: 100%;
-    }
-
-    .syntax-preview-code-container {
-        max-height: 250px;
-    }
-
-    .preview-header-top {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-
-    .btn-preview-colors {
-        width: 100%;
-    }
-
-    .syntax-preview-buttons {
-        flex-direction: column;
-    }
-
-    .btn-edit-colors,
-    .syntax-preview-buttons .btn-confirm {
-        width: 100%;
-    }
-
-    .legend-items {
-        gap: 0.5rem;
     }
 }
 
@@ -666,7 +206,32 @@
 }
 
 
-/* ─── Rough Preview Modal ─── */
+
+.split-input-group {
+    margin-bottom: 1.5rem;
+}
+
+.split-input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--ui-ink);
+    font-size: 1.05rem;
+}
+
+.split-input-group input {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--ui-bg);
+    border: 2px solid var(--ui-edge);
+    color: var(--ui-ink);
+    font-family: "Jersey 15", monospace;
+    font-size: 1.15rem;
+}
+
+.split-input-group input:focus {
+    outline: none;
+    border-color: #ff5e5b;
+}
 
 /* ─── Dry Run Modal ─── */
 .dry-run-modal {
@@ -772,17 +337,17 @@
     font-size: 0.8rem;
 }
 
-.dry-group-num {
-    font-family: "Jersey 15", monospace;
-    font-size: 0.85rem;
-    color: #e63946;
-}
-
 .dry-group-lines {
     opacity: 0.75;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.dry-group-num {
+    font-family: "Jersey 15", monospace;
+    font-size: 0.85rem;
+    color: #e63946;
 }
 
 .dry-group-dur {
@@ -796,4 +361,240 @@
     display: flex;
     gap: 0.75rem;
     justify-content: flex-end;
+}
+
+/* ===================================================
+   Shared modal chrome: tab strip on top, footer below
+   =================================================== */
+.render-modal,
+.colors-modal {
+    background: var(--ui-bg);
+    border: 2px solid var(--ui-edge);
+    color: var(--ui-ink);
+    font-family: "Jersey 15", monospace;
+}
+
+.modal-tabs {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    background: var(--ui-bg-2);
+    border-bottom: 2px solid var(--ui-edge);
+}
+
+.modal-tabs .editor-tab {
+    background: var(--ui-bg);
+    color: var(--ui-ink);
+}
+
+.modal-close {
+    padding: 0 1rem;
+    background: none;
+    border: none;
+    color: var(--ui-muted);
+    font: inherit;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: #e63946;
+}
+
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.25rem;
+    border-top: 2px solid var(--ui-line);
+}
+
+/* ── Render progress ── */
+.render-modal {
+    width: min(520px, 92vw);
+}
+
+.render-modal__body {
+    padding: 1.75rem 1.75rem 1.5rem;
+}
+
+.render-modal__title {
+    margin: 0 0 1.25rem;
+    font-size: 1.6rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.pixel-progress {
+    display: grid;
+    grid-template-columns: repeat(24, 1fr);
+    gap: 3px;
+    padding: 4px;
+    border: 2px solid var(--ui-edge);
+}
+
+.pixel-progress span {
+    height: 22px;
+    background: var(--ui-line);
+}
+
+.pixel-progress span.is-filled {
+    background: #ff5e5b;
+}
+
+.render-modal__percent {
+    margin: 0.75rem 0 1.25rem;
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+.render-steps {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0 0 1.25rem;
+    padding: 0;
+    color: var(--ui-muted);
+    list-style: none;
+}
+
+.render-steps li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.render-steps li::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border: 2px solid currentColor;
+}
+
+.render-steps .is-done,
+.render-steps .is-current {
+    color: var(--ui-ink);
+}
+
+.render-steps .is-done::before {
+    background: #2a9d8f;
+    border-color: #2a9d8f;
+}
+
+.render-steps .is-current::before {
+    background: #ff5e5b;
+    border-color: #ff5e5b;
+}
+
+.render-modal__note {
+    margin: 0;
+    color: var(--ui-muted);
+    font-size: 0.95rem;
+}
+
+/* ── Colors ── */
+.colors-modal {
+    display: flex;
+    flex-direction: column;
+    width: min(980px, 94vw);
+    max-height: 88vh;
+}
+
+.colors-modal__body {
+    display: grid;
+    grid-template-columns: 310px minmax(0, 1fr);
+    flex: 1;
+    min-height: 0;
+}
+
+.color-list {
+    display: grid;
+    align-content: start;
+    gap: 0.4rem;
+    padding: 1rem 1.25rem;
+    overflow-y: auto;
+    border-right: 2px solid var(--ui-line);
+}
+
+.color-list__row {
+    display: grid;
+    grid-template-columns: 34px 1fr 6.5rem;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.color-list__row label {
+    font-size: 1.05rem;
+}
+
+.color-list__row input[type="color"] {
+    width: 34px;
+    height: 28px;
+    padding: 0;
+    background: none;
+    border: 2px solid var(--ui-edge);
+    cursor: pointer;
+}
+
+.color-list__row input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.color-list__row input[type="color"]::-webkit-color-swatch {
+    border: none;
+}
+
+.color-list__row input[type="text"] {
+    width: 100%;
+    padding: 0.3rem 0.45rem;
+    background: var(--ui-bg);
+    border: 2px solid var(--ui-line);
+    color: var(--ui-ink);
+    font: inherit;
+    font-size: 0.95rem;
+}
+
+.color-list__row input:focus-visible,
+.modal-footer button:focus-visible,
+.modal-close:focus-visible {
+    outline: 2px solid #ff5e5b;
+    outline-offset: 1px;
+}
+
+.colors-modal__preview {
+    min-height: 320px;
+    margin: 0;
+    padding: 1rem 0;
+    overflow: auto;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.colors-modal__line {
+    display: flex;
+    white-space: pre;
+}
+
+.colors-modal__line-num {
+    flex-shrink: 0;
+    width: 3.5rem;
+    padding-right: 1rem;
+    opacity: 0.4;
+    text-align: right;
+}
+
+@media (max-width: 760px) {
+    .colors-modal__body {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+    }
+
+    .color-list {
+        border-right: none;
+        border-bottom: 2px solid var(--ui-line);
+    }
+
+    .colors-modal__preview {
+        min-height: 0;
+        max-height: 40vh;
+    }
 }
