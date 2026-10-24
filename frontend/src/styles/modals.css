@@ -24,10 +24,7 @@
 
 .loading-modal {
     background: white;
-    border: 4px solid #333;
-    box-shadow:
-        8px 8px 0 #333,
-        12px 12px 0 rgba(0, 0, 0, 0.2);
+    border: 2px solid #333;
     width: 90%;
     max-width: 500px;
     animation: slideDown 0.3s ease;
@@ -48,7 +45,7 @@
     background: #e63946;
     color: white;
     padding: 1rem 1.5rem;
-    border-bottom: 4px solid #333;
+    border-bottom: 2px solid #333;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -122,7 +119,7 @@
     width: 100%;
     height: 44px;
     background: #f0f0f0;
-    border: 4px solid #333;
+    border: 2px solid #333;
     position: relative;
     overflow: hidden;
     box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.08);
@@ -156,10 +153,7 @@
 /* Split Modal */
 .split-modal {
     background: white;
-    border: 4px solid #333;
-    box-shadow:
-        8px 8px 0 #333,
-        12px 12px 0 rgba(0, 0, 0, 0.2);
+    border: 2px solid #333;
     width: 90%;
     max-width: 450px;
 }
@@ -168,7 +162,7 @@
     background: #f4a261;
     color: white;
     padding: 1rem 1.5rem;
-    border-bottom: 4px solid #333;
+    border-bottom: 2px solid #333;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -225,19 +219,17 @@
 .split-input-group input {
     width: 100%;
     padding: 0.75rem;
-    border: 3px solid #333;
+    border: 2px solid #333;
     background: white;
     color: #333;
     font-size: 1.15rem;
     font-family: "Jersey 15", monospace;
     font-weight: bold;
-    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .split-input-group input:focus {
     outline: none;
     border-color: #f4a261;
-    box-shadow: 3px 3px 0 rgba(244, 162, 97, 0.2);
 }
 
 .split-buttons {
@@ -250,10 +242,7 @@
     padding: 0.75rem 1.5rem;
     background: #999;
     color: white;
-    border: 3px solid #333;
-    box-shadow:
-        3px 3px 0 #333,
-        4px 4px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     font-size: 1rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
@@ -265,27 +254,14 @@
 
 .btn-cancel:hover {
     background: #888;
-    transform: translate(-1px, -1px);
-    box-shadow:
-        4px 4px 0 #333,
-        5px 5px 0 rgba(0, 0, 0, 0.1);
 }
 
-.btn-cancel:active {
-    transform: translate(3px, 3px);
-    box-shadow:
-        0 0 0 #333,
-        1px 1px 0 rgba(0, 0, 0, 0.1);
-}
 
 .btn-confirm {
     padding: 0.75rem 1.5rem;
     background: #f4a261;
     color: white;
-    border: 3px solid #333;
-    box-shadow:
-        3px 3px 0 #333,
-        4px 4px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     font-size: 1rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
@@ -297,27 +273,14 @@
 
 .btn-confirm:hover {
     background: #e08d4a;
-    transform: translate(-1px, -1px);
-    box-shadow:
-        4px 4px 0 #333,
-        5px 5px 0 rgba(0, 0, 0, 0.1);
 }
 
-.btn-confirm:active {
-    transform: translate(3px, 3px);
-    box-shadow:
-        0 0 0 #333,
-        1px 1px 0 rgba(0, 0, 0, 0.1);
-}
 
 
 /* Color Modal */
 .color-modal {
     background: white;
-    border: 4px solid #333;
-    box-shadow:
-        8px 8px 0 #333,
-        12px 12px 0 rgba(0, 0, 0, 0.2);
+    border: 2px solid #333;
     width: 90%;
     max-width: 550px;
     max-height: 90vh;
@@ -328,7 +291,7 @@
     background: #9b59b6;
     color: white;
     padding: 1rem 1.5rem;
-    border-bottom: 4px solid #333;
+    border-bottom: 2px solid #333;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -384,7 +347,7 @@
     width: 50px;
     height: 40px;
     padding: 0;
-    border: 3px solid #333;
+    border: 2px solid #333;
     cursor: pointer;
     background: transparent;
 }
@@ -400,20 +363,18 @@
 .color-input-wrapper input[type="text"] {
     flex: 1;
     padding: 0.5rem;
-    border: 3px solid #333;
+    border: 2px solid #333;
     background: white;
     color: #333;
     font-size: 1rem;
     font-family: "Jersey 15", monospace;
     font-weight: bold;
-    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
     text-transform: uppercase;
 }
 
 .color-input-wrapper input[type="text"]:focus {
     outline: none;
     border-color: #9b59b6;
-    box-shadow: 2px 2px 0 rgba(155, 89, 182, 0.2);
 }
 
 .color-modal-buttons {
@@ -426,10 +387,7 @@
     padding: 0.75rem 1.5rem;
     background: #95a5a6;
     color: white;
-    border: 3px solid #333;
-    box-shadow:
-        3px 3px 0 #333,
-        4px 4px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     font-size: 1rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
@@ -441,18 +399,8 @@
 
 .btn-reset:hover {
     background: #7f8c8d;
-    transform: translate(-1px, -1px);
-    box-shadow:
-        4px 4px 0 #333,
-        5px 5px 0 rgba(0, 0, 0, 0.1);
 }
 
-.btn-reset:active {
-    transform: translate(3px, 3px);
-    box-shadow:
-        0 0 0 #333,
-        1px 1px 0 rgba(0, 0, 0, 0.1);
-}
 
 @media (max-width: 768px) {
     .color-inputs-grid {
@@ -477,10 +425,7 @@
 /* Syntax Preview Modal */
 .syntax-preview-modal {
     background: white;
-    border: 4px solid #333;
-    box-shadow:
-        8px 8px 0 #333,
-        12px 12px 0 rgba(0, 0, 0, 0.2);
+    border: 2px solid #333;
     width: 90%;
     max-width: 900px;
     max-height: 90vh;
@@ -492,7 +437,7 @@
     background: #2a9d8f;
     color: white;
     padding: 1rem 1.5rem;
-    border-bottom: 4px solid #333;
+    border-bottom: 2px solid #333;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -528,7 +473,7 @@
     flex: 1;
     overflow-y: auto;
     background: #1e1e1e;
-    border: 4px solid #333;
+    border: 2px solid #333;
     margin-bottom: 1rem;
     min-height: 200px;
     max-height: 400px;
@@ -565,7 +510,7 @@
 /* Legend */
 .syntax-preview-legend {
     background: #fafafa;
-    border: 3px solid #e0e0e0;
+    border: 2px solid #e0e0e0;
     padding: 1rem;
     margin-bottom: 1rem;
     flex-shrink: 0;
@@ -615,10 +560,7 @@
     padding: 0.75rem 1.5rem;
     background: #9b59b6;
     color: white;
-    border: 3px solid #333;
-    box-shadow:
-        3px 3px 0 #333,
-        4px 4px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     font-size: 1rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
@@ -630,18 +572,8 @@
 
 .btn-edit-colors:hover {
     background: #8e44ad;
-    transform: translate(-1px, -1px);
-    box-shadow:
-        4px 4px 0 #333,
-        5px 5px 0 rgba(0, 0, 0, 0.1);
 }
 
-.btn-edit-colors:active {
-    transform: translate(3px, 3px);
-    box-shadow:
-        0 0 0 #333,
-        1px 1px 0 rgba(0, 0, 0, 0.1);
-}
 
 @media (max-width: 768px) {
     .syntax-preview-modal {
@@ -680,10 +612,7 @@
 /* Upload Another Modal */
 .upload-another-modal {
     background: white;
-    border: 4px solid #333;
-    box-shadow:
-        8px 8px 0 #333,
-        12px 12px 0 rgba(0, 0, 0, 0.2);
+    border: 2px solid #333;
     width: 90%;
     max-width: 500px;
 }
@@ -692,7 +621,7 @@
     background: #2a9d8f;
     color: white;
     padding: 1rem 1.5rem;
-    border-bottom: 4px solid #333;
+    border-bottom: 2px solid #333;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -726,9 +655,8 @@
 
 .video-preview-container {
     margin-bottom: 1.5rem;
-    border: 4px solid #333;
+    border: 2px solid #333;
     background: #000;
-    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
 }
 
 .video-preview {
@@ -743,8 +671,7 @@
 /* ─── Dry Run Modal ─── */
 .dry-run-modal {
     background: var(--bg);
-    border: 3px solid var(--border);
-    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.25);
+    border: 2px solid var(--border);
     max-width: 560px;
     width: 95vw;
     overflow: hidden;
@@ -775,7 +702,6 @@
     letter-spacing: 1px;
     padding: 0.2rem 0.5rem;
     border: 2px solid #fff;
-    box-shadow: 2px 2px 0 #33333366;
 }
 
 .dry-run-body {

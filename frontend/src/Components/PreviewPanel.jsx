@@ -118,7 +118,6 @@ function PreviewPanel({
         <span className="preview-filename">
           <span className="filename-prompt">~/</span>
           {fileName}
-          <span className="cursor-blink">_</span>
         </span>
       </div>
 

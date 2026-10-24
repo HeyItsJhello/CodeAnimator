@@ -3,10 +3,7 @@
     flex: 1.2;
     min-width: 600px;
     background: white;
-    border: 4px solid #333;
-    box-shadow:
-        4px 4px 0 #333,
-        8px 8px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -15,13 +12,13 @@
 
 .preview-header {
     padding: 1.5rem 2rem;
-    background: #e63946;
-    color: white;
-    border-bottom: 4px solid #333;
+    background: white;
+    color: #333;
+    border-bottom: 2px solid #ff5e5b;
 }
 
 .preview-header h2 {
-    color: white;
+    color: #333;
     margin: 0 0 0.5rem 0;
     font-size: 1.5rem;
     font-weight: bold;
@@ -29,7 +26,7 @@
 
 .preview-filename {
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.9);
+    color: #666;
     font-family: "Jersey 15", monospace;
     font-weight: bold;
 }
@@ -40,22 +37,6 @@
     overflow-x: hidden;
     background: #1a1a1a;
     position: relative;
-    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(42, 157, 143, 0.04);
-}
-
-.preview-content::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 3px,
-        rgba(0,0,0,0.06) 3px,
-        rgba(0,0,0,0.06) 4px
-    );
-    z-index: 1;
 }
 
 .code-preview {
@@ -81,7 +62,7 @@
 
 .code-line.in-range {
     background: rgba(230, 57, 70, 0.15);
-    border-left: 4px solid #e63946;
+    border-left: 2px solid #e63946;
 }
 
 .code-line.in-range:hover {
@@ -90,7 +71,7 @@
 
 .code-line.in-group {
     background: rgba(42, 157, 143, 0.2);
-    border-left: 4px solid #2a9d8f;
+    border-left: 2px solid #2a9d8f;
 }
 
 .code-line.in-group:hover {
@@ -105,7 +86,6 @@
     text-align: right;
     user-select: none;
     flex-shrink: 0;
-    text-shadow: 0 0 8px rgba(230, 57, 70, 0.25);
 }
 
 .line-group-indicator {
@@ -138,10 +118,7 @@
     padding: 0.5rem 1rem;
     background: #2a9d8f;
     color: white;
-    border: 3px solid #333;
-    box-shadow:
-        3px 3px 0 #333,
-        4px 4px 0 rgba(0, 0, 0, 0.1);
+    border: 2px solid #333;
     font-size: 0.9rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
@@ -153,18 +130,8 @@
 
 .btn-preview-colors:hover {
     background: #238276;
-    transform: translate(-1px, -1px);
-    box-shadow:
-        4px 4px 0 #333,
-        5px 5px 0 rgba(0, 0, 0, 0.1);
 }
 
-.btn-preview-colors:active {
-    transform: translate(3px, 3px);
-    box-shadow:
-        0 0 0 #333,
-        1px 1px 0 rgba(0, 0, 0, 0.1);
-}
 
 
 /* ── Terminal chrome bar ─────────────────────────────── */
@@ -203,7 +170,7 @@
 
 /* ── Preview filename terminal path ──────────────────── */
 .filename-prompt {
-    color: rgba(255, 255, 255, 0.35);
+    color: #999;
     font-size: 0.9em;
 }
 

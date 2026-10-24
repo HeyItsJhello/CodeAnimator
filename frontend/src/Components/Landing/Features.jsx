@@ -73,7 +73,7 @@ function Features() {
           {features.map((feature, index) => (
             <motion.div 
               key={index}
-              className="feature-card retro-card"
+              className="feature-card pixel-card"
               variants={itemVariants}
             >
               <img src={feature.icon} alt={feature.title} className="feature-card__icon" />

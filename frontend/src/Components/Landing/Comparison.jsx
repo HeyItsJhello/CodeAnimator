@@ -84,7 +84,7 @@ function Comparison() {
         </motion.div>
         
         <motion.div 
-          className="comparison__table-wrapper retro-card"
+          className="comparison__table-wrapper pixel-card"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}

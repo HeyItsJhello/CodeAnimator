@@ -57,7 +57,7 @@ function OpenSource() {
           </p>
 
           <div className="open-source__stats">
-            <div className="open-source__stat retro-card">
+            <div className="open-source__stat pixel-card">
               <span className="open-source__stat-value">
                 <img
                   src="/Star.png"
@@ -68,7 +68,7 @@ function OpenSource() {
               </span>
               <span className="open-source__stat-label">Stars</span>
             </div>
-            <div className="open-source__stat retro-card">
+            <div className="open-source__stat pixel-card">
               <span className="open-source__stat-value">
                 <img
                   src="/Fork.png"
@@ -79,7 +79,7 @@ function OpenSource() {
               </span>
               <span className="open-source__stat-label">Forks</span>
             </div>
-            <div className="open-source__stat retro-card">
+            <div className="open-source__stat pixel-card">
               <span className="open-source__stat-value">
                 <img
                   src="/File.png"
@@ -96,7 +96,7 @@ function OpenSource() {
             href="https://github.com/HeyItsJhello/CodeAnimator"
             target="_blank"
             rel="noopener noreferrer"
-            className="retro-btn retro-btn--secondary"
+            className="pixel-btn pixel-btn--secondary"
           >
             View on GitHub →
           </a>

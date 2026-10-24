@@ -14,7 +14,7 @@ function WhyIMadeThis() {
           Why was Code Animator Created?
         </motion.h2>
         <motion.div
-          className="why-i-made-this__content retro-card"
+          className="why-i-made-this__content pixel-card"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
