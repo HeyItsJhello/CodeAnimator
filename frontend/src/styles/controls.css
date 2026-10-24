@@ -1,0 +1,481 @@
+/* Color Preview Row */
+.color-preview-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.color-preview-chip {
+    padding: 0.4rem 0.8rem;
+    border: 3px solid #333;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.color-preview-label {
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-transform: capitalize;
+    color: #fff;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.btn-colors {
+    padding: 0.75rem 1.5rem;
+    background: #9b59b6;
+    color: white;
+    border: 3px solid #333;
+    box-shadow:
+        4px 4px 0 #333,
+        6px 6px 0 rgba(0, 0, 0, 0.1);
+    font-size: 1.05rem;
+    font-weight: bold;
+    font-family: "Jersey 15", monospace;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-colors:hover {
+    background: #8e44ad;
+    transform: translate(-2px, -2px);
+    box-shadow:
+        6px 6px 0 #333,
+        8px 8px 0 rgba(0, 0, 0, 0.1);
+}
+
+.btn-colors:active {
+    transform: translate(4px, 4px);
+    box-shadow:
+        0 0 0 #333,
+        2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Orientation Toggle */
+.orientation-toggle {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.orientation-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.2rem 1rem;
+    background: white;
+    border: 4px solid #333;
+    color: #333;
+    cursor: pointer;
+    font-family: "Jersey 15", monospace;
+    font-weight: bold;
+    transition: all 0.1s ease;
+    box-shadow:
+        4px 4px 0 #333,
+        6px 6px 0 rgba(0, 0, 0, 0.1);
+}
+
+.orientation-btn:hover {
+    background: #f0f0f0;
+}
+
+.orientation-btn:not(.active) {
+    color: #333 !important;
+}
+
+.orientation-btn.active {
+    background: #2a9d8f;
+    color: white;
+    border-color: #333;
+}
+
+.orientation-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow:
+        2px 2px 0 #333,
+        4px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.orientation-icon {
+    display: block;
+    border: 3px solid currentColor;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.landscape-icon {
+    width: 48px;
+    height: 28px;
+}
+
+.portrait-icon {
+    width: 28px;
+    height: 48px;
+}
+
+.orientation-btn.active .orientation-icon {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.orientation-label {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.orientation-size {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+/* Quality Toggle */
+.quality-toggle {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.quality-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 1rem 0.75rem;
+    background: white;
+    border: 4px solid #333;
+    color: #333;
+    cursor: pointer;
+    font-family: "Jersey 15", monospace;
+    font-weight: bold;
+    transition: all 0.1s ease;
+    box-shadow:
+        4px 4px 0 #333,
+        6px 6px 0 rgba(0, 0, 0, 0.1);
+}
+
+.quality-btn:hover {
+    background: #f0f0f0;
+}
+
+.quality-btn:not(.active) {
+    color: #333 !important;
+}
+
+.quality-btn.active {
+    background: #e63946;
+    color: white;
+    border-color: #333;
+}
+
+.quality-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow:
+        2px 2px 0 #333,
+        4px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.quality-label {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.quality-size {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+    .quality-toggle {
+        flex-direction: column;
+    }
+
+    .quality-btn {
+        padding: 0.75rem;
+    }
+}
+
+
+/* Animation Type Toggle */
+.animation-type-toggle {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.animation-type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 1rem 0.75rem;
+    background: white;
+    border: 4px solid #333;
+    color: #333;
+    cursor: pointer;
+    font-family: "Jersey 15", monospace;
+    font-weight: bold;
+    transition: all 0.1s ease;
+    box-shadow:
+        4px 4px 0 #333,
+        6px 6px 0 rgba(0, 0, 0, 0.1);
+}
+
+.animation-type-btn:hover {
+    background: #f0f0f0;
+}
+
+.animation-type-btn:not(.active) {
+    color: #333 !important;
+}
+
+.animation-type-btn.active {
+    background: #f4a261;
+    color: white;
+    border-color: #333;
+}
+
+.animation-type-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow:
+        2px 2px 0 #333,
+        4px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.animation-type-label {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.animation-type-desc {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+    .animation-type-toggle {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Animation Timing Settings */
+.timing-inputs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.timing-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.timing-input-group label {
+    color: #333;
+    font-weight: bold;
+    font-size: 0.95rem;
+}
+
+.timing-input-group input {
+    padding: 0.5rem;
+    border: 3px solid #333;
+    background: white;
+    color: #333;
+    font-size: 1rem;
+    font-family: "Jersey 15", monospace;
+    font-weight: bold;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.timing-input-group input:focus {
+    outline: none;
+    border-color: #e63946;
+    box-shadow: 2px 2px 0 rgba(230, 57, 70, 0.2);
+}
+
+.timing-input-group .input-suffix {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.timing-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .timing-inputs-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .upload-another-buttons {
+        flex-direction: column;
+    }
+
+    .upload-another-buttons .btn-cancel,
+    .upload-another-buttons .btn-confirm {
+        width: 100%;
+    }
+}
+
+
+/* ── Font Selector ────────────────────────────────────── */
+.font-selector {
+    position: relative;
+    width: 100%;
+}
+
+.font-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    border: 3px solid #333;
+    box-shadow: 4px 4px 0 #333, 6px 6px 0 rgba(0,0,0,0.08);
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.1s ease;
+    gap: 1rem;
+}
+
+.font-trigger:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 #333, 7px 7px 0 rgba(0,0,0,0.08);
+}
+
+.font-trigger.open {
+    box-shadow: 2px 2px 0 #333;
+    transform: translate(2px, 2px);
+}
+
+.font-trigger-preview {
+    font-size: 1.25rem;
+    color: #222;
+    flex: 1;
+    line-height: 1;
+}
+
+.font-trigger-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.font-trigger-desc {
+    font-size: 0.78rem;
+    color: #999;
+    font-family: "Jersey 15", monospace;
+    letter-spacing: 0.5px;
+}
+
+.font-trigger-arrow {
+    font-size: 0.7rem;
+    color: #555;
+    font-family: "Jersey 15", monospace;
+}
+
+.font-dropdown {
+    position: absolute;
+    top: calc(100% + 3px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 3px solid #333;
+    box-shadow: 6px 6px 0 #333, 8px 8px 0 rgba(0,0,0,0.08);
+    z-index: 200;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.font-category {
+    border-bottom: 2px solid #ebebeb;
+}
+
+.font-category:last-child {
+    border-bottom: none;
+}
+
+.font-category-label {
+    font-family: "Jersey 15", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #aaa;
+    padding: 0.4rem 1rem 0.3rem;
+    background: #f7f7f7;
+    border-bottom: 1px solid #ebebeb;
+    user-select: none;
+}
+
+.font-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 1rem;
+    background: white;
+    border: none;
+    border-bottom: 1px solid #f2f2f2;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.08s ease;
+    gap: 1.5rem;
+}
+
+.font-option:last-child {
+    border-bottom: none;
+}
+
+.font-option:hover {
+    background: #f5f5f5;
+}
+
+.font-option.active {
+    background: #edfaf8;
+    border-left: 3px solid #2a9d8f;
+    padding-left: calc(1rem - 3px);
+}
+
+.font-option-name {
+    font-size: 1rem;
+    color: #222;
+    flex-shrink: 0;
+    min-width: 140px;
+    line-height: 1.2;
+}
+
+.font-option.active .font-option-name {
+    color: #2a9d8f;
+}
+
+.font-option-sample {
+    font-size: 0.82rem;
+    color: #aaa;
+    flex: 1;
+    text-align: right;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.font-option.active .font-option-sample {
+    color: #2a9d8f;
+    opacity: 0.7;
+}
+

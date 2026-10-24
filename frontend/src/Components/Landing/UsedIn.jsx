@@ -1,13 +1,8 @@
 import { motion } from "framer-motion";
-
-// Add YouTube video IDs here when available
-export const usedInVideos = [
-  // { id: "dQw4w9WgXcQ", title: "Example Video 1" },
-  // { id: "dQw4w9WgXcQ", title: "Example Video 2" },
-];
+import { USED_IN_VIDEOS } from "../../config/constants";
 
 function UsedIn() {
-  const videos = usedInVideos;
+  const videos = USED_IN_VIDEOS;
 
   const shouldScroll = videos.length >= 4;
 

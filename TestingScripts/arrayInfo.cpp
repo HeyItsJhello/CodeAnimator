@@ -3,10 +3,10 @@
 * This program reads in 40 positive integers and cheks if the values are
 * Ascending, Descending, In the same order when read backwards and forwards
 *
-* Author: Jhelson Gonzales
+* Author: Jhello
 */
 
-#include <iostream> 
+#include <iostream>
 using namespace std;
 
 int maxIteration;

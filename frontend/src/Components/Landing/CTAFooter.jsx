@@ -18,7 +18,7 @@ function CTAFooter() {
               Join developers creating stunning code showcases
             </p>
             <Link
-              to="/app"
+              to="/"
               className="retro-btn retro-btn--primary retro-btn--large"
             >
               Start Creating — It's Free
@@ -30,7 +30,7 @@ function CTAFooter() {
       <footer className="footer">
         <div className="footer__container">
           <div className="footer__top">
-            <Link to="/" className="footer__logo">
+            <Link to="/landing" className="footer__logo">
               <img src="/Movie.png" alt="" className="footer__logo-icon" />
               Code Animator
             </Link>

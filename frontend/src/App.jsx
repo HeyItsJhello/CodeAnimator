@@ -7,8 +7,8 @@ import "./App.css";
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/app" element={<AppPage />} />
+      <Route path="/" element={<AppPage />} />
+      <Route path="/landing" element={<LandingPage />} />
       <Route path="/downloads" element={<DownloadsPage />} />
     </Routes>
   );

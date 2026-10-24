@@ -1,5 +1,8 @@
 import { interpolate } from 'remotion';
 import { SyntaxTokens } from './SyntaxTokens.jsx';
+import { applyAnimation } from '../animations.js';
+
+const GUTTER_COLOR = '#555566';
 
 export function CodeLine({
   frame,
@@ -9,66 +12,28 @@ export function CodeLine({
   durationFrames,
   animationType,
   syntaxColors,
-  index,
-  lineHeight,
-  fontSize,
-  gutterWidth,
-  gutterCharWidth,
+  layout,
   compositionWidth,
   language,
 }) {
+  const { firstLine, lineHeight, fontSize, gutterChars, gutterPx, gutterPadLeft, gutterPadRight } = layout;
+
   const progress = interpolate(
     frame,
-    [startFrame, Math.max(startFrame + durationFrames, startFrame + 1)],
+    [startFrame, startFrame + Math.max(durationFrames, 1)],
     [0, 1],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
+    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' },
   );
 
-  let transform   = 'none';
-  let opacity     = 1;
-  let charLimit   = undefined; // undefined = show all chars
-
-  switch (animationType) {
-    case 'slide_left': {
-      const x = interpolate(progress, [0, 1], [-compositionWidth, 0]);
-      transform = `translateX(${x}px)`;
-      break;
-    }
-    case 'fade_in':
-      opacity = progress;
-      break;
-    case 'drop_in': {
-      const y = interpolate(progress, [0, 1], [-lineHeight * 3, 0]);
-      transform = `translateY(${y}px)`;
-      break;
-    }
-    case 'scale_in':
-      transform = `scale(${Math.max(progress, 0.001)})`;
-      opacity   = progress;
-      break;
-    case 'typewriter':
-      // Full content is always tokenized (colors correct), charLimit clips rendering
-      charLimit = Math.round(progress * content.length);
-      opacity   = progress > 0 ? 1 : 0;
-      break;
-    default: {
-      const x = interpolate(progress, [0, 1], [-compositionWidth, 0]);
-      transform = `translateX(${x}px)`;
-    }
-  }
-
-  const gutterColor = '#555566';
-  const gutterStr   = String(lineNum).padStart(gutterWidth, ' ');
-  // Padding scales with font size so the gap looks right at every resolution
-  const gutterPadL  = Math.round(fontSize * 1.2);
-  const gutterPadR  = Math.round(fontSize * 2.5);
-  const gutterPx    = gutterWidth * gutterCharWidth + gutterPadL + gutterPadR;
+  const { transform, opacity, charLimit } = applyAnimation(animationType, {
+    progress, compositionWidth, lineHeight, contentLength: content.length,
+  });
 
   return (
     <div
       style={{
         position: 'absolute',
-        top: index * lineHeight,
+        top: (lineNum - firstLine) * lineHeight,
         left: 0,
         right: 0,
         height: lineHeight,
@@ -81,11 +46,12 @@ export function CodeLine({
       <span
         style={{
           display: 'inline-block',
+          boxSizing: 'border-box',
           width: gutterPx,
-          paddingLeft: gutterPadL,
-          paddingRight: gutterPadR,
+          paddingLeft: gutterPadLeft,
+          paddingRight: gutterPadRight,
           flexShrink: 0,
-          color: gutterColor,
+          color: GUTTER_COLOR,
           fontSize,
           fontVariantNumeric: 'tabular-nums',
           whiteSpace: 'pre',
@@ -93,10 +59,9 @@ export function CodeLine({
           userSelect: 'none',
         }}
       >
-        {gutterStr}
+        {String(lineNum).padStart(gutterChars, ' ')}
       </span>
 
-      {/* Code content — animated */}
       <div
         style={{
           transform,

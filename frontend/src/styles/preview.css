@@ -1,0 +1,222 @@
+/* Preview Panel */
+.preview-panel {
+    flex: 1.2;
+    min-width: 600px;
+    background: white;
+    border: 4px solid #333;
+    box-shadow:
+        4px 4px 0 #333,
+        8px 8px 0 rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 2rem);
+}
+
+.preview-header {
+    padding: 1.5rem 2rem;
+    background: #e63946;
+    color: white;
+    border-bottom: 4px solid #333;
+}
+
+.preview-header h2 {
+    color: white;
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.preview-filename {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-family: "Jersey 15", monospace;
+    font-weight: bold;
+}
+
+.preview-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #1a1a1a;
+    position: relative;
+    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(42, 157, 143, 0.04);
+}
+
+.preview-content::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,0.06) 3px,
+        rgba(0,0,0,0.06) 4px
+    );
+    z-index: 1;
+}
+
+.code-preview {
+    margin: 0;
+    padding: 1rem 0;
+    font-family: "Jersey 15", "Courier New", monospace;
+    font-size: 0.78rem; /* overridden inline by scale-to-fit logic */
+    line-height: 1.55;
+    color: #d4d4d4;
+    font-weight: bold;
+    width: 100%;
+}
+
+.code-line {
+    display: flex;
+    padding: 0.2rem 0;
+    transition: background-color 0.1s ease;
+}
+
+.code-line:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.code-line.in-range {
+    background: rgba(230, 57, 70, 0.15);
+    border-left: 4px solid #e63946;
+}
+
+.code-line.in-range:hover {
+    background: rgba(230, 57, 70, 0.25);
+}
+
+.code-line.in-group {
+    background: rgba(42, 157, 143, 0.2);
+    border-left: 4px solid #2a9d8f;
+}
+
+.code-line.in-group:hover {
+    background: rgba(42, 157, 143, 0.3);
+}
+
+.line-number {
+    display: inline-block;
+    min-width: 60px;
+    padding: 0 1rem;
+    color: rgba(200, 60, 70, 0.45);
+    text-align: right;
+    user-select: none;
+    flex-shrink: 0;
+    text-shadow: 0 0 8px rgba(230, 57, 70, 0.25);
+}
+
+.line-group-indicator {
+    display: inline-block;
+    min-width: 80px;
+    padding: 0 0.75rem 0 0.5rem;
+    color: #e63946;
+    font-weight: bold;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.line-content {
+    padding-right: 1rem;
+    white-space: pre;
+    flex: 1;
+    color: #d4d4d4;
+}
+
+
+/* Preview Header with Button */
+.preview-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.btn-preview-colors {
+    padding: 0.5rem 1rem;
+    background: #2a9d8f;
+    color: white;
+    border: 3px solid #333;
+    box-shadow:
+        3px 3px 0 #333,
+        4px 4px 0 rgba(0, 0, 0, 0.1);
+    font-size: 0.9rem;
+    font-weight: bold;
+    font-family: "Jersey 15", monospace;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-preview-colors:hover {
+    background: #238276;
+    transform: translate(-1px, -1px);
+    box-shadow:
+        4px 4px 0 #333,
+        5px 5px 0 rgba(0, 0, 0, 0.1);
+}
+
+.btn-preview-colors:active {
+    transform: translate(3px, 3px);
+    box-shadow:
+        0 0 0 #333,
+        1px 1px 0 rgba(0, 0, 0, 0.1);
+}
+
+
+/* ── Terminal chrome bar ─────────────────────────────── */
+.preview-chrome {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #111;
+    border-bottom: 2px solid #333;
+    flex-shrink: 0;
+}
+
+.chrome-dot {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border: 1px solid rgba(0,0,0,0.4);
+    flex-shrink: 0;
+}
+
+.chrome-dot.red    { background: #e63946; }
+.chrome-dot.yellow { background: #f4a261; }
+.chrome-dot.green  { background: #2a9d8f; }
+
+.chrome-label {
+    margin-left: auto;
+    font-family: "Jersey 15", monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #444;
+    user-select: none;
+}
+
+
+/* ── Preview filename terminal path ──────────────────── */
+.filename-prompt {
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 0.9em;
+}
+
+/* ─── Virtual scroll badge ─── */
+.virtual-badge {
+    margin-left: auto;
+    font-size: 0.6rem;
+    font-family: "Jersey 15", monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: #1a1a2e;
+    color: #00ecff;
+    border: 1px solid #00ecff44;
+    padding: 0.1rem 0.4rem;
+    opacity: 0.75;
+}
