@@ -45,15 +45,15 @@
 
 /* Split Modal */
 .split-modal {
-    background: white;
+    background: #1a1a1a;
     border: 2px solid #333;
     width: 90%;
     max-width: 450px;
 }
 
 .split-header {
-    background: #f4a261;
-    color: white;
+    background: #222;
+    color: #e8e8e8;
     padding: 1rem 1.5rem;
     border-bottom: 2px solid #333;
     display: flex;
@@ -67,6 +67,7 @@
     font-family: "Jersey 15", monospace;
     text-transform: uppercase;
     letter-spacing: 1px;
+    color: #e8e8e8;
 }
 
 .btn-close {
@@ -87,10 +88,11 @@
 
 .split-body {
     padding: 2rem;
+    background: #1a1a1a;
 }
 
 .split-description {
-    color: #666;
+    color: #777;
     font-size: 1rem;
     margin: 0 0 1.5rem 0;
     line-height: 1.6;
@@ -105,9 +107,9 @@
 
 .btn-cancel {
     padding: 0.75rem 1.5rem;
-    background: #999;
-    color: white;
-    border: 2px solid #333;
+    background: #2a2a2a;
+    color: #999;
+    border: 2px solid #444;
     font-size: 1rem;
     font-weight: bold;
     font-family: "Jersey 15", monospace;
@@ -118,14 +120,15 @@
 }
 
 .btn-cancel:hover {
-    background: #888;
+    background: #333;
+    color: #e8e8e8;
 }
 
 
 .btn-confirm {
     padding: 0.75rem 1.5rem;
-    background: #f4a261;
-    color: white;
+    background: #00ecff;
+    color: #0d0d0d;
     border: 2px solid #333;
     font-size: 1rem;
     font-weight: bold;
@@ -137,7 +140,7 @@
 }
 
 .btn-confirm:hover {
-    background: #e08d4a;
+    background: #00c4d6;
 }
 
 
@@ -151,7 +154,7 @@
 
 /* Upload Another Modal */
 .upload-another-modal {
-    background: white;
+    background: #1a1a1a;
     border: 2px solid #333;
     width: 90%;
     max-width: 500px;
@@ -179,6 +182,7 @@
 .upload-another-body {
     padding: 2.5rem 2rem;
     text-align: center;
+    background: #1a1a1a;
 }
 
 .upload-another-buttons {
@@ -191,6 +195,7 @@
 /* Video Complete Modal */
 .video-complete-modal {
     max-width: 800px;
+    background: #1a1a1a;
 }
 
 .video-preview-container {

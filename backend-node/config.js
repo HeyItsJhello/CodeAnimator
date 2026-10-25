@@ -70,11 +70,14 @@ export function buildStructuredGroups(lineGroupStrings, startLine, endLine) {
 
 // ── Render props ───────────────────────────────────────────────────────────
 
+// Values are Prism language ids; renderer/syntax.js registers the ones
+// prism-react-renderer doesn't bundle.
 const EXT_TO_LANG = {
-  py: 'python', gd: 'gdscript', js: 'javascript', ts: 'typescript',
-  jsx: 'jsx', tsx: 'tsx', rs: 'rust', go: 'go', cpp: 'cpp', c: 'c',
+  py: 'python', gd: 'gdscript', js: 'javascript', mjs: 'javascript', cjs: 'javascript',
+  ts: 'typescript', jsx: 'jsx', tsx: 'tsx', rs: 'rust', go: 'go',
+  cpp: 'cpp', cc: 'cpp', cxx: 'cpp', hpp: 'cpp', h: 'cpp', c: 'c',
   java: 'java', cs: 'csharp', rb: 'ruby', php: 'php', swift: 'swift',
-  kt: 'kotlin', css: 'css', html: 'html', json: 'json', sh: 'bash',
+  kt: 'kotlin', kts: 'kotlin', css: 'css', html: 'html', json: 'json', sh: 'bash',
 };
 
 export function detectLanguage(filename) {

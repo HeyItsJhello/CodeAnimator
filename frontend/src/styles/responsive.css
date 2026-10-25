@@ -35,15 +35,6 @@
         font-size: 0.95rem;
     }
 
-    .code-preview {
-        font-size: 0.75rem;
-    }
-
-    .line-number {
-        min-width: 50px;
-        padding: 0 0.5rem;
-    }
-
     .btn-submit {
         font-size: 0.85rem;
     }

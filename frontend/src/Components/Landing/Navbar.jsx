@@ -44,9 +44,6 @@ function Navbar({ showSectionLinks = true }) {
               )}
             </>
           )}
-          <Link to="/downloads" className="navbar__link">
-            Downloads
-          </Link>
           <a
             href="https://github.com/HeyItsJhello/CodeAnimator"
             target="_blank"

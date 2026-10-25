@@ -34,7 +34,8 @@ function CTAFooter() {
         <h2 className="closing__title">Free and open source.</h2>
         <p className="closing__text">
           MIT licensed. No accounts, no subscriptions, no watermark. Your code
-          is deleted as soon as the video renders.
+          is deleted as soon as it's read, and the video once you download it
+          (or after 30 minutes if you don't).
         </p>
 
         {stats && (

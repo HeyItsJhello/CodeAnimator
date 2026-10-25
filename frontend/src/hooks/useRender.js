@@ -41,7 +41,7 @@ export function useRender(file) {
           resolve({
             videoUrl:    `${API_URL}/api/stream/${data.videoId}`,
             downloadUrl: `${API_URL}/api/download/${data.videoId}`,
-            filename:    data.filename,
+            filename:    data.videoId,
           });
         } else if (data.status === 'error') {
           es.close();

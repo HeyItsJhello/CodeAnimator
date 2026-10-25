@@ -22,7 +22,7 @@ https://github.com/user-attachments/assets/ed7b0d6c-e840-499b-a7b9-a5f8b1194bd0
 - Animations: slide in, fade in, typewriter, drop in, scale in
 - Landscape or portrait; 720p30, 1080p60, or 4K60
 - Dry run to check timing before rendering
-- Uploads are deleted immediately; videos are deleted once downloaded
+- Uploads are deleted immediately; videos are deleted once downloaded, and anything left over (abandoned or failed renders) is swept after 30 minutes
 
 ## Running locally
 

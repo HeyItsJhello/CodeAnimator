@@ -21,7 +21,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: white;
+    background: #1a1a1a;
     border: 2px solid #333;
     padding: 0.8rem 1rem;
     cursor: pointer;
@@ -32,9 +32,13 @@
 
 
 
+.font-trigger:hover {
+    background: #222;
+}
+
 .font-trigger-preview {
     font-size: 1.25rem;
-    color: #222;
+    color: #e8e8e8;
     flex: 1;
     line-height: 1;
 }
@@ -48,14 +52,14 @@
 
 .font-trigger-desc {
     font-size: 0.78rem;
-    color: #999;
+    color: #555;
     font-family: "Jersey 15", monospace;
     letter-spacing: 0.5px;
 }
 
 .font-trigger-arrow {
     font-size: 0.7rem;
-    color: #555;
+    color: #666;
     font-family: "Jersey 15", monospace;
 }
 
@@ -64,7 +68,7 @@
     top: calc(100% + 3px);
     left: 0;
     right: 0;
-    background: white;
+    background: #1a1a1a;
     border: 2px solid #333;
     z-index: 200;
     max-height: 420px;
@@ -72,7 +76,7 @@
 }
 
 .font-category {
-    border-bottom: 2px solid #ebebeb;
+    border-bottom: 2px solid #252525;
 }
 
 .font-category:last-child {
@@ -84,10 +88,10 @@
     font-size: 0.68rem;
     letter-spacing: 2.5px;
     text-transform: uppercase;
-    color: #aaa;
+    color: #555;
     padding: 0.4rem 1rem 0.3rem;
-    background: #f7f7f7;
-    border-bottom: 1px solid #ebebeb;
+    background: #141414;
+    border-bottom: 1px solid #252525;
     user-select: none;
 }
 
@@ -97,9 +101,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.55rem 1rem;
-    background: white;
+    background: #1a1a1a;
     border: none;
-    border-bottom: 1px solid #f2f2f2;
+    border-bottom: 1px solid #222;
     cursor: pointer;
     text-align: left;
     transition: background 0.08s ease;
@@ -111,30 +115,30 @@
 }
 
 .font-option:hover {
-    background: #f5f5f5;
+    background: #222;
 }
 
 .font-option.active {
-    background: #edfaf8;
-    border-left: 2px solid #2a9d8f;
+    background: #0d2220;
+    border-left: 2px solid #00ecff;
     padding-left: calc(1rem - 3px);
 }
 
 .font-option-name {
     font-size: 1rem;
-    color: #222;
+    color: #e8e8e8;
     flex-shrink: 0;
     min-width: 140px;
     line-height: 1.2;
 }
 
 .font-option.active .font-option-name {
-    color: #2a9d8f;
+    color: #00ecff;
 }
 
 .font-option-sample {
     font-size: 0.82rem;
-    color: #aaa;
+    color: #555;
     flex: 1;
     text-align: right;
     overflow: hidden;
@@ -144,7 +148,7 @@
 }
 
 .font-option.active .font-option-sample {
-    color: #2a9d8f;
+    color: #00ecff;
     opacity: 0.7;
 }
 

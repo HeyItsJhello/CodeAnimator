@@ -4,7 +4,6 @@ dist/
 .env.*
 
 # Runtime output
-backend-node/cache/
 backend-node/outputs/
 backend-node/uploads/
 

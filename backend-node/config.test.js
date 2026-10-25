@@ -32,6 +32,8 @@ describe('detectLanguage', () => {
   test('maps known extensions and defaults to python', () => {
     expect(detectLanguage('script.gd')).toBe('gdscript');
     expect(detectLanguage('main.cpp')).toBe('cpp');
+    expect(detectLanguage('util.h')).toBe('cpp');
+    expect(detectLanguage('Program.cs')).toBe('csharp');
     expect(detectLanguage('mystery.xyz')).toBe('python');
     expect(detectLanguage(undefined)).toBe('python');
   });

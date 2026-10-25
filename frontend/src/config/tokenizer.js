@@ -1,13 +1,13 @@
 const EXT_TO_LANG = {
   ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".hpp": "cpp", ".h": "cpp",
   ".c": "c", ".py": "py",
-  ".js": "js", ".jsx": "js", ".ts": "js", ".tsx": "js", ".mjs": "js",
+  ".js": "js", ".jsx": "js", ".ts": "js", ".tsx": "js", ".mjs": "js", ".cjs": "js", ".cs": "java",
   ".java": "java", ".go": "go", ".rs": "rs", ".rb": "rb", ".php": "php",
   ".swift": "swift", ".kt": "kt", ".kts": "kt", ".gd": "gd",
 };
 
-// Regex approximation of Pygments tokenization, used only for the in-browser
-// preview. The rendered video highlights with Prism (renderer/syntax.js).
+// Regex-based highlighting, used only for the in-browser preview (C# borrows
+// Java's patterns). The rendered video highlights with Prism (renderer/syntax.js).
 export const getTokenPatterns = (fileExtension) => {
   const ext = fileExtension?.toLowerCase() || "";
   const lang = EXT_TO_LANG[ext] || "cpp";
