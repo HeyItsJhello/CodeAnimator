@@ -13,18 +13,22 @@ export const getTokenPatterns = (fileExtension) => {
   const lang = EXT_TO_LANG[ext] || "cpp";
   const isCLike = ["cpp", "c"].includes(lang);
 
-  // Later patterns override earlier ones; `#` is a comment everywhere except
-  // C/C++, where it marks the preprocessor.
-  const basePatterns = [
+  // Strings and comments: whichever opens first on a line wins, and nothing
+  // later repaints inside them. `#` is a comment everywhere except C/C++,
+  // where it marks the preprocessor.
+  const literalPatterns = [
     { type: "comments", pattern: /\/\*[\s\S]*?\*\//g },
     { type: "comments", pattern: /\/\/.*$/gm },
     ...(!isCLike ? [{ type: "comments", pattern: /#.*$/gm }] : []),
     { type: "strings", pattern: /"(?:[^"\\]|\\.)*"/g },
     { type: "strings", pattern: /'(?:[^'\\]|\\.)*'/g },
     { type: "strings", pattern: /`(?:[^`\\]|\\.)*`/g },
-    { type: "numbers", pattern: /\b0x[0-9a-fA-F]+\b/g },
-    { type: "numbers", pattern: /\b0b[01]+\b/g },
-    { type: "numbers", pattern: /\b\d+\.?\d*(?:[eE][+-]?\d+)?[fFlL]?\b/g },
+  ];
+
+  const numberPatterns = [
+    /\b0x[0-9a-fA-F]+\b/g,
+    /\b0b[01]+\b/g,
+    /\b\d+\.?\d*(?:[eE][+-]?\d+)?[fFlL]?\b/g,
   ];
 
   // Pygments colors #include/#define as keywords and <file.h> as PreprocFile
@@ -87,7 +91,8 @@ export const getTokenPatterns = (fileExtension) => {
   };
 
   return {
-    base: basePatterns,
+    literals: literalPatterns,
+    numbers: numberPatterns,
     preprocessor: preprocessorPatterns,
     keywords: keywordsByLang[lang] || keywordsByLang.cpp,
     types: typesByLang[lang] || null,
@@ -103,6 +108,28 @@ export const tokenizeLine = (line, patterns, colors) => {
   if (!line) return [{ text: " ", color: colors.default }];
 
   const charColors = new Array(line.length).fill(colors.default);
+  const locked = new Array(line.length).fill(false);
+
+  // Scan left to right for the earliest string or comment, paint and lock it,
+  // then continue after it.
+  let pos = 0;
+  while (pos < line.length) {
+    let best = null;
+    for (const { type, pattern } of patterns.literals) {
+      const regex = new RegExp(pattern.source, pattern.flags);
+      regex.lastIndex = pos;
+      const match = regex.exec(line);
+      if (match && match[0].length && (!best || match.index < best.start)) {
+        best = { type, start: match.index, end: match.index + match[0].length };
+      }
+    }
+    if (!best) break;
+    for (let i = best.start; i < best.end; i++) {
+      charColors[i] = colors[best.type];
+      locked[i] = true;
+    }
+    pos = best.end;
+  }
 
   const applyPattern = (pattern, colorKey) => {
     if (!pattern) return;
@@ -112,12 +139,12 @@ export const tokenizeLine = (line, patterns, colors) => {
       const start = match.index;
       const end = start + match[0].length;
       for (let i = start; i < end && i < charColors.length; i++) {
-        charColors[i] = colors[colorKey];
+        if (!locked[i]) charColors[i] = colors[colorKey];
       }
     }
   };
 
-  patterns.base.forEach((p) => applyPattern(p.pattern, p.type));
+  patterns.numbers.forEach((p) => applyPattern(p, "numbers"));
   if (patterns.preprocessor) {
     patterns.preprocessor.forEach((p) => applyPattern(p.pattern, p.type));
   }
@@ -139,6 +166,7 @@ export const tokenizeLine = (line, patterns, colors) => {
       let isKeywordOrType = false;
       for (let i = start; i < end; i++) {
         if (
+          locked[i] ||
           charColors[i] === colors.keywords ||
           charColors[i] === colors.types
         ) {

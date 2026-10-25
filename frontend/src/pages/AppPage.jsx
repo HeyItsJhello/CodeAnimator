@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import { Link } from "react-router-dom";
 import "../App.css";
 
@@ -13,6 +13,7 @@ import {
   ApiStatusBanner, LinesPanel, AnimationPanel, VideoPanel, LookPanel, SidebarLinks,
 } from "../Components/FormSections";
 import PreviewPanel from "../Components/PreviewPanel";
+import FontScreen from "../Components/FontSelector";
 import {
   LoadingModal, SplitModal, ColorModal, VideoCompleteModal, DryRunModal,
 } from "../Components/Modals";
@@ -98,6 +99,19 @@ function AppPage() {
 
   // null | "split" | "color" | "video" | "dryRun"
   const [modal, setModal] = useState(null);
+  const [fontScreenOpen, setFontScreenOpen] = useState(false);
+  const closeFontScreen = useCallback(() => setFontScreenOpen(false), []);
+
+  // The font screen replaces the settings in the sidebar; return the user to where they were.
+  const sidebarRef = useRef(null);
+  const sidebarScroll = useRef(0);
+  const openFontScreen = () => {
+    sidebarScroll.current = sidebarRef.current?.scrollTop ?? 0;
+    setFontScreenOpen(true);
+  };
+  useLayoutEffect(() => {
+    if (sidebarRef.current) sidebarRef.current.scrollTop = fontScreenOpen ? 0 : sidebarScroll.current;
+  }, [fontScreenOpen]);
   const [dryRunResult, setDryRunResult] = useState(null);
   const closeModal = () => setModal(null);
 
@@ -260,8 +274,11 @@ function AppPage() {
         </section>
 
         {fileContent && (
-          <aside className="sidebar" aria-label="Video settings">
-            <form id="render-form" onSubmit={(e) => { e.preventDefault(); startRender(); }}>
+          <aside className="sidebar" aria-label="Video settings" ref={sidebarRef}>
+            {fontScreenOpen && (
+              <FontScreen font={font} onFontChange={setFont} onClose={closeFontScreen} />
+            )}
+            <form id="render-form" hidden={fontScreenOpen} onSubmit={(e) => { e.preventDefault(); startRender(); }}>
               <LinesPanel
                 startLine={startLine} endLine={endLine} totalLines={totalLines}
                 onStartLineChange={setStartLine} onEndLineChange={setEndLine}
@@ -281,11 +298,11 @@ function AppPage() {
               />
               <LookPanel
                 syntaxColors={syntaxColors} onOpenColorModal={() => setModal("color")}
-                font={font} onFontChange={setFont}
+                font={font} onOpenFontScreen={openFontScreen}
                 includeComments={includeComments} onIncludeCommentsChange={setIncludeComments}
               />
             </form>
-            <SidebarLinks />
+            {!fontScreenOpen && <SidebarLinks />}
           </aside>
         )}
       </main>
