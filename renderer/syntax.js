@@ -1,4 +1,11 @@
-import { Prism } from 'prism-react-renderer';
+import { Prism } from './prism.js';
+// Languages prism-react-renderer doesn't bundle (php needs markup-templating).
+import 'prismjs/components/prism-java.js';
+import 'prismjs/components/prism-csharp.js';
+import 'prismjs/components/prism-ruby.js';
+import 'prismjs/components/prism-markup-templating.js';
+import 'prismjs/components/prism-php.js';
+import 'prismjs/components/prism-bash.js';
 
 Prism.languages.gdscript = {
   comment:      { pattern: /#.*/, greedy: true },

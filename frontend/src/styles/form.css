@@ -1,5 +1,4 @@
-/* Settings sidebar. Colors come from the --ui-* tokens on .app, which
-   .dark-theme swaps, so these rules work in both themes. */
+/* Settings sidebar. Colors come from the --ui-* tokens on .app. */
 
 /* ── Collapsible panels ── */
 .panel {
@@ -350,6 +349,8 @@
 
 .btn-submit:disabled {
     opacity: 0.5;
+    background: #333;
+    color: #666;
     cursor: not-allowed;
 }
 

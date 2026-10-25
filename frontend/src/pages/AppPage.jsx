@@ -94,12 +94,6 @@ function toTimingConfig(animationTiming) {
 }
 
 function AppPage() {
-  const [isDark, setIsDark] = useState(() => localStorage.getItem("theme") === "dark");
-  const toggleTheme = () => {
-    localStorage.setItem("theme", isDark ? "light" : "dark");
-    setIsDark(!isDark);
-  };
-
   const [apiStatus, checkApiStatus] = useApiStatus();
 
   // null | "split" | "color" | "video" | "dryRun"
@@ -209,7 +203,7 @@ function AppPage() {
   const ready = apiStatus === "awake";
 
   return (
-    <div className={`app${isDark ? " dark-theme" : ""}`}>
+    <div className="app">
       <input
         type="file" id="file-upload" className="visually-hidden"
         accept={ACCEPTED_EXTENSIONS} onChange={handleFileUpload}
@@ -230,9 +224,6 @@ function AppPage() {
         )}
 
         <div className="topbar__actions">
-          <button type="button" className="theme-toggle" onClick={toggleTheme}>
-            {isDark ? "Light mode" : "Dark mode"}
-          </button>
           {fileContent && (
             <>
               <button type="button" className="btn-dry-run" disabled={!ready} onClick={handleDryRun}>

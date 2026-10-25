@@ -49,18 +49,37 @@ async function renderVideo(inputProps, outputPath, onProgress) {
   });
 }
 
-// ── Job progress (in memory, kept 30 minutes) ──────────────────────────────
+// ── Retention ──────────────────────────────────────────────────────────────
+//
+// Nothing user-provided outlives TTL_MS. Uploads are deleted as soon as they
+// are read; a rendered video is deleted when downloaded, when its render
+// fails, or by the sweep once it is TTL_MS old (covers abandoned renders and
+// files left behind by a crash or restart).
+
+const TTL_MS = 30 * 60 * 1000;
 
 // taskId → { progress, status: 'rendering' | 'complete' | 'error', videoId?, error?, updatedAt }
 const jobs = new Map();
-const JOB_TTL_MS = 30 * 60 * 1000;
 
 const setJob = (taskId, data) => jobs.set(taskId, { ...data, updatedAt: Date.now() });
 
-setInterval(() => {
-  const cutoff = Date.now() - JOB_TTL_MS;
+function sweep() {
+  const cutoff = Date.now() - TTL_MS;
   for (const [id, job] of jobs) if (job.updatedAt < cutoff) jobs.delete(id);
-}, 60_000).unref();
+  for (const dir of [UPLOADS_DIR, OUTPUTS_DIR]) {
+    for (const name of fs.readdirSync(dir)) {
+      const file = path.join(dir, name);
+      try {
+        if (fs.statSync(file).mtimeMs < cutoff) fs.rmSync(file, { recursive: true, force: true });
+      } catch {
+        // Deleted concurrently (e.g. by a download) — nothing to do
+      }
+    }
+  }
+}
+
+sweep();
+setInterval(sweep, 60_000).unref();
 
 // ── Request helpers ────────────────────────────────────────────────────────
 
@@ -148,14 +167,16 @@ app.post('/api/animate', upload.single('file'), (req, res) => {
   res.json({ success: true, taskId });
   console.log(`Render started ${taskId}`);
 
+  const outputPath = path.join(OUTPUTS_DIR, videoId);
   renderVideo(
     toRenderProps(fileContent, config, filename),
-    path.join(OUTPUTS_DIR, videoId),
+    outputPath,
     (pct) => setJob(taskId, { progress: pct, status: 'rendering' }),
   ).then(() => {
-    setJob(taskId, { progress: 100, status: 'complete', videoId, filename: videoId });
+    setJob(taskId, { progress: 100, status: 'complete', videoId });
     console.log(`Render complete ${taskId}`);
   }).catch((err) => {
+    fs.rmSync(outputPath, { force: true });
     setJob(taskId, { progress: 0, status: 'error', error: err.message });
     console.error(`Render failed ${taskId}: ${err.message}`);
   });
@@ -198,11 +219,10 @@ app.get('/api/stream/:videoId', (req, res) => {
   const file = videoPath(req.params.videoId);
   if (!file) return res.status(400).json({ error: 'Invalid filename' });
   if (!fs.existsSync(file)) return res.status(404).json({ error: 'Not found' });
-  res.setHeader('Content-Type', 'video/mp4');
-  fs.createReadStream(file).pipe(res);
+  res.sendFile(file); // handles Range requests, which <video> seeking (and Safari) needs
 });
 
-// The video is deleted once downloaded.
+// The video is deleted once downloaded (or the download is aborted).
 app.get('/api/download/:videoId', (req, res) => {
   const file = videoPath(req.params.videoId);
   if (!file) return res.status(400).json({ error: 'Invalid filename' });

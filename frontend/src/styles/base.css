@@ -42,21 +42,27 @@ body,
 }
 
 .app {
-    /* UI tokens for the editor chrome; .dark-theme swaps them */
-    --ui-bg: #fff;
-    --ui-bg-2: #f5f5f5;
-    --ui-ink: #333;
-    --ui-muted: #6b6b6b;
-    --ui-line: #e4e4e4;
-    --ui-edge: #333;
+    /* UI tokens for the editor chrome */
+    --ui-bg: #1a1a1a;
+    --ui-bg-2: #232323;
+    --ui-ink: #e8e8e8;
+    --ui-muted: #8f8f8f;
+    --ui-line: #2c2c2c;
+    --ui-edge: #444;
 
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background: #f0f0f0;
-    color: #333;
+    background: #111111;
+    color: #e8e8e8;
     font-family: "Jersey 15", "Courier New", monospace;
     overflow: hidden;
+    --shadow-ink: #000;
+    --text: #e8e8e8;
+    --border: #555;
+    --bg: #1a1a1a;
+    background-image: radial-gradient(rgba(255,255,255,0.055) 1px, transparent 1px);
+    background-size: 20px 20px;
 }
 
 .visually-hidden {
@@ -84,7 +90,7 @@ body,
     align-items: center;
     gap: 0.75rem 1.75rem;
     padding: 0.75rem 1.25rem;
-    background: white;
+    background: #1a1a1a;
     border-bottom: 2px solid #333;
 }
 
@@ -92,7 +98,7 @@ body,
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    color: #333;
+    color: #e8e8e8;
     font-size: 1.35rem;
     text-decoration: none;
 }
@@ -106,7 +112,7 @@ body,
 
 .topbar__filename {
     overflow: hidden;
-    color: #333;
+    color: #e8e8e8;
     font-size: 1.15rem;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -118,7 +124,7 @@ body,
 }
 
 .topbar__change {
-    color: #d62839;
+    color: #ff3d3d;
     text-decoration: underline;
     white-space: nowrap;
     cursor: pointer;
@@ -159,7 +165,7 @@ body,
     min-height: 0;
     padding: 0;
     overflow-y: auto;
-    background: white;
+    background: #1a1a1a;
     border-left: 2px solid #333;
 }
 
@@ -227,21 +233,6 @@ body,
 #file-upload:focus-visible ~ .workspace .empty-editor {
     outline: 3px solid #ff5e5b;
     outline-offset: -3px;
-}
-
-/* Back to Home Link */
-.back-to-home {
-    display: inline-block;
-    margin-bottom: 1rem;
-    color: #666;
-    text-decoration: none;
-    font-size: 1rem;
-    font-family: "Jersey 15", "Courier New", monospace;
-    transition: color 0.2s ease;
-}
-
-.back-to-home:hover {
-    color: #ff5e5b;
 }
 
 h1 {

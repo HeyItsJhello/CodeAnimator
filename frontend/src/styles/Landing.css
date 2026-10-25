@@ -10,11 +10,14 @@
 .landing-page {
     --gutter: 3.5rem;
     --pad: clamp(1.5rem, 5vw, 4.5rem);
-    --paper: #f5f5f5;
-    --ink: #333;
+    --paper: #111;
+    --surface: #1a1a1a;
+    --ink: #e8e8e8;
     --coral: #ff5e5b;
-    --muted: #555;
+    --muted: #8f8f8f;
+    --line-faint: #262626;
     --code-bg: #1e1e1e;
+    --shadow-ink: #000;
 
     position: relative;
     min-height: 100vh;
@@ -46,8 +49,8 @@
     width: var(--gutter);
     padding: 1rem 0.75rem 0 0;
     overflow: hidden;
-    border-right: 2px solid #e2e2e2;
-    color: #bbb;
+    border-right: 2px solid var(--line-faint);
+    color: #3a3a3a;
     font-size: 0.8rem;
     line-height: 1.75rem;
     text-align: right;
@@ -94,7 +97,7 @@
 }
 
 /* ===================================
-   Buttons & cards (shared with Downloads page)
+   Buttons
    =================================== */
 
 .pixel-btn {
@@ -125,24 +128,9 @@
     box-shadow: none;
 }
 
-.pixel-btn--secondary {
-    background: white;
-    color: #333;
-}
-
-.pixel-btn--secondary:hover {
-    background: #eee;
-}
-
 .pixel-btn--large {
     padding: 1rem 2rem;
     font-size: 1.35rem;
-}
-
-.pixel-card {
-    background: white;
-    border: 2px solid #333;
-    padding: 1.5rem;
 }
 
 /* ===================================
@@ -161,7 +149,7 @@
 }
 
 .navbar--scrolled {
-    background: #f5f5f5;
+    background: var(--paper);
     border-bottom: 2px solid #333;
 }
 
@@ -176,7 +164,7 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    color: #333;
+    color: var(--ink);
     font-size: 1.5rem;
     text-decoration: none;
 }
@@ -191,7 +179,7 @@
     padding: 0;
     background: none;
     border: none;
-    color: #333;
+    color: var(--ink);
     font-family: "Jersey 15", monospace;
     font-size: 1.1rem;
     text-decoration: none;
@@ -200,7 +188,7 @@
 }
 
 .navbar__link:hover {
-    color: #e63946;
+    color: var(--coral);
 }
 
 .navbar__cta {
@@ -310,7 +298,7 @@
    =================================== */
 
 .features {
-    background: white;
+    background: var(--surface);
     border-top: 2px solid #333;
     border-bottom: 2px solid #333;
 }
@@ -391,7 +379,7 @@
    =================================== */
 
 .comparison {
-    background: white;
+    background: var(--surface);
     border-top: 2px solid #333;
     border-bottom: 2px solid #333;
 }
@@ -409,7 +397,7 @@
 .comparison__table th,
 .comparison__table td {
     padding: 0.85rem 1rem;
-    border-bottom: 2px solid #e2e2e2;
+    border-bottom: 2px solid var(--line-faint);
     font-weight: normal;
     text-align: center;
 }
@@ -434,9 +422,9 @@
     color: #1a1a1a;
 }
 
-.comparison__value--good { color: #333; }
-.comparison__value--okay { color: #777; }
-.comparison__value--bad  { color: #999; }
+.comparison__value--good { color: var(--ink); }
+.comparison__value--okay { color: #9a9a9a; }
+.comparison__value--bad  { color: #5f5f5f; }
 
 /* ===================================
    Why I made this: a taped note
@@ -447,9 +435,9 @@
     max-width: 46rem;
     margin: 1rem 0 0 clamp(0rem, 4vw, 3rem);
     padding: 2.75rem 2.5rem 2rem;
-    background: white;
+    background: var(--surface);
     border: 2px solid #333;
-    color: #444;
+    color: #bbb;
     font-size: 1.2rem;
     line-height: 1.65;
     transform: rotate(-1.5deg);
@@ -471,7 +459,7 @@
 }
 
 .note a {
-    color: #d62839;
+    color: var(--coral);
 }
 
 .note__signature {
@@ -547,7 +535,7 @@
     position: relative;
     padding: 9rem var(--pad) 7rem calc(var(--gutter) + var(--pad));
     overflow: hidden;
-    background: #333;
+    background: var(--surface);
     color: #f5f5f5;
 }
 
@@ -630,7 +618,7 @@
 
 .footer {
     padding: 2.5rem var(--pad, 2rem) 2.5rem calc(var(--gutter, 0px) + var(--pad, 2rem));
-    background: #1a1a1a;
+    background: #0a0a0a;
     color: #999;
 }
 
@@ -674,124 +662,6 @@
     border-top: 2px solid #333;
     font-size: 0.9rem;
 }
-
-/* ===================================
-   App Page Back Link
-   =================================== */
-
-.back-to-home {
-    display: inline-block;
-    margin-bottom: 1rem;
-    color: #666;
-    text-decoration: none;
-    font-size: 1rem;
-    transition: color 0.2s ease;
-}
-
-.back-to-home:hover {
-    color: #ff5e5b;
-}
-
-/* ===================================
-   Downloads Page
-   =================================== */
-
-.downloads {
-    min-height: 100vh;
-    padding: 8rem 2rem 4rem;
-}
-
-.downloads__container {
-    max-width: 800px;
-    margin: 0 auto;
-}
-
-.downloads__grid {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-}
-
-.download-card {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    text-decoration: none;
-    color: inherit;
-    transition: transform 0.2s ease;
-    cursor: pointer;
-}
-
-
-.download-card__icon {
-    flex-shrink: 0;
-    width: 64px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.download-card__icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.download-card__info {
-    flex: 1;
-}
-
-.download-card__platform {
-    font-size: 1.5rem;
-    color: #333;
-    margin: 0 0 0.25rem 0;
-}
-
-.download-card__arch {
-    font-size: 1.1rem;
-    color: #666;
-    margin: 0 0 0.5rem 0;
-}
-
-.download-card__meta {
-    font-size: 0.9rem;
-    color: #999;
-    margin: 0;
-}
-
-.download-card__action {
-    flex-shrink: 0;
-}
-
-.downloads__more {
-    text-align: center;
-    padding-top: 2rem;
-    border-top: 2px solid #333;
-}
-
-.downloads__more-text {
-    font-size: 1.1rem;
-    color: #666;
-    margin-bottom: 1.5rem;
-}
-
-@media (max-width: 768px) {
-    .download-card {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .download-card__icon {
-        margin: 0 auto;
-    }
-
-    .download-card__info {
-        text-align: center;
-    }
-}
-
 
 /* ===================================
    Responsive & motion preferences

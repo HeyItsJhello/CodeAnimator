@@ -51,9 +51,6 @@ function Hero() {
           <Link to="/" className="pixel-btn pixel-btn--primary">
             Try it online
           </Link>
-          <Link to="/downloads" className="pixel-btn pixel-btn--secondary">
-            Download the app
-          </Link>
         </div>
       </div>
 

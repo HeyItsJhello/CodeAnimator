@@ -12,15 +12,15 @@
 }
 
 .api-status-banner.waking {
-    background: #fff3cd;
-    color: #856404;
-    border-color: #856404;
+    background: rgba(255, 220, 100, 0.08);
+    color: #ffd96a;
+    border-color: #ffd96a;
 }
 
 .api-status-banner.error {
-    background: #f8d7da;
-    color: #721c24;
-    border-color: #721c24;
+    background: rgba(255, 61, 61, 0.08);
+    color: #ff3d3d;
+    border-color: #ff3d3d;
 }
 
 .status-spinner {
@@ -38,7 +38,7 @@
 }
 
 .retry-btn {
-    background: #721c24;
+    background: #a71d2a;
     color: white;
     border: 2px solid #333;
     padding: 0.25rem 0.75rem;
@@ -48,282 +48,7 @@
 }
 
 .retry-btn:hover {
-    background: #a71d2a;
-}
-
-
-.btn-submit:disabled {
-    background: #ccc;
-    color: #666;
-    cursor: not-allowed;
-}
-
-.btn-submit:disabled:hover {
-    background: #ccc;
-    transform: none;
-}
-
-/* ── Theme toggle ── */
-.theme-toggle {
-    background: white;
-    color: #666;
-    border: 2px solid #333;
-    padding: 0.35rem 0.9rem;
-    font-family: "Jersey 15", monospace;
-    font-size: 0.9rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.1s ease;
-    line-height: 1;
-}
-
-.theme-toggle:hover {
-    background: #f0f0f0;
-}
-
-
-/* ── Dark theme ───────────────────────────────────────── */
-.dark-theme {
-    --shadow-ink: #000;
-    --ui-bg: #1a1a1a;
-    --ui-bg-2: #232323;
-    --ui-ink: #e8e8e8;
-    --ui-muted: #8f8f8f;
-    --ui-line: #2c2c2c;
-    --ui-edge: #444;
-    --text: #e8e8e8;
-    --border: #555;
-    --bg: #1a1a1a;
-    background: #111111;
-    color: #e8e8e8;
-}
-
-.dark-theme h1 {
-    color: #e8e8e8;
-}
-
-.dark-theme h2 {
-    color: #e8e8e8;
-}
-
-.dark-theme h3 {
-    color: #999;
-}
-
-.dark-theme .back-to-home {
-    color: #777;
-}
-
-.dark-theme .back-to-home:hover {
-    color: #ff3d3d;
-}
-
-.dark-theme .theme-toggle {
-    background: #222;
-    color: #777;
-    border-color: #444;
-}
-
-.dark-theme .theme-toggle:hover {
-    background: #2a2a2a;
-    color: #e8e8e8;
-}
-
-.dark-theme .btn-submit:disabled {
-    background: #333;
-    color: #666;
-}
-
-
-/* Dark modals */
-.dark-theme .split-modal,
-.dark-theme .upload-another-modal,
-.dark-theme .video-complete-modal {
-    background: #1a1a1a;
-    border-color: #333;
-}
-
-.dark-theme .split-header {
-    background: #222;
-    border-bottom-color: #333;
-    color: #e8e8e8;
-}
-
-.dark-theme .split-title {
-    color: #e8e8e8;
-}
-
-.dark-theme .split-body {
-    background: #1a1a1a;
-}
-
-.dark-theme .split-description {
-    color: #777;
-}
-
-.dark-theme .btn-confirm {
-    background: #00ecff;
-    color: #0d0d0d;
-    border-color: #333;
-}
-
-.dark-theme .btn-confirm:hover {
-    background: #00c4d6;
-}
-
-.dark-theme .btn-cancel {
-    background: #2a2a2a;
-    color: #999;
-    border-color: #444;
-}
-
-.dark-theme .btn-cancel:hover {
-    background: #333;
-    color: #e8e8e8;
-}
-
-.dark-theme .upload-another-header {
-    background: #2a9d8f;
-    border-bottom-color: #333;
-}
-
-.dark-theme .upload-another-body {
-    background: #1a1a1a;
-}
-
-.dark-theme .api-status-banner {
-    border-color: #333;
-}
-
-.dark-theme .api-status-banner.waking {
-    background: rgba(255, 220, 100, 0.08);
-    color: #ffd96a;
-    border-color: #ffd96a;
-}
-
-.dark-theme .api-status-banner.error {
-    background: rgba(255, 61, 61, 0.08);
-    color: #ff3d3d;
-    border-color: #ff3d3d;
-}
-
-.dark-theme .retry-btn {
-    background: #a71d2a;
-    border-color: #333;
-}
-
-.dark-theme .retry-btn:hover {
     background: #ff3d3d;
-}
-
-.dark-theme .video-preview-container {
-    border-color: #333;
-}
-
-
-/* Dark theme — font selector */
-.dark-theme .font-trigger {
-    background: #1a1a1a;
-    border-color: #333;
-}
-
-.dark-theme .font-trigger:hover {
-    background: #222;
-}
-
-
-.dark-theme .font-trigger-preview {
-    color: #e8e8e8;
-}
-
-.dark-theme .font-trigger-desc {
-    color: #555;
-}
-
-.dark-theme .font-trigger-arrow {
-    color: #666;
-}
-
-.dark-theme .font-dropdown {
-    background: #1a1a1a;
-    border-color: #333;
-}
-
-.dark-theme .font-category {
-    border-bottom-color: #252525;
-}
-
-.dark-theme .font-category-label {
-    background: #141414;
-    color: #555;
-    border-bottom-color: #252525;
-}
-
-.dark-theme .font-option {
-    background: #1a1a1a;
-    border-bottom-color: #222;
-}
-
-.dark-theme .font-option:hover {
-    background: #222;
-}
-
-.dark-theme .font-option.active {
-    background: #0d2220;
-    border-left-color: #00ecff;
-}
-
-.dark-theme .font-option-name {
-    color: #e8e8e8;
-}
-
-.dark-theme .font-option.active .font-option-name {
-    color: #00ecff;
-}
-
-.dark-theme .font-option-sample {
-    color: #555;
-}
-
-.dark-theme .font-option.active .font-option-sample {
-    color: #00ecff;
-}
-
-
-/* ── Dark theme enhancements ─────────────────────────── */
-.dark-theme {
-    background-image: radial-gradient(rgba(255,255,255,0.055) 1px, transparent 1px);
-    background-size: 20px 20px;
-}
-
-
-/* ── Dark theme additional ───────────────────────────── */
-.dark-theme h2::before {
-    color: #ff3d3d;
-    opacity: 0.8;
-}
-
-.dark-theme .line-number {
-    color: rgba(255, 61, 61, 0.3);
-}
-
-.dark-theme .topbar,
-.dark-theme .sidebar {
-    background: #1a1a1a;
-    border-color: #333;
-}
-
-.dark-theme .topbar__logo,
-.dark-theme .topbar__filename {
-    color: #e8e8e8;
-}
-
-.dark-theme .topbar__change {
-    color: #ff3d3d;
-}
-
-.dark-theme .sidebar-links a {
-    color: #777;
 }
 
 /* ─── Dry run button ─── */
@@ -348,4 +73,3 @@
     opacity: 0.4;
     cursor: not-allowed;
 }
-

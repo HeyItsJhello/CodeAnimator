@@ -2,9 +2,23 @@ import { useState, useRef, useEffect, useMemo } from "react";
 
 const OVERSCAN          = 30;
 const VIRTUAL_THRESHOLD = 250;
-const NATURAL_FONT_SIZE = 13;   // px — don't scale UP beyond this
-const MIN_FONT_SIZE     = 7;    // px — below this is unreadable; clip instead
-const CHAR_RATIO        = 0.60; // approx char-width / font-size for monospace
+const MAX_FONT_SIZE     = 32;   // px — keeps tiny files from turning into posters
+const MIN_FONT_SIZE     = 5;    // px — below this is unreadable; scroll instead
+
+// Must match preview.css. Everything in a line scales with font size except
+// these rem-based paddings, so the fitting size can be solved for directly.
+const LINE_HEIGHT    = 1.55;              // .code-preview line-height
+const V_PAD_PX       = 2 * 0.75 * 16;     // .code-preview vertical padding
+const H_PAD_PX       = (0.9 + 0.4 + 0.9 + 0.35 + 1) * 16 + 1; // gutter margin/padding/gap, border, content padding
+const MARKER_EM      = 2.2 * 0.85;        // .line-group-marker min-width
+const SAFETY_PX      = 2;                 // rounding slack so a fitted file never shows a scrollbar
+
+// Advance width of one character as a fraction of font size (fonts are monospace).
+function measureCharRatio(fontFamily) {
+  const ctx = document.createElement("canvas").getContext("2d");
+  ctx.font = `100px ${fontFamily}`;
+  return ctx.measureText("0").width / 100;
+}
 
 function PreviewPanel({
   fileName,
@@ -21,7 +35,6 @@ function PreviewPanel({
 }) {
   const containerRef = useRef(null);
 
-  const [lineHeight, setLineHeight] = useState(null); // measured from the first rendered line
   const [scrollTop,  setScrollTop]  = useState(0);
   const [viewHeight, setViewHeight] = useState(500);
   const [viewWidth,  setViewWidth]  = useState(800);
@@ -43,13 +56,16 @@ function PreviewPanel({
     return () => obs.disconnect();
   }, []);
 
-  const measureRef = (node) => {
-    if (node && lineHeight === null) {
-      const h = node.getBoundingClientRect().height;
-      if (h > 0) setLineHeight(h);
-    }
-  };
-  const lh = lineHeight ?? 26;
+  // Re-measure when the font changes, and again whenever web fonts finish loading.
+  const family = fontFamily || '"Jersey 15", "Courier New", monospace';
+  const [fontsLoaded, setFontsLoaded] = useState(0);
+  useEffect(() => {
+    const bump = () => setFontsLoaded((n) => n + 1);
+    document.fonts.addEventListener("loadingdone", bump);
+    return () => document.fonts.removeEventListener("loadingdone", bump);
+  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fontsLoaded only triggers a re-measure
+  const charRatio = useMemo(() => measureCharRatio(family), [family, fontsLoaded]);
 
   // Longest line in the whole file — stable so font doesn't jump while scrolling
   const maxLineLength = useMemo(
@@ -57,18 +73,15 @@ function PreviewPanel({
     [lines],
   );
 
-  const maxLineNum   = lines.length;
-  const lineNumWidth = String(maxLineNum).length;
+  const lineNumWidth = String(lines.length).length;
 
-  // Estimate space consumed by gutter (line numbers) and group indicator
-  const gutterPx    = lineNumWidth * NATURAL_FONT_SIZE * CHAR_RATIO + 76; // number + group marker + paddings
-  const indicatorPx = 0;
-  const hPad        = 16;
-  const available   = Math.max(60, viewWidth - gutterPx - indicatorPx - hPad);
-
-  // Font size that fits the longest line; clamped to [MIN, NATURAL]
-  const fittedSize = available / (maxLineLength * CHAR_RATIO);
-  const fontSize   = Math.min(NATURAL_FONT_SIZE, Math.max(MIN_FONT_SIZE, fittedSize));
+  // Largest font size at which the whole file fits: every line's full width,
+  // and every line's height. Clamped to [MIN, MAX].
+  const emsWide   = MARKER_EM + (lineNumWidth + maxLineLength) * charRatio;
+  const widthFit  = (viewWidth - H_PAD_PX - SAFETY_PX) / emsWide;
+  const heightFit = (viewHeight - V_PAD_PX - SAFETY_PX) / (Math.max(1, lines.length) * LINE_HEIGHT);
+  const fontSize  = Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, Math.min(widthFit, heightFit)));
+  const lh        = fontSize * LINE_HEIGHT;
 
   const { firstIdx, lastIdx } = useMemo(() => {
     if (!isVirtual) return { firstIdx: 0, lastIdx: lines.length - 1 };
@@ -122,7 +135,6 @@ function PreviewPanel({
             return (
               <div
                 key={lineNum}
-                ref={i === 0 ? measureRef : undefined}
                 className={`code-line${inRange ? "" : " is-dimmed"}${groupNums ? " is-grouped" : ""}`}
               >
                 <button
