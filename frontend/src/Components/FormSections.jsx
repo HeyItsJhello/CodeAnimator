@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ANIMATION_TYPES, QUALITY_OPTIONS } from "../config/constants";
-import FontSelector from "./FontSelector";
+import { FontTrigger } from "./FontSelector";
 
 // A collapsible group of settings in the sidebar.
 function Panel({ title, children }) {
@@ -220,7 +220,7 @@ export function VideoPanel({ orientation, onOrientationChange, quality, onQualit
 }
 
 export function LookPanel({
-  syntaxColors, onOpenColorModal, font, onFontChange, includeComments, onIncludeCommentsChange,
+  syntaxColors, onOpenColorModal, font, onOpenFontScreen, includeComments, onIncludeCommentsChange,
 }) {
   return (
     <Panel title="Look">
@@ -236,7 +236,7 @@ export function LookPanel({
       </Field>
 
       <Field label="Font">
-        <FontSelector font={font} onFontChange={onFontChange} />
+        <FontTrigger font={font} onOpen={onOpenFontScreen} />
       </Field>
 
       <label className="check-row">
