@@ -212,6 +212,68 @@
 
 
 
+/* Batch results: a strip of videos under the main player. */
+.gallery {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.25rem;
+    overflow-x: auto;
+}
+
+.gallery__item {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    width: 160px;
+    padding: 0;
+    background: #111;
+    border: 2px solid #333;
+    color: #bbb;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.gallery__item:hover {
+    border-color: #555;
+}
+
+.gallery__item[aria-selected="true"] {
+    border-color: #ff5e5b;
+    color: #e8e8e8;
+}
+
+.gallery__thumb {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    background: #000;
+    pointer-events: none;
+}
+
+.gallery__thumb--failed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #e63946;
+}
+
+.gallery__name {
+    padding: 0.35rem 0.5rem;
+    overflow: hidden;
+    font-size: 0.85rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gallery-error {
+    margin: 0;
+    padding: 2rem 1.5rem;
+    color: #e63946;
+}
+
 .split-input-group {
     margin-bottom: 1.5rem;
 }
@@ -385,6 +447,13 @@
     justify-content: space-between;
     background: var(--ui-bg-2);
     border-bottom: 2px solid var(--ui-edge);
+}
+
+.modal-tabs__meta {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 1rem;
+    color: var(--ui-muted);
 }
 
 .modal-tabs .editor-tab {

@@ -123,13 +123,6 @@ body,
     white-space: nowrap;
 }
 
-.topbar__change {
-    color: #ff3d3d;
-    text-decoration: underline;
-    white-space: nowrap;
-    cursor: pointer;
-}
-
 .topbar__actions {
     display: flex;
     align-items: center;

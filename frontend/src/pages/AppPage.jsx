@@ -2,10 +2,9 @@ import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect } fr
 import { Link } from "react-router-dom";
 import "../App.css";
 
-import { API_URL, DEFAULT_TIMING, FONT_OPTIONS, QUALITY_OPTIONS } from "../config/constants";
+import { API_URL, DEFAULT_TIMING, DEFAULT_TIMING_STR, FONT_OPTIONS, QUALITY_OPTIONS } from "../config/constants";
 import { getTokenPatterns, tokenizeLine } from "../config/tokenizer";
-import { useFileUpload }        from "../hooks/useFileUpload";
-import { useAnimationSettings } from "../hooks/useAnimationSettings";
+import { useDocuments }         from "../hooks/useDocuments";
 import { useLineGroups, toApiGroups } from "../hooks/useLineGroups";
 import { useRender }            from "../hooks/useRender";
 
@@ -15,7 +14,7 @@ import {
 import PreviewPanel from "../Components/PreviewPanel";
 import FontScreen from "../Components/FontSelector";
 import {
-  LoadingModal, SplitModal, ColorModal, VideoCompleteModal, DryRunModal,
+  LoadingModal, SplitModal, ColorModal, VideoGalleryModal, DryRunModal,
 } from "../Components/Modals";
 
 const LANGUAGES = {
@@ -32,7 +31,7 @@ function EmptyEditor({ onFiles }) {
 
   const lines = [
     "",
-    "Drop a code file here",
+    "Drop code files here",
     "or click to browse.",
     "",
     "// Python, JavaScript, TypeScript, Go, Rust,",
@@ -115,62 +114,74 @@ function AppPage() {
   const [dryRunResult, setDryRunResult] = useState(null);
   const closeModal = () => setModal(null);
 
-  const upload = useFileUpload();
   const {
-    file, fileName, fileContent, totalLines,
-    startLine, endLine, setStartLine, setEndLine, handleFileUpload,
-  } = upload;
+    docs, active: doc, activeId, setActiveId, addFiles, closeDocument, setField, clear,
+  } = useDocuments();
+  const {
+    file, fileName, fileContent, totalLines, startLine, endLine, lineGroups, currentGroup,
+    includeComments, syntaxColors, orientation, quality, animationTiming, animationType, font,
+  } = doc;
+  // Setter for one field of the active tab's document.
+  const set = (key) => (value) => setField(key, value);
+  const updateTiming = (key, value) => setField("animationTiming", (prev) => ({ ...prev, [key]: value }));
+  const resetTiming  = () => setField("animationTiming", DEFAULT_TIMING_STR);
 
-  const {
-    includeComments, setIncludeComments,
-    syntaxColors, setSyntaxColors,
-    orientation, setOrientation,
-    quality, setQuality,
-    animationTiming, updateTiming, resetTiming,
-    animationType, setAnimationType,
-    font, setFont, resetSettings,
-  } = useAnimationSettings();
-
-  const {
-    lineGroups, currentGroup, lineGroupMap,
-    setCurrentGroup, addLineGroup, removeLineGroup, addSplit, clearAll,
-  } = useLineGroups(startLine, endLine);
+  const { lineGroupMap, addLineGroup, removeLineGroup, addSplit, clearAll } =
+    useLineGroups(doc, set("lineGroups"), set("currentGroup"));
 
   const {
-    isLoading, loadingProgress, loadingStatus,
-    videoUrl, submitRender, submitDryRun, download, resetVideo,
-  } = useRender(file);
+    isLoading, loadingProgress, loadingStatus, currentJob,
+    results, renderAll, submitDryRun, download, discardResults,
+  } = useRender();
 
-  const buildConfig = () => ({
-    scriptPath:      fileName,
-    startLine, endLine, includeComments, orientation, quality,
-    lineGroups:      toApiGroups(lineGroups),
-    syntaxColors,
-    animationTiming: toTimingConfig(animationTiming),
-    animationType,   font,
-  });
-
-  // Returns false (after alerting) when the form isn't ready to submit.
-  const canSubmit = () => {
-    if (!file)                   { alert("Please upload a file");               return false; }
-    if (lineGroups.length === 0) { alert("Please add at least one line group"); return false; }
+  // Returns false (after alerting and opening the first unready tab) when a document can't render.
+  const canSubmit = (targets) => {
+    if (targets.length === 0) { alert("Please upload a file"); return false; }
+    const missing = targets.filter((d) => d.lineGroups.length === 0);
+    if (missing.length > 0) {
+      alert(targets.length === 1
+        ? "Please add at least one line group"
+        : `Add at least one line group to: ${missing.map((d) => d.fileName).join(", ")}`);
+      setActiveId(missing[0].id);
+      return false;
+    }
     return true;
   };
 
-  const startRender = async () => {
-    if (!canSubmit()) return;
-    try {
-      await submitRender(buildConfig());
+  // Each document becomes the same request a single render sends.
+  const toJob = (d) => ({
+    fileName: d.fileName,
+    file:     d.file,
+    config: {
+      scriptPath:      d.fileName,
+      startLine:       d.startLine,
+      endLine:         d.endLine,
+      includeComments: d.includeComments,
+      orientation:     d.orientation,
+      quality:         d.quality,
+      lineGroups:      toApiGroups(d.lineGroups),
+      syntaxColors:    d.syntaxColors,
+      animationTiming: toTimingConfig(d.animationTiming),
+      animationType:   d.animationType,
+      font:            d.font,
+    },
+  });
+
+  const startRender = async (targets) => {
+    if (!canSubmit(targets)) return;
+    const completed = await renderAll(targets.map(toJob));
+    const failed = completed.filter((r) => r.error);
+    if (failed.length === completed.length) {
+      alert(failed.map((r) => `Error${completed.length > 1 ? ` (${r.fileName})` : ""}: ${r.error}`).join("\n"));
+    } else {
       setModal("video");
-    } catch (err) {
-      alert(`Error: ${err.message}`);
     }
   };
 
   const handleDryRun = async () => {
-    if (!canSubmit()) return;
+    if (!canSubmit([doc])) return;
     try {
-      setDryRunResult(await submitDryRun(buildConfig()));
+      setDryRunResult(await submitDryRun(file, toJob(doc).config));
       setModal("dryRun");
     } catch (err) {
       alert(`Dry run failed: ${err.message}`);
@@ -179,13 +190,19 @@ function AppPage() {
 
   const closeVideoModal = () => {
     closeModal();
-    resetVideo();
+    discardResults();
+  };
+
+  const downloadVideo = async (result) => {
+    try {
+      await download(result);
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   const resetForNewFile = () => {
-    upload.reset();
-    clearAll();
-    resetSettings();
+    clear();
     closeVideoModal();
   };
 
@@ -201,11 +218,10 @@ function AppPage() {
   }, [fileContent, fileExtension, syntaxColors]);
 
   const fontFamily = FONT_OPTIONS.find((f) => f.value === font)?.family ?? "monospace";
-  const loadFiles = (files) => handleFileUpload({ target: { files } });
 
   // Clicking a line number in the editor adds it to the group being typed.
   const addLineToGroup = (lineNum) =>
-    setCurrentGroup((prev) => (prev.trim() ? `${prev.trim()} ${lineNum}` : String(lineNum)));
+    setField("currentGroup", (prev) => (prev.trim() ? `${prev.trim()} ${lineNum}` : String(lineNum)));
 
   const qualityLabel = QUALITY_OPTIONS.find((q) => q.value === quality)?.size ?? quality;
   const statusItems = [
@@ -220,7 +236,8 @@ function AppPage() {
     <div className="app">
       <input
         type="file" id="file-upload" className="visually-hidden"
-        accept={ACCEPTED_EXTENSIONS} onChange={handleFileUpload}
+        accept={ACCEPTED_EXTENSIONS} multiple
+        onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
       />
 
       <header className="topbar">
@@ -233,7 +250,6 @@ function AppPage() {
           <div className="topbar__file">
             <span className="topbar__filename">{fileName}</span>
             <span className="topbar__meta">{totalLines} lines</span>
-            <label htmlFor="file-upload" className="topbar__change">Change file</label>
           </div>
         )}
 
@@ -243,9 +259,20 @@ function AppPage() {
               <button type="button" className="btn-dry-run" disabled={!ready} onClick={handleDryRun}>
                 Dry run
               </button>
-              <button type="submit" form="render-form" className="btn-submit" disabled={!ready}>
-                {ready ? "Generate video" : "Waiting for server…"}
-              </button>
+              {docs.length > 1 ? (
+                <>
+                  <button type="submit" form="render-form" className="btn-dry-run" disabled={!ready}>
+                    Generate this video
+                  </button>
+                  <button type="button" className="btn-submit" disabled={!ready} onClick={() => startRender(docs)}>
+                    {ready ? `Generate all (${docs.length})` : "Waiting for server…"}
+                  </button>
+                </>
+              ) : (
+                <button type="submit" form="render-form" className="btn-submit" disabled={!ready}>
+                  {ready ? "Generate video" : "Waiting for server…"}
+                </button>
+              )}
             </>
           )}
         </div>
@@ -257,7 +284,8 @@ function AppPage() {
         <section className="editor" aria-label="Code preview">
           {fileContent ? (
             <PreviewPanel
-              fileName={fileName}
+              tabs={docs} activeTabId={activeId}
+              onSelectTab={setActiveId} onCloseTab={closeDocument}
               fileContent={fileContent}
               highlightedLines={highlightedLines}
               startLine={startLine} endLine={endLine}
@@ -269,37 +297,37 @@ function AppPage() {
               onEditColors={() => setModal("color")}
             />
           ) : (
-            <EmptyEditor onFiles={loadFiles} />
+            <EmptyEditor onFiles={addFiles} />
           )}
         </section>
 
         {fileContent && (
           <aside className="sidebar" aria-label="Video settings" ref={sidebarRef}>
             {fontScreenOpen && (
-              <FontScreen font={font} onFontChange={setFont} onClose={closeFontScreen} />
+              <FontScreen font={font} onFontChange={set("font")} onClose={closeFontScreen} />
             )}
-            <form id="render-form" hidden={fontScreenOpen} onSubmit={(e) => { e.preventDefault(); startRender(); }}>
+            <form id="render-form" hidden={fontScreenOpen} onSubmit={(e) => { e.preventDefault(); startRender([doc]); }}>
               <LinesPanel
                 startLine={startLine} endLine={endLine} totalLines={totalLines}
-                onStartLineChange={setStartLine} onEndLineChange={setEndLine}
+                onStartLineChange={set("startLine")} onEndLineChange={set("endLine")}
                 lineGroups={lineGroups} currentGroup={currentGroup}
-                onCurrentGroupChange={setCurrentGroup}
+                onCurrentGroupChange={set("currentGroup")}
                 onAddLineGroup={addLineGroup} onRemoveLineGroup={removeLineGroup}
                 onClearAllGroups={clearAll} onOpenSplitModal={() => setModal("split")}
               />
               <AnimationPanel
-                animationType={animationType} onAnimationTypeChange={setAnimationType}
+                animationType={animationType} onAnimationTypeChange={set("animationType")}
                 animationTiming={animationTiming}
                 onUpdateTiming={updateTiming} onResetTiming={resetTiming}
               />
               <VideoPanel
-                orientation={orientation} onOrientationChange={setOrientation}
-                quality={quality} onQualityChange={setQuality}
+                orientation={orientation} onOrientationChange={set("orientation")}
+                quality={quality} onQualityChange={set("quality")}
               />
               <LookPanel
                 syntaxColors={syntaxColors} onOpenColorModal={() => setModal("color")}
                 font={font} onOpenFontScreen={openFontScreen}
-                includeComments={includeComments} onIncludeCommentsChange={setIncludeComments}
+                includeComments={includeComments} onIncludeCommentsChange={set("includeComments")}
               />
             </form>
             {!fontScreenOpen && <SidebarLinks />}
@@ -309,7 +337,7 @@ function AppPage() {
 
       <LoadingModal
         isLoading={isLoading} loadingProgress={loadingProgress} loadingStatus={loadingStatus}
-        fileName={fileName}
+        job={currentJob}
       />
       <SplitModal
         show={modal === "split"} startLine={startLine} endLine={endLine}
@@ -317,18 +345,18 @@ function AppPage() {
       />
       <ColorModal
         show={modal === "color"} syntaxColors={syntaxColors}
-        onSyntaxColorsChange={setSyntaxColors} onClose={closeModal}
+        onSyntaxColorsChange={set("syntaxColors")} onClose={closeModal}
         previewLines={highlightedLines.filter(({ lineNum }) => lineNum >= startLine && lineNum <= endLine)}
         fontFamily={fontFamily}
       />
-      <VideoCompleteModal
-        show={modal === "video"} videoUrl={videoUrl}
-        onClose={closeVideoModal} onDownload={download} onUploadNew={resetForNewFile}
+      <VideoGalleryModal
+        show={modal === "video"} results={results}
+        onClose={closeVideoModal} onDownload={downloadVideo} onUploadNew={resetForNewFile}
       />
       <DryRunModal
         show={modal === "dryRun"} result={dryRunResult}
         onClose={closeModal}
-        onRender={() => { closeModal(); startRender(); }}
+        onRender={() => { closeModal(); startRender([doc]); }}
       />
     </div>
   );

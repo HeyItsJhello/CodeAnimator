@@ -1,7 +1,8 @@
 // HTTP API and video rendering. All request-config logic lives in config.js.
 //
 // Flow: POST /api/animate → render job starts in the background → client
-// follows /api/progress-stream/:taskId → fetches /api/stream or /api/download.
+// follows /api/progress-stream/:taskId → fetches /api/stream or /api/download
+// → POST /api/videos/delete once the user is done with the videos.
 
 import express from 'express';
 import cors from 'cors';
@@ -52,8 +53,8 @@ async function renderVideo(inputProps, outputPath, onProgress) {
 // ── Retention ──────────────────────────────────────────────────────────────
 //
 // Nothing user-provided outlives TTL_MS. Uploads are deleted as soon as they
-// are read; a rendered video is deleted when downloaded, when its render
-// fails, or by the sweep once it is TTL_MS old (covers abandoned renders and
+// are read; a rendered video is deleted when the client says it is done with
+// it (closing the preview or leaving the app), when its render fails, or by the sweep once it is TTL_MS old (covers abandoned renders and
 // files left behind by a crash or restart).
 
 const TTL_MS = 30 * 60 * 1000;
@@ -222,12 +223,29 @@ app.get('/api/stream/:videoId', (req, res) => {
   res.sendFile(file); // handles Range requests, which <video> seeking (and Safari) needs
 });
 
-// The video is deleted once downloaded (or the download is aborted).
+// Can be downloaded any number of times until deleted below.
 app.get('/api/download/:videoId', (req, res) => {
   const file = videoPath(req.params.videoId);
   if (!file) return res.status(400).json({ error: 'Invalid filename' });
   if (!fs.existsSync(file)) return res.status(404).json({ error: 'Not found' });
-  res.download(file, req.params.videoId, () => fs.rmSync(file, { force: true }));
+  res.download(file, req.params.videoId);
+});
+
+// Body: JSON array of videoIds. Sent as text/plain so navigator.sendBeacon can
+// deliver it while the page is closing.
+app.post('/api/videos/delete', express.text({ type: '*/*' }), (req, res) => {
+  let videoIds;
+  try {
+    videoIds = JSON.parse(req.body);
+  } catch {
+    return res.status(400).json({ error: 'Expected a JSON array of video ids' });
+  }
+  if (!Array.isArray(videoIds)) return res.status(400).json({ error: 'Expected a JSON array of video ids' });
+  for (const id of videoIds) {
+    const file = typeof id === 'string' && videoPath(id);
+    if (file) fs.rmSync(file, { force: true });
+  }
+  res.status(204).end();
 });
 
 app.use((err, _req, res, _next) => {

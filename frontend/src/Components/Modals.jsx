@@ -38,7 +38,8 @@ const RENDER_STEPS = [
 ];
 const PROGRESS_BLOCKS = 24;
 
-export function LoadingModal({ isLoading, loadingProgress, loadingStatus, fileName }) {
+export function LoadingModal({ isLoading, loadingProgress, loadingStatus, job }) {
+  const fileName = job?.fileName ?? "";
   const percent = Math.round(loadingProgress);
   const filled = Math.round((percent / 100) * PROGRESS_BLOCKS);
   const currentStep = RENDER_STEPS.findIndex((step) => step.key === loadingStatus);
@@ -47,6 +48,7 @@ export function LoadingModal({ isLoading, loadingProgress, loadingStatus, fileNa
     <Modal show={isLoading} className="render-modal">
       <div className="modal-tabs">
         <span className="editor-tab">{fileName}</span>
+        {job?.total > 1 && <span className="modal-tabs__meta">File {job.index} of {job.total}</span>}
       </div>
       <div className="render-modal__body">
         <p className="render-modal__title">
@@ -207,22 +209,83 @@ export function ColorModal({ show, syntaxColors, onSyntaxColorsChange, onClose, 
   );
 }
 
-export function VideoCompleteModal({ show, videoUrl, onClose, onDownload, onUploadNew }) {
+// The rendered videos: one large player, plus a strip to pick between them when there are several.
+export function VideoGalleryModal({ show, results, onClose, onDownload, onUploadNew }) {
+  // The pick belongs to one set of results; a new render starts back at the first video.
+  const [pick, setPick] = useState({ results, index: 0 });
+  const selected    = pick.results === results ? pick.index : 0;
+  const setSelected = (index) => setPick({ results, index });
+
+  const [downloading, setDownloading] = useState(false);
+  // Downloads run one after another; the buttons wait until all are saved.
+  const downloadEach = async (list) => {
+    setDownloading(true);
+    try {
+      for (const result of list) await onDownload(result);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const current   = results[selected] ?? results[0];
+  const succeeded = results.filter((r) => !r.error);
+  const title = results.length > 1
+    ? `${succeeded.length} of ${results.length} videos complete`
+    : "Video Complete!";
+
   return (
     <Modal show={show} className="upload-another-modal video-complete-modal">
       <div className="upload-another-header">
-        <span className="upload-another-title">Video Complete!</span>
+        <span className="upload-another-title">{title}</span>
       </div>
       <div className="upload-another-body">
-        {videoUrl && (
+        {current && (
           <div className="video-preview-container">
-            <video src={videoUrl} controls autoPlay loop className="video-preview" />
+            {current.error ? (
+              <p className="gallery-error">{current.fileName} failed: {current.error}</p>
+            ) : (
+              <video key={current.videoUrl} src={current.videoUrl} controls autoPlay loop className="video-preview" />
+            )}
           </div>
         )}
+
+        {results.length > 1 && (
+          <div className="gallery" role="tablist" aria-label="Rendered videos">
+            {results.map((result, i) => (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={i === selected}
+                className={`gallery__item${result.error ? " gallery__item--failed" : ""}`}
+                onClick={() => setSelected(i)}
+              >
+                {result.error
+                  ? <span className="gallery__thumb gallery__thumb--failed">Failed</span>
+                  : <video className="gallery__thumb" src={result.videoUrl} muted preload="metadata" />}
+                <span className="gallery__name">{result.fileName}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="upload-another-buttons">
           <button type="button" className="btn-cancel" onClick={onClose}>Close</button>
-          <button type="button" className="btn-confirm" onClick={onDownload}>Download Video</button>
-          <button type="button" className="btn-confirm" onClick={onUploadNew}>Upload New File</button>
+          <button
+            type="button" className="btn-confirm"
+            disabled={!current || current.error || downloading} onClick={() => downloadEach([current])}
+          >
+            {downloading ? "Downloading…" : "Download Video"}
+          </button>
+          {succeeded.length > 1 && (
+            <button
+              type="button" className="btn-confirm"
+              disabled={downloading} onClick={() => downloadEach(succeeded)}
+            >
+              Download All ({succeeded.length})
+            </button>
+          )}
+          <button type="button" className="btn-confirm" onClick={onUploadNew}>Upload New Files</button>
         </div>
       </div>
     </Modal>
