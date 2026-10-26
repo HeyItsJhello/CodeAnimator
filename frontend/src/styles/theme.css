@@ -1,0 +1,75 @@
+/* API Status Banner */
+.api-status-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border: 2px solid #333;
+    font-size: 1rem;
+    overflow: hidden;
+}
+
+.api-status-banner.waking {
+    background: rgba(255, 220, 100, 0.08);
+    color: #ffd96a;
+    border-color: #ffd96a;
+}
+
+.api-status-banner.error {
+    background: rgba(255, 61, 61, 0.08);
+    color: #ff3d3d;
+    border-color: #ff3d3d;
+}
+
+.status-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.retry-btn {
+    background: #a71d2a;
+    color: white;
+    border: 2px solid #333;
+    padding: 0.25rem 0.75rem;
+    font-family: "Jersey 15", monospace;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.retry-btn:hover {
+    background: #ff3d3d;
+}
+
+/* ─── Dry run button ─── */
+.btn-dry-run {
+    padding: 0.75rem 1.25rem;
+    background: transparent;
+    color: var(--text);
+    border: 2px solid var(--border);
+    font-family: "Jersey 15", monospace;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+.btn-dry-run:not(:disabled):hover {
+    background: var(--border);
+    color: var(--bg);
+}
+
+.btn-dry-run:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

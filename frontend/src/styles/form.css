@@ -1,0 +1,370 @@
+/* Settings sidebar. Colors come from the --ui-* tokens on .app. */
+
+/* ── Collapsible panels ── */
+.panel {
+    border-bottom: 2px solid var(--ui-line);
+}
+
+.panel__title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.25rem;
+    color: var(--ui-ink);
+    font-size: 1.2rem;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+}
+
+.panel__title::-webkit-details-marker {
+    display: none;
+}
+
+.panel__title::after {
+    content: "+";
+    color: var(--ui-muted);
+}
+
+.panel[open] > .panel__title::after {
+    content: "−";
+}
+
+.panel__title:hover {
+    background: var(--ui-bg-2);
+}
+
+.panel__body {
+    display: grid;
+    gap: 1.1rem;
+    padding: 0.25rem 1.25rem 1.4rem;
+}
+
+/* ── Fields ── */
+.field {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.field__label {
+    color: var(--ui-muted);
+    font-size: 0.95rem;
+}
+
+.field__hint {
+    margin: 0;
+    color: var(--ui-muted);
+    font-size: 0.85rem;
+    line-height: 1.45;
+}
+
+.sidebar input[type="number"],
+.sidebar input[type="text"] {
+    min-width: 0;
+    padding: 0.45rem 0.6rem;
+    background: var(--ui-bg);
+    border: 2px solid var(--ui-edge);
+    color: var(--ui-ink);
+    font: inherit;
+    font-size: 1.05rem;
+}
+
+.sidebar input:focus-visible,
+.sidebar button:focus-visible,
+.sidebar summary:focus-visible {
+    outline: 2px solid #ff5e5b;
+    outline-offset: 1px;
+}
+
+/* ── Buttons ── */
+.ui-btn {
+    padding: 0.45rem 0.9rem;
+    background: var(--ui-bg);
+    border: 2px solid var(--ui-edge);
+    color: var(--ui-ink);
+    font: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.ui-btn:hover {
+    background: var(--ui-bg-2);
+}
+
+.ui-btn--accent {
+    background: #ff5e5b;
+    color: #1a1a1a;
+}
+
+.ui-btn--accent:hover {
+    background: #ff4744;
+}
+
+.text-btn {
+    justify-self: start;
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--ui-muted);
+    font: inherit;
+    font-size: 0.95rem;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.text-btn:hover {
+    color: #e63946;
+}
+
+/* ── Lines ── */
+.range-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--ui-muted);
+}
+
+.range-row input {
+    width: 5.5rem;
+}
+
+.group-entry {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 0.5rem;
+}
+
+.group-list {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.group-list__item {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr auto;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    background: var(--ui-bg-2);
+    border-left: 4px solid #2a9d8f;
+    color: var(--ui-ink);
+}
+
+.group-list__item--split {
+    border-left-color: #f4a261;
+}
+
+.group-list__number {
+    color: var(--ui-muted);
+}
+
+.group-list__remove {
+    padding: 0 0.25rem;
+    background: none;
+    border: none;
+    color: var(--ui-muted);
+    font: inherit;
+    cursor: pointer;
+}
+
+.group-list__remove:hover {
+    color: #e63946;
+}
+
+/* ── One-of-many choices ── */
+.choice {
+    display: grid;
+    border: 2px solid var(--ui-edge);
+}
+
+.choice--row {
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+}
+
+.choice__option {
+    display: grid;
+    gap: 0.1rem;
+    padding: 0.5rem 0.4rem;
+    background: var(--ui-bg);
+    border: none;
+    color: var(--ui-ink);
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+}
+
+.choice--row .choice__option + .choice__option {
+    border-left: 2px solid var(--ui-edge);
+}
+
+.choice--list .choice__option {
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+}
+
+.choice--list .choice__option + .choice__option {
+    border-top: 2px solid var(--ui-line);
+}
+
+.choice__option:hover {
+    background: var(--ui-bg-2);
+}
+
+.choice__option[aria-checked="true"] {
+    background: #ff5e5b;
+    color: #1a1a1a;
+}
+
+.choice__name {
+    font-size: 1rem;
+}
+
+.choice__meta {
+    color: var(--ui-muted);
+    font-size: 0.8rem;
+}
+
+.choice__option[aria-checked="true"] .choice__meta {
+    color: #1a1a1a;
+}
+
+/* ── Timing ── */
+.timing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+}
+
+.timing-grid__item {
+    display: grid;
+    gap: 0.3rem;
+    color: var(--ui-muted);
+    font-size: 0.9rem;
+}
+
+.timing-grid__item input {
+    width: 100%;
+}
+
+/* ── Look ── */
+.swatch-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.4rem 0.75rem 0.4rem 0.4rem;
+    background: var(--ui-bg);
+    border: 2px solid var(--ui-edge);
+    color: var(--ui-ink);
+    font: inherit;
+    cursor: pointer;
+}
+
+.swatch-strip:hover {
+    background: var(--ui-bg-2);
+}
+
+.swatch-strip__chips {
+    display: flex;
+}
+
+.swatch-strip__chips span {
+    width: 20px;
+    height: 24px;
+}
+
+.check-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--ui-ink);
+    cursor: pointer;
+}
+
+.check-row input {
+    width: 18px;
+    height: 18px;
+    accent-color: #e63946;
+}
+
+/* ── Generate button (lives in the top bar) ── */
+.btn-submit {
+    position: relative;
+    padding: 0.6rem 2.5rem;
+    background: #e63946;
+    color: white;
+    border: 2px solid #333;
+    font-family: "Jersey 15", monospace;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+
+.btn-submit:not(:disabled) {
+    box-shadow: 3px 3px 0 var(--shadow-ink);
+}
+
+.btn-submit::before,
+.btn-submit::after {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.4);
+    pointer-events: none;
+    transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.btn-submit::before {
+    content: '[';
+    left: 14px;
+}
+
+.btn-submit::after {
+    content: ']';
+    right: 14px;
+}
+
+.btn-submit:not(:disabled):hover::before {
+    transform: translateY(-50%) translateX(-5px);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-submit:not(:disabled):hover::after {
+    transform: translateY(-50%) translateX(5px);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-submit:hover {
+    background: #d62839;
+}
+
+.btn-submit:not(:disabled):active {
+    transform: translate(3px, 3px);
+    box-shadow: none;
+}
+
+.btn-submit:disabled {
+    opacity: 0.5;
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+}
+
+/* Section headings elsewhere (landing, modals) keep the "// " prefix */
+h2 {
+    color: #333;
+    font-size: 1.25rem;
+    margin: 0 0 1rem 0;
+    font-weight: bold;
+}
+
+h2::before {
+    content: '// ';
+    color: #e63946;
+    font-size: 1rem;
+    opacity: 0.75;
+}

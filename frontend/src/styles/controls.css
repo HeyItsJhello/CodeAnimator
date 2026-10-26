@@ -1,0 +1,171 @@
+@media (max-width: 768px) {
+    .upload-another-buttons {
+        flex-direction: column;
+    }
+
+    .upload-another-buttons .btn-cancel,
+    .upload-another-buttons .btn-confirm {
+        width: 100%;
+    }
+}
+
+
+/* ── Font Selector ────────────────────────────────────── */
+.font-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #1a1a1a;
+    border: 2px solid #333;
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.1s ease;
+    gap: 1rem;
+}
+
+
+
+.font-trigger:hover {
+    background: #222;
+}
+
+.font-trigger-preview {
+    font-size: 1.25rem;
+    color: #e8e8e8;
+    flex: 1;
+    line-height: 1;
+}
+
+.font-trigger-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.font-trigger-desc {
+    font-size: 0.78rem;
+    color: #555;
+    font-family: "Jersey 15", monospace;
+    letter-spacing: 0.5px;
+}
+
+.font-trigger-arrow {
+    font-size: 0.7rem;
+    color: #666;
+    font-family: "Jersey 15", monospace;
+}
+
+/* Takes over the whole sidebar while choosing a font. */
+.font-screen {
+    min-height: 100%;
+    background: #1a1a1a;
+}
+
+.font-screen__back {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.9rem 1.25rem;
+    background: #141414;
+    border: none;
+    border-bottom: 2px solid #333;
+    color: #e8e8e8;
+    font-family: "Jersey 15", monospace;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.font-screen__back:hover {
+    color: #00ecff;
+}
+
+.font-screen__back span {
+    font-size: 0.7rem;
+}
+
+.font-category {
+    border-bottom: 2px solid #252525;
+}
+
+.font-category:last-child {
+    border-bottom: none;
+}
+
+.font-category-label {
+    font-family: "Jersey 15", monospace;
+    font-size: 0.68rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #555;
+    padding: 0.4rem 1rem 0.3rem;
+    background: #141414;
+    border-bottom: 1px solid #252525;
+    user-select: none;
+}
+
+.font-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 1rem;
+    background: #1a1a1a;
+    border: none;
+    border-bottom: 1px solid #222;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.08s ease;
+    gap: 1.5rem;
+}
+
+.font-option:last-child {
+    border-bottom: none;
+}
+
+.font-option:hover {
+    background: #222;
+}
+
+.font-option.active {
+    background: #0d2220;
+    border-left: 2px solid #00ecff;
+    padding-left: calc(1rem - 3px);
+}
+
+.font-option-name {
+    font-size: 1rem;
+    color: #e8e8e8;
+    flex-shrink: 0;
+    min-width: 140px;
+    line-height: 1.2;
+}
+
+.font-option.active .font-option-name {
+    color: #00ecff;
+}
+
+.font-option-sample {
+    font-size: 0.82rem;
+    color: #555;
+    flex: 1;
+    text-align: right;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.font-option.active .font-option-sample {
+    color: #00ecff;
+    opacity: 0.7;
+}
+

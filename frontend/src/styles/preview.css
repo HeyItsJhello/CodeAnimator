@@ -1,0 +1,200 @@
+/* Code preview, styled like a text editor. The code area always uses the
+   video's background color, so it looks like the render will. */
+.preview-panel {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    background: #1a1a1a;
+}
+
+/* ── Tab bar ── */
+.editor-tabs {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    background: #1a1a1a;
+    border-bottom: 2px solid #333;
+}
+
+.editor-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.55rem 1.1rem;
+    background: #262626;
+    border-top: 3px solid #ff5e5b;
+    color: #e8e8e8;
+    font-size: 1rem;
+}
+
+/* File tabs: the active one is lifted with an accent edge. */
+.editor-tabs__list {
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.editor-tabs .editor-tab {
+    flex-shrink: 0;
+    padding: 0;
+    background: transparent;
+    border-top-color: transparent;
+    color: #888;
+}
+
+.editor-tabs .editor-tab.is-active {
+    background: #262626;
+    border-top-color: #ff5e5b;
+    color: #e8e8e8;
+}
+
+.editor-tab__name,
+.editor-tab__close {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.editor-tab__name {
+    padding: 0.55rem 0.4rem 0.55rem 1.1rem;
+    white-space: nowrap;
+}
+
+.editor-tab__close {
+    padding: 0.55rem 0.8rem 0.55rem 0.4rem;
+    font-size: 0.75rem;
+    opacity: 0.6;
+}
+
+.editor-tab__close:hover {
+    color: #ff5e5b;
+    opacity: 1;
+}
+
+.editor-tabs__add {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 1rem;
+    color: #888;
+    font-size: 1.3rem;
+    cursor: pointer;
+}
+
+.editor-tabs__add:hover {
+    color: #ff5e5b;
+}
+
+.editor-tabs__action {
+    flex-shrink: 0;
+    padding: 0 1rem;
+    background: none;
+    border: none;
+    color: #bbb;
+    font: inherit;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.editor-tabs__action:hover {
+    color: #ff5e5b;
+}
+
+/* ── Code ──
+   PreviewPanel.jsx sizes the font so the whole file fits; its constants
+   mirror the line-height and paddings below and in .line-gutter. */
+.preview-content {
+    position: relative;
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.code-preview {
+    width: 100%;
+    margin: 0;
+    padding: 0.75rem 0;
+    color: #d4d4d4;
+    font-family: "Jersey 15", "Courier New", monospace;
+    line-height: 1.55;
+}
+
+.code-line {
+    display: flex;
+}
+
+.code-line:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.code-line.is-dimmed .line-content {
+    opacity: 0.35;
+}
+
+/* Gutter: group marker + line number. Clicking adds the line to the group field. */
+.line-gutter {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.35rem;
+    margin-right: 0.9rem;
+    padding: 0 0.9rem 0 0.4rem;
+    background: transparent;
+    border: none;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.line-group-marker {
+    min-width: 2.2em;
+    color: #2a9d8f;
+    font-size: 0.85em;
+    text-align: right;
+}
+
+.line-number {
+    color: rgba(255, 61, 61, 0.3);
+    white-space: pre;
+}
+
+.is-grouped .line-gutter {
+    box-shadow: inset 3px 0 0 #2a9d8f;
+}
+
+.is-grouped .line-number {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.line-gutter:hover .line-number {
+    color: #ff5e5b;
+}
+
+.line-content {
+    flex: 1;
+    padding-right: 1rem;
+    white-space: pre;
+}
+
+/* ── Status bar ── */
+.status-bar {
+    display: flex;
+    flex-wrap: wrap;
+    background: #333;
+    color: #e8e8e8;
+    font-size: 0.9rem;
+}
+
+.status-bar__item {
+    padding: 0.3rem 0.9rem;
+    border-right: 1px solid #444;
+}
+
+.status-bar__item:first-child {
+    background: #ff5e5b;
+    color: #1a1a1a;
+}

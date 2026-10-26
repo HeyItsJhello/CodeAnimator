@@ -1,0 +1,674 @@
+/* Loading Modal */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* Split Modal */
+.split-modal {
+    background: #1a1a1a;
+    border: 2px solid #333;
+    width: 90%;
+    max-width: 450px;
+}
+
+.split-header {
+    background: #222;
+    color: #e8e8e8;
+    padding: 1rem 1.5rem;
+    border-bottom: 2px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.split-title {
+    font-size: 1.3rem;
+    font-weight: bold;
+    font-family: "Jersey 15", monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #e8e8e8;
+}
+
+.btn-close {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    font-family: "Jersey 15", monospace;
+    transition: transform 0.1s ease;
+}
+
+.btn-close:hover {
+    transform: scale(1.2);
+}
+
+.split-body {
+    padding: 2rem;
+    background: #1a1a1a;
+}
+
+.split-description {
+    color: #777;
+    font-size: 1rem;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.6;
+    font-weight: bold;
+}
+
+.split-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.btn-cancel {
+    padding: 0.75rem 1.5rem;
+    background: #2a2a2a;
+    color: #999;
+    border: 2px solid #444;
+    font-size: 1rem;
+    font-weight: bold;
+    font-family: "Jersey 15", monospace;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-cancel:hover {
+    background: #333;
+    color: #e8e8e8;
+}
+
+
+.btn-confirm {
+    padding: 0.75rem 1.5rem;
+    background: #00ecff;
+    color: #0d0d0d;
+    border: 2px solid #333;
+    font-size: 1rem;
+    font-weight: bold;
+    font-family: "Jersey 15", monospace;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-confirm:hover {
+    background: #00c4d6;
+}
+
+
+
+@media (max-width: 768px) {
+    .btn-confirm {
+        width: 100%;
+    }
+}
+
+
+/* Upload Another Modal */
+.upload-another-modal {
+    background: #1a1a1a;
+    border: 2px solid #333;
+    width: 90%;
+    max-width: 500px;
+}
+
+.upload-another-header {
+    background: #2a9d8f;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-bottom: 2px solid #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.upload-another-title {
+    font-size: 1.3rem;
+    font-weight: bold;
+    font-family: "Jersey 15", monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.upload-another-body {
+    padding: 2.5rem 2rem;
+    text-align: center;
+    background: #1a1a1a;
+}
+
+.upload-another-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Video Complete Modal */
+.video-complete-modal {
+    max-width: 800px;
+    background: #1a1a1a;
+}
+
+.video-preview-container {
+    margin-bottom: 1.5rem;
+    border: 2px solid #333;
+    background: #000;
+}
+
+.video-preview {
+    width: 100%;
+    max-height: 450px;
+    display: block;
+}
+
+
+
+/* Batch results: a strip of videos under the main player. */
+.gallery {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.25rem;
+    overflow-x: auto;
+}
+
+.gallery__item {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    width: 160px;
+    padding: 0;
+    background: #111;
+    border: 2px solid #333;
+    color: #bbb;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.gallery__item:hover {
+    border-color: #555;
+}
+
+.gallery__item[aria-selected="true"] {
+    border-color: #ff5e5b;
+    color: #e8e8e8;
+}
+
+.gallery__thumb {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: contain;
+    background: #000;
+    pointer-events: none;
+}
+
+.gallery__thumb--failed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #e63946;
+}
+
+.gallery__name {
+    padding: 0.35rem 0.5rem;
+    overflow: hidden;
+    font-size: 0.85rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gallery-error {
+    margin: 0;
+    padding: 2rem 1.5rem;
+    color: #e63946;
+}
+
+.split-input-group {
+    margin-bottom: 1.5rem;
+}
+
+.split-input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--ui-ink);
+    font-size: 1.05rem;
+}
+
+.split-input-group input {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--ui-bg);
+    border: 2px solid var(--ui-edge);
+    color: var(--ui-ink);
+    font-family: "Jersey 15", monospace;
+    font-size: 1.15rem;
+}
+
+.split-input-group input:focus {
+    outline: none;
+    border-color: #ff5e5b;
+}
+
+/* ─── Dry Run Modal ─── */
+.dry-run-modal {
+    background: var(--bg);
+    border: 2px solid var(--border);
+    max-width: 560px;
+    width: 95vw;
+    overflow: hidden;
+}
+
+.dry-run-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 2px solid var(--border);
+    background: var(--surface);
+}
+
+.dry-run-title {
+    font-family: "Jersey 15", monospace;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.dry-run-badge {
+    background: #2a9d8f;
+    color: #fff;
+    font-family: "Jersey 15", monospace;
+    font-size: 0.7rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    padding: 0.2rem 0.5rem;
+    border: 2px solid #fff;
+}
+
+.dry-run-body {
+    padding: 1.5rem;
+}
+
+.dry-run-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px dashed var(--border);
+}
+
+.dry-run-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.dry-stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.5;
+}
+
+.dry-stat-value {
+    font-family: "Jersey 15", monospace;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+}
+
+.dry-stat-value.highlight {
+    color: #e63946;
+    font-size: 1.15rem;
+}
+
+.dry-run-groups {
+    margin-bottom: 1.25rem;
+}
+
+.dry-groups-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.6;
+    margin-bottom: 0.5rem;
+}
+
+.dry-groups-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.dry-group-row {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr 3rem;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.3rem 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 0.8rem;
+}
+
+.dry-group-lines {
+    opacity: 0.75;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dry-group-num {
+    font-family: "Jersey 15", monospace;
+    font-size: 0.85rem;
+    color: #e63946;
+}
+
+.dry-group-dur {
+    text-align: right;
+    font-family: "Jersey 15", monospace;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.dry-run-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+}
+
+/* ===================================================
+   Shared modal chrome: tab strip on top, footer below
+   =================================================== */
+.render-modal,
+.colors-modal {
+    background: var(--ui-bg);
+    border: 2px solid var(--ui-edge);
+    color: var(--ui-ink);
+    font-family: "Jersey 15", monospace;
+}
+
+.modal-tabs {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    background: var(--ui-bg-2);
+    border-bottom: 2px solid var(--ui-edge);
+}
+
+.modal-tabs__meta {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 1rem;
+    color: var(--ui-muted);
+}
+
+.modal-tabs .editor-tab {
+    background: var(--ui-bg);
+    color: var(--ui-ink);
+}
+
+.modal-close {
+    padding: 0 1rem;
+    background: none;
+    border: none;
+    color: var(--ui-muted);
+    font: inherit;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: #e63946;
+}
+
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.25rem;
+    border-top: 2px solid var(--ui-line);
+}
+
+/* ── Render progress ── */
+.render-modal {
+    width: min(520px, 92vw);
+}
+
+.render-modal__body {
+    padding: 1.75rem 1.75rem 1.5rem;
+}
+
+.render-modal__title {
+    margin: 0 0 1.25rem;
+    font-size: 1.6rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.pixel-progress {
+    display: grid;
+    grid-template-columns: repeat(24, 1fr);
+    gap: 3px;
+    padding: 4px;
+    border: 2px solid var(--ui-edge);
+}
+
+.pixel-progress span {
+    height: 22px;
+    background: var(--ui-line);
+}
+
+.pixel-progress span.is-filled {
+    background: #ff5e5b;
+}
+
+.render-modal__percent {
+    margin: 0.75rem 0 1.25rem;
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+.render-steps {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0 0 1.25rem;
+    padding: 0;
+    color: var(--ui-muted);
+    list-style: none;
+}
+
+.render-steps li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.render-steps li::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border: 2px solid currentColor;
+}
+
+.render-steps .is-done,
+.render-steps .is-current {
+    color: var(--ui-ink);
+}
+
+.render-steps .is-done::before {
+    background: #2a9d8f;
+    border-color: #2a9d8f;
+}
+
+.render-steps .is-current::before {
+    background: #ff5e5b;
+    border-color: #ff5e5b;
+}
+
+.render-modal__note {
+    margin: 0;
+    color: var(--ui-muted);
+    font-size: 0.95rem;
+}
+
+/* ── Colors ── */
+.colors-modal {
+    display: flex;
+    flex-direction: column;
+    width: min(980px, 94vw);
+    max-height: 88vh;
+}
+
+.colors-modal__body {
+    display: grid;
+    grid-template-columns: 310px minmax(0, 1fr);
+    flex: 1;
+    min-height: 0;
+}
+
+.color-list {
+    display: grid;
+    align-content: start;
+    gap: 0.4rem;
+    padding: 1rem 1.25rem;
+    overflow-y: auto;
+    border-right: 2px solid var(--ui-line);
+}
+
+.color-list__row {
+    display: grid;
+    grid-template-columns: 34px 1fr 6.5rem;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.color-list__row label {
+    font-size: 1.05rem;
+}
+
+.color-list__row input[type="color"] {
+    width: 34px;
+    height: 28px;
+    padding: 0;
+    background: none;
+    border: 2px solid var(--ui-edge);
+    cursor: pointer;
+}
+
+.color-list__row input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.color-list__row input[type="color"]::-webkit-color-swatch {
+    border: none;
+}
+
+.color-list__row input[type="text"] {
+    width: 100%;
+    padding: 0.3rem 0.45rem;
+    background: var(--ui-bg);
+    border: 2px solid var(--ui-line);
+    color: var(--ui-ink);
+    font: inherit;
+    font-size: 0.95rem;
+}
+
+.color-list__row input:focus-visible,
+.modal-footer button:focus-visible,
+.modal-close:focus-visible {
+    outline: 2px solid #ff5e5b;
+    outline-offset: 1px;
+}
+
+.colors-modal__preview {
+    min-height: 320px;
+    margin: 0;
+    padding: 1rem 0;
+    overflow: auto;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.colors-modal__line {
+    display: flex;
+    white-space: pre;
+}
+
+.colors-modal__line-num {
+    flex-shrink: 0;
+    width: 3.5rem;
+    padding-right: 1rem;
+    opacity: 0.4;
+    text-align: right;
+}
+
+@media (max-width: 760px) {
+    .colors-modal__body {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+    }
+
+    .color-list {
+        border-right: none;
+        border-bottom: 2px solid var(--ui-line);
+    }
+
+    .colors-modal__preview {
+        min-height: 0;
+        max-height: 40vh;
+    }
+}

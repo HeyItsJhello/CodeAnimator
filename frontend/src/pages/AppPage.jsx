@@ -1,546 +1,363 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { AnimatePresence } from "framer-motion";
+import { useState, useMemo, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import { Link } from "react-router-dom";
 import "../App.css";
 
-// Data imports
-import {
-  API_URL,
-  DEFAULT_SYNTAX_COLORS,
-  DEFAULT_TIMING_STR,
-} from "../data/constants";
-import { getTokenPatterns, tokenizeLine } from "../data/tokenizer";
+import { API_URL, DEFAULT_TIMING, DEFAULT_TIMING_STR, FONT_OPTIONS, QUALITY_OPTIONS } from "../config/constants";
+import { getTokenPatterns, tokenizeLine } from "../config/tokenizer";
+import { useDocuments }         from "../hooks/useDocuments";
+import { useLineGroups, toApiGroups } from "../hooks/useLineGroups";
+import { useRender }            from "../hooks/useRender";
 
-// Utility functions
 import {
-  parseLineToken,
-  checkApiStatus as checkApiStatusFn,
-  buildTimingConfig,
-  buildLineGroupsForApi,
-  calculateLineGroupMap,
-} from "../utils/functions";
+  ApiStatusBanner, LinesPanel, AnimationPanel, VideoPanel, LookPanel, SidebarLinks,
+} from "../Components/FormSections";
+import PreviewPanel from "../Components/PreviewPanel";
+import FontScreen from "../Components/FontSelector";
+import {
+  LoadingModal, SplitModal, ColorModal, VideoGalleryModal, DryRunModal,
+} from "../Components/Modals";
 
-// Components
-import {
-  ApiStatusBanner,
-  FileUploadSection,
-  LineRangeSection,
-  CommentSettings,
-  ColorSettings,
-  OrientationToggle,
-  QualityPreset,
-  TimingSettings,
-  LineGroupsSection,
-  PreviewPanel,
-  LoadingModal,
-  SplitModal,
-  ColorModal,
-  PreviewModal,
-  VideoCompleteModal,
-  SubmitSection,
-} from "../Components";
+const LANGUAGES = {
+  py: "Python", js: "JavaScript", jsx: "JavaScript", ts: "TypeScript", tsx: "TypeScript",
+  java: "Java", cpp: "C++", c: "C", h: "C", go: "Go", rs: "Rust", rb: "Ruby",
+  php: "PHP", swift: "Swift", kt: "Kotlin", gd: "GDScript",
+};
+
+const ACCEPTED_EXTENSIONS = ".py,.js,.jsx,.ts,.tsx,.java,.cpp,.c,.h,.go,.rs,.rb,.php,.swift,.kt,.gd";
+
+// Shown in the editor before a file is loaded: an empty file you drop code into.
+function EmptyEditor({ onFiles }) {
+  const [dragging, setDragging] = useState(false);
+
+  const lines = [
+    "",
+    "Drop code files here",
+    "or click to browse.",
+    "",
+    "// Python, JavaScript, TypeScript, Go, Rust,",
+    "// C++, Java, Swift, GDScript and more",
+    "", "", "", "", "", "",
+  ];
+
+  return (
+    <label
+      htmlFor="file-upload"
+      className={`empty-editor${dragging ? " empty-editor--dragging" : ""}`}
+      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        onFiles(e.dataTransfer.files);
+      }}
+    >
+      {lines.map((text, i) => (
+        <span key={i} className="empty-editor__line">
+          <span className="empty-editor__number">{i + 1}</span>
+          <span className={text.startsWith("//") ? "empty-editor__comment" : "empty-editor__text"}>
+            {text}
+          </span>
+        </span>
+      ))}
+    </label>
+  );
+}
+
+// Sets "awake", "error", or "waking" (request timed out — retries every 3s).
+async function pingApi(setStatus) {
+  try {
+    const response = await fetch(`${API_URL}/`, { signal: AbortSignal.timeout(5000) });
+    setStatus(response.ok ? "awake" : "error");
+  } catch (err) {
+    if (err.name === "TimeoutError") {
+      setStatus("waking");
+      setTimeout(() => pingApi(setStatus), 3000);
+    } else {
+      setStatus("error");
+    }
+  }
+}
+
+function useApiStatus() {
+  const [apiStatus, setApiStatus] = useState("awake");
+  const check = useCallback(() => pingApi(setApiStatus), []);
+  useEffect(() => { check(); }, [check]);
+  return [apiStatus, check];
+}
+
+// Timing inputs hold strings; blank or invalid values fall back to defaults.
+function toTimingConfig(animationTiming) {
+  return Object.fromEntries(Object.entries(DEFAULT_TIMING).map(([key, fallback]) => {
+    const num = parseFloat(animationTiming[key]);
+    return [key, Number.isFinite(num) && num >= 0 ? num : fallback];
+  }));
+}
 
 function AppPage() {
-  // File state
-  const [file, setFile] = useState(null);
-  const [fileName, setFileName] = useState("");
-  const [fileContent, setFileContent] = useState("");
-  const [totalLines, setTotalLines] = useState(0);
+  const [apiStatus, checkApiStatus] = useApiStatus();
 
-  // Line range state
-  const [startLine, setStartLine] = useState(1);
-  const [endLine, setEndLine] = useState(1);
+  // null | "split" | "color" | "video" | "dryRun"
+  const [modal, setModal] = useState(null);
+  const [fontScreenOpen, setFontScreenOpen] = useState(false);
+  const closeFontScreen = useCallback(() => setFontScreenOpen(false), []);
 
-  // Settings state
-  const [includeComments, setIncludeComments] = useState(true);
-  const [syntaxColors, setSyntaxColors] = useState({
-    ...DEFAULT_SYNTAX_COLORS,
+  // The font screen replaces the settings in the sidebar; return the user to where they were.
+  const sidebarRef = useRef(null);
+  const sidebarScroll = useRef(0);
+  const openFontScreen = () => {
+    sidebarScroll.current = sidebarRef.current?.scrollTop ?? 0;
+    setFontScreenOpen(true);
+  };
+  useLayoutEffect(() => {
+    if (sidebarRef.current) sidebarRef.current.scrollTop = fontScreenOpen ? 0 : sidebarScroll.current;
+  }, [fontScreenOpen]);
+  const [dryRunResult, setDryRunResult] = useState(null);
+  const closeModal = () => setModal(null);
+
+  const {
+    docs, active: doc, activeId, setActiveId, addFiles, closeDocument, setField, clear,
+  } = useDocuments();
+  const {
+    file, fileName, fileContent, totalLines, startLine, endLine, lineGroups, currentGroup,
+    includeComments, syntaxColors, orientation, quality, animationTiming, animationType, font,
+  } = doc;
+  // Setter for one field of the active tab's document.
+  const set = (key) => (value) => setField(key, value);
+  const updateTiming = (key, value) => setField("animationTiming", (prev) => ({ ...prev, [key]: value }));
+  const resetTiming  = () => setField("animationTiming", DEFAULT_TIMING_STR);
+
+  const { lineGroupMap, addLineGroup, removeLineGroup, addSplit, clearAll } =
+    useLineGroups(doc, set("lineGroups"), set("currentGroup"));
+
+  const {
+    isLoading, loadingProgress, loadingStatus, currentJob,
+    results, renderAll, submitDryRun, download, discardResults,
+  } = useRender();
+
+  // Returns false (after alerting and opening the first unready tab) when a document can't render.
+  const canSubmit = (targets) => {
+    if (targets.length === 0) { alert("Please upload a file"); return false; }
+    const missing = targets.filter((d) => d.lineGroups.length === 0);
+    if (missing.length > 0) {
+      alert(targets.length === 1
+        ? "Please add at least one line group"
+        : `Add at least one line group to: ${missing.map((d) => d.fileName).join(", ")}`);
+      setActiveId(missing[0].id);
+      return false;
+    }
+    return true;
+  };
+
+  // Each document becomes the same request a single render sends.
+  const toJob = (d) => ({
+    fileName: d.fileName,
+    file:     d.file,
+    config: {
+      scriptPath:      d.fileName,
+      startLine:       d.startLine,
+      endLine:         d.endLine,
+      includeComments: d.includeComments,
+      orientation:     d.orientation,
+      quality:         d.quality,
+      lineGroups:      toApiGroups(d.lineGroups),
+      syntaxColors:    d.syntaxColors,
+      animationTiming: toTimingConfig(d.animationTiming),
+      animationType:   d.animationType,
+      font:            d.font,
+    },
   });
-  const [orientation, setOrientation] = useState("landscape");
-  const [quality, setQuality] = useState("standard");
-  const [animationTiming, setAnimationTiming] = useState({
-    ...DEFAULT_TIMING_STR,
-  });
 
-  // Line groups state
-  const [lineGroups, setLineGroups] = useState([]);
-  const [currentGroup, setCurrentGroup] = useState("");
-  const [shownLines, setShownLines] = useState(new Set());
-
-  // Loading state
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [loadingStatus, setLoadingStatus] = useState("starting");
-
-  // Modal state
-  const [showSplitModal, setShowSplitModal] = useState(false);
-  const [splitLineInput, setSplitLineInput] = useState("");
-  const [showColorModal, setShowColorModal] = useState(false);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [showUploadAnotherModal, setShowUploadAnotherModal] = useState(false);
-
-  // Video state
-  const [completedVideoUrl, setCompletedVideoUrl] = useState(null);
-  const [completedVideoFilename, setCompletedVideoFilename] = useState("");
-
-  // API state
-  const [apiStatus, setApiStatus] = useState("awake");
-
-  // Check API status on mount
-  const checkApiStatus = useCallback(() => {
-    checkApiStatusFn(setApiStatus);
-  }, []);
-
-  useEffect(() => {
-    checkApiStatus();
-  }, [checkApiStatus]);
-
-  // File upload handler
-  const handleFileUpload = (e) => {
-    const uploadedFile = e.target.files[0];
-    if (uploadedFile) {
-      setFile(uploadedFile);
-      setFileName(uploadedFile.name);
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const content = event.target.result;
-        setFileContent(content);
-        const lineCount = content.split("\n").length;
-        setTotalLines(lineCount);
-        setStartLine(1);
-        setEndLine(lineCount);
-      };
-      reader.readAsText(uploadedFile);
+  const startRender = async (targets) => {
+    if (!canSubmit(targets)) return;
+    const completed = await renderAll(targets.map(toJob));
+    const failed = completed.filter((r) => r.error);
+    if (failed.length === completed.length) {
+      alert(failed.map((r) => `Error${completed.length > 1 ? ` (${r.fileName})` : ""}: ${r.error}`).join("\n"));
+    } else {
+      setModal("video");
     }
   };
 
-  // Line group handlers
-  const addLineGroup = () => {
-    if (!currentGroup.trim()) {
-      setLineGroups([...lineGroups, "ALL_REMAINING"]);
-      const newShownLines = new Set(shownLines);
-      for (let i = startLine; i <= endLine; i++) {
-        if (!shownLines.has(i)) {
-          newShownLines.add(i);
-        }
-      }
-      setShownLines(newShownLines);
-      return;
-    }
-
+  const handleDryRun = async () => {
+    if (!canSubmit([doc])) return;
     try {
-      const lines = currentGroup.trim().split(/\s+/).flatMap(parseLineToken);
-
-      const validLines = lines.filter((lineNum) => {
-        if (isNaN(lineNum)) return false;
-        if (shownLines.has(lineNum)) {
-          alert(`Warning: Line ${lineNum} already shown`);
-          return false;
-        }
-        if (lineNum < startLine || lineNum > endLine) {
-          alert(
-            `Warning: Line ${lineNum} is outside range [${startLine}, ${endLine}]`,
-          );
-          return false;
-        }
-        return true;
-      });
-
-      if (validLines.length > 0) {
-        setLineGroups([...lineGroups, validLines]);
-        const newShownLines = new Set(shownLines);
-        validLines.forEach((line) => newShownLines.add(line));
-        setShownLines(newShownLines);
-        setCurrentGroup("");
-      }
-    } catch {
-      alert("Invalid input. Please enter space-separated numbers");
+      setDryRunResult(await submitDryRun(file, toJob(doc).config));
+      setModal("dryRun");
+    } catch (err) {
+      alert(`Dry run failed: ${err.message}`);
     }
   };
 
-  const removeLineGroup = (index) => {
-    const newGroups = lineGroups.filter((_, i) => i !== index);
-    setLineGroups(newGroups);
-
-    const newShownLines = new Set();
-    newGroups.forEach((g) => {
-      if (Array.isArray(g)) {
-        g.forEach((line) => newShownLines.add(line));
-      } else if (typeof g === "object" && g.type === "SPLIT") {
-        newShownLines.add(g.line);
-      }
-    });
-
-    const hasAllRemaining = newGroups.some((g) => g === "ALL_REMAINING");
-    if (hasAllRemaining) {
-      for (let i = startLine; i <= endLine; i++) {
-        newShownLines.add(i);
-      }
-    }
-
-    setShownLines(newShownLines);
+  const closeVideoModal = () => {
+    closeModal();
+    discardResults();
   };
 
-  const clearAllGroups = () => {
-    setLineGroups([]);
-    setShownLines(new Set());
-    setCurrentGroup("");
+  const downloadVideo = async (result) => {
+    try {
+      await download(result);
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
-  // Split handler
-  const addSplit = () => {
-    const lineNum = parseInt(splitLineInput);
-
-    if (isNaN(lineNum)) {
-      alert("Please enter a valid line number");
-      return;
-    }
-
-    if (lineNum < startLine || lineNum > endLine) {
-      alert(`Line ${lineNum} is outside range [${startLine}, ${endLine}]`);
-      return;
-    }
-
-    if (shownLines.has(lineNum)) {
-      alert(`Line ${lineNum} has already been shown`);
-      return;
-    }
-
-    setLineGroups([...lineGroups, { type: "SPLIT", line: lineNum }]);
-    const newShownLines = new Set(shownLines);
-    newShownLines.add(lineNum);
-    setShownLines(newShownLines);
-    setSplitLineInput("");
-    setShowSplitModal(false);
-  };
-
-  // Timing handlers
-  const updateTiming = (key, value) => {
-    setAnimationTiming((prev) => ({
-      ...prev,
-      [key]: value === "" ? "" : value,
-    }));
-  };
-
-  const resetTiming = () => setAnimationTiming({ ...DEFAULT_TIMING_STR });
-
-  // Reset handlers
   const resetForNewFile = () => {
-    setFile(null);
-    setFileName("");
-    setFileContent("");
-    setTotalLines(0);
-    setStartLine(1);
-    setEndLine(1);
-    setLineGroups([]);
-    setCurrentGroup("");
-    setShownLines(new Set());
-    setShowUploadAnotherModal(false);
-    setCompletedVideoUrl(null);
-    setCompletedVideoFilename("");
-    setQuality("standard");
-    window._videoDownloadUrl = null;
+    clear();
+    closeVideoModal();
   };
 
-  // Video handlers
-  const handleDownloadVideo = () => {
-    const downloadUrl = window._videoDownloadUrl;
-    if (downloadUrl) {
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = completedVideoFilename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-  };
-
-  const handleCloseVideoModal = () => {
-    setShowUploadAnotherModal(false);
-    setCompletedVideoUrl(null);
-    setCompletedVideoFilename("");
-    window._videoDownloadUrl = null;
-  };
-
-  // Form submit handler
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!file) {
-      alert("Please upload a file");
-      return;
-    }
-
-    if (lineGroups.length === 0) {
-      alert("Please add at least one line group");
-      return;
-    }
-
-    const timingConfig = buildTimingConfig(animationTiming);
-
-    const config = {
-      scriptPath: fileName,
-      startLine,
-      endLine,
-      includeComments,
-      orientation,
-      quality,
-      lineGroups: buildLineGroupsForApi(lineGroups),
-      syntaxColors,
-      animationTiming: timingConfig,
-    };
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("config", JSON.stringify(config));
-
-    try {
-      setIsLoading(true);
-      setLoadingProgress(0);
-      setLoadingStatus("starting");
-
-      const response = await fetch(`${API_URL}/api/animate`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.detail || "Failed to generate animation");
-      }
-
-      const taskId = result.taskId;
-      const progressInterval = setInterval(async () => {
-        try {
-          const progressResponse = await fetch(
-            `${API_URL}/api/progress/${taskId}`,
-          );
-          if (progressResponse.ok) {
-            const progressData = await progressResponse.json();
-            setLoadingProgress(progressData.progress);
-            setLoadingStatus(progressData.status || "processing");
-
-            if (
-              progressData.status === "complete" ||
-              progressData.progress >= 100
-            ) {
-              clearInterval(progressInterval);
-            }
-          }
-        } catch (err) {
-          console.error("Progress polling error:", err);
-        }
-      }, 500);
-
-      await new Promise((resolve) => {
-        const checkComplete = setInterval(async () => {
-          try {
-            const progressResponse = await fetch(
-              `${API_URL}/api/progress/${taskId}`,
-            );
-            if (progressResponse.ok) {
-              const progressData = await progressResponse.json();
-              if (
-                progressData.status === "complete" ||
-                progressData.progress >= 100
-              ) {
-                clearInterval(checkComplete);
-                clearInterval(progressInterval);
-                setLoadingProgress(100);
-                resolve();
-              }
-            }
-          } catch (err) {
-            console.error("Completion check error:", err);
-          }
-        }, 500);
-      });
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const streamUrl = `${API_URL}/api/stream/${result.videoId}`;
-      const downloadUrl = `${API_URL}/api/download/${result.videoId}`;
-      setCompletedVideoUrl(streamUrl);
-      setCompletedVideoFilename(result.filename);
-      window._videoDownloadUrl = downloadUrl;
-
-      setIsLoading(false);
-      setLoadingProgress(0);
-      setShowUploadAnotherModal(true);
-    } catch (error) {
-      console.error("Error:", error);
-      alert(`Error: ${error.message}`);
-      setIsLoading(false);
-      setLoadingProgress(0);
-    }
-  };
-
-  // Memoized values
   const fileExtension = fileName ? "." + fileName.split(".").pop() : "";
 
   const highlightedLines = useMemo(() => {
     if (!fileContent) return [];
-    const lines = fileContent.split("\n");
     const patterns = getTokenPatterns(fileExtension);
-    return lines.map((line, idx) => ({
+    return fileContent.split("\n").map((line, idx) => ({
       lineNum: idx + 1,
-      tokens: tokenizeLine(line, patterns, syntaxColors),
+      tokens:  tokenizeLine(line, patterns, syntaxColors),
     }));
   }, [fileContent, fileExtension, syntaxColors]);
 
-  const lineGroupMap = useMemo(() => {
-    return calculateLineGroupMap(lineGroups, startLine, endLine);
-  }, [lineGroups, startLine, endLine]);
+  const fontFamily = FONT_OPTIONS.find((f) => f.value === font)?.family ?? "monospace";
+
+  // Clicking a line number in the editor adds it to the group being typed.
+  const addLineToGroup = (lineNum) =>
+    setField("currentGroup", (prev) => (prev.trim() ? `${prev.trim()} ${lineNum}` : String(lineNum)));
+
+  const qualityLabel = QUALITY_OPTIONS.find((q) => q.value === quality)?.size ?? quality;
+  const statusItems = [
+    `Lines ${startLine}–${endLine}`,
+    `${lineGroups.length} ${lineGroups.length === 1 ? "group" : "groups"}`,
+    LANGUAGES[fileExtension.slice(1)] ?? fileExtension.slice(1),
+    `${orientation === "portrait" ? "Portrait" : "Landscape"}, ${qualityLabel}`,
+  ];
+  const ready = apiStatus === "awake";
 
   return (
     <div className="app">
-      <div className={`main-layout ${!fileContent ? "centered" : ""}`}>
-        <motion.div
-          className="container"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        >
-          <Link to="/" className="back-to-home">
-            ← Back to Home
-          </Link>
+      <input
+        type="file" id="file-upload" className="visually-hidden"
+        accept={ACCEPTED_EXTENSIONS} multiple
+        onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
+      />
 
-          <motion.h1
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            Code Animator
-          </motion.h1>
-          <motion.p
-            className="subtitle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            Create an automatic showcase of your code! (Animated using Manim)
-          </motion.p>
+      <header className="topbar">
+        <Link to="/landing" className="topbar__logo">
+          <span className="logo-mark" aria-hidden="true" />
+          Code Animator
+        </Link>
 
-          <ApiStatusBanner apiStatus={apiStatus} onRetry={checkApiStatus} />
+        {fileName && (
+          <div className="topbar__file">
+            <span className="topbar__filename">{fileName}</span>
+            <span className="topbar__meta">{totalLines} lines</span>
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit}>
-            <FileUploadSection
-              fileName={fileName}
-              totalLines={totalLines}
-              onFileUpload={handleFileUpload}
-            />
-
-            <AnimatePresence>
-              {totalLines > 0 && (
-                <>
-                  <LineRangeSection
-                    startLine={startLine}
-                    endLine={endLine}
-                    totalLines={totalLines}
-                    onStartLineChange={setStartLine}
-                    onEndLineChange={setEndLine}
-                  />
-
-                  <CommentSettings
-                    includeComments={includeComments}
-                    onIncludeCommentsChange={setIncludeComments}
-                  />
-
-                  <ColorSettings
-                    syntaxColors={syntaxColors}
-                    onOpenColorModal={() => setShowColorModal(true)}
-                  />
-
-                  <OrientationToggle
-                    orientation={orientation}
-                    onOrientationChange={setOrientation}
-                  />
-
-                  <QualityPreset
-                    quality={quality}
-                    onQualityChange={setQuality}
-                  />
-
-                  <TimingSettings
-                    animationTiming={animationTiming}
-                    onUpdateTiming={updateTiming}
-                    onResetTiming={resetTiming}
-                  />
-
-                  <LineGroupsSection
-                    lineGroups={lineGroups}
-                    currentGroup={currentGroup}
-                    onCurrentGroupChange={setCurrentGroup}
-                    onAddLineGroup={addLineGroup}
-                    onRemoveLineGroup={removeLineGroup}
-                    onClearAllGroups={clearAllGroups}
-                    onOpenSplitModal={() => setShowSplitModal(true)}
-                  />
-
-                  <SubmitSection apiStatus={apiStatus} />
-                </>
-              )}
-            </AnimatePresence>
-          </form>
-        </motion.div>
-
-        <AnimatePresence>
+        <div className="topbar__actions">
           {fileContent && (
-            <PreviewPanel
-              fileName={fileName}
-              fileContent={fileContent}
-              startLine={startLine}
-              endLine={endLine}
-              shownLines={shownLines}
-              lineGroupMap={lineGroupMap}
-              onOpenPreviewModal={() => setShowPreviewModal(true)}
-            />
+            <>
+              <button type="button" className="btn-dry-run" disabled={!ready} onClick={handleDryRun}>
+                Dry run
+              </button>
+              {docs.length > 1 ? (
+                <>
+                  <button type="submit" form="render-form" className="btn-dry-run" disabled={!ready}>
+                    Generate this video
+                  </button>
+                  <button type="button" className="btn-submit" disabled={!ready} onClick={() => startRender(docs)}>
+                    {ready ? `Generate all (${docs.length})` : "Waiting for server…"}
+                  </button>
+                </>
+              ) : (
+                <button type="submit" form="render-form" className="btn-submit" disabled={!ready}>
+                  {ready ? "Generate video" : "Waiting for server…"}
+                </button>
+              )}
+            </>
           )}
-        </AnimatePresence>
+        </div>
+      </header>
 
-        <LoadingModal
-          isLoading={isLoading}
-          loadingProgress={loadingProgress}
-          loadingStatus={loadingStatus}
-        />
+      <ApiStatusBanner apiStatus={apiStatus} onRetry={checkApiStatus} />
 
-        <SplitModal
-          show={showSplitModal}
-          splitLineInput={splitLineInput}
-          startLine={startLine}
-          endLine={endLine}
-          onSplitLineInputChange={setSplitLineInput}
-          onAddSplit={addSplit}
-          onClose={() => setShowSplitModal(false)}
-        />
+      <main className={`workspace${fileContent ? "" : " workspace--empty"}`}>
+        <section className="editor" aria-label="Code preview">
+          {fileContent ? (
+            <PreviewPanel
+              tabs={docs} activeTabId={activeId}
+              onSelectTab={setActiveId} onCloseTab={closeDocument}
+              fileContent={fileContent}
+              highlightedLines={highlightedLines}
+              startLine={startLine} endLine={endLine}
+              lineGroupMap={lineGroupMap}
+              fontFamily={fontFamily}
+              background={syntaxColors.background}
+              statusItems={statusItems}
+              onLineClick={addLineToGroup}
+              onEditColors={() => setModal("color")}
+            />
+          ) : (
+            <EmptyEditor onFiles={addFiles} />
+          )}
+        </section>
 
-        <ColorModal
-          show={showColorModal}
-          syntaxColors={syntaxColors}
-          onSyntaxColorsChange={setSyntaxColors}
-          onClose={() => setShowColorModal(false)}
-        />
+        {fileContent && (
+          <aside className="sidebar" aria-label="Video settings" ref={sidebarRef}>
+            {fontScreenOpen && (
+              <FontScreen font={font} onFontChange={set("font")} onClose={closeFontScreen} />
+            )}
+            <form id="render-form" hidden={fontScreenOpen} onSubmit={(e) => { e.preventDefault(); startRender([doc]); }}>
+              <LinesPanel
+                startLine={startLine} endLine={endLine} totalLines={totalLines}
+                onStartLineChange={set("startLine")} onEndLineChange={set("endLine")}
+                lineGroups={lineGroups} currentGroup={currentGroup}
+                onCurrentGroupChange={set("currentGroup")}
+                onAddLineGroup={addLineGroup} onRemoveLineGroup={removeLineGroup}
+                onClearAllGroups={clearAll} onOpenSplitModal={() => setModal("split")}
+              />
+              <AnimationPanel
+                animationType={animationType} onAnimationTypeChange={set("animationType")}
+                animationTiming={animationTiming}
+                onUpdateTiming={updateTiming} onResetTiming={resetTiming}
+              />
+              <VideoPanel
+                orientation={orientation} onOrientationChange={set("orientation")}
+                quality={quality} onQualityChange={set("quality")}
+              />
+              <LookPanel
+                syntaxColors={syntaxColors} onOpenColorModal={() => setModal("color")}
+                font={font} onOpenFontScreen={openFontScreen}
+                includeComments={includeComments} onIncludeCommentsChange={set("includeComments")}
+              />
+            </form>
+            {!fontScreenOpen && <SidebarLinks />}
+          </aside>
+        )}
+      </main>
 
-        <PreviewModal
-          show={showPreviewModal}
-          highlightedLines={highlightedLines}
-          syntaxColors={syntaxColors}
-          startLine={startLine}
-          endLine={endLine}
-          onClose={() => setShowPreviewModal(false)}
-          onOpenColorModal={() => setShowColorModal(true)}
-        />
-
-        <VideoCompleteModal
-          show={showUploadAnotherModal}
-          completedVideoUrl={completedVideoUrl}
-          onClose={handleCloseVideoModal}
-          onDownload={handleDownloadVideo}
-          onUploadNew={resetForNewFile}
-        />
-      </div>
+      <LoadingModal
+        isLoading={isLoading} loadingProgress={loadingProgress} loadingStatus={loadingStatus}
+        job={currentJob}
+      />
+      <SplitModal
+        show={modal === "split"} startLine={startLine} endLine={endLine}
+        onAddSplit={addSplit} onClose={closeModal}
+      />
+      <ColorModal
+        show={modal === "color"} syntaxColors={syntaxColors}
+        onSyntaxColorsChange={set("syntaxColors")} onClose={closeModal}
+        previewLines={highlightedLines.filter(({ lineNum }) => lineNum >= startLine && lineNum <= endLine)}
+        fontFamily={fontFamily}
+      />
+      <VideoGalleryModal
+        show={modal === "video"} results={results}
+        onClose={closeVideoModal} onDownload={downloadVideo} onUploadNew={resetForNewFile}
+      />
+      <DryRunModal
+        show={modal === "dryRun"} result={dryRunResult}
+        onClose={closeModal}
+        onRender={() => { closeModal(); startRender([doc]); }}
+      />
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { USED_IN_VIDEOS } from '../../config/constants'
 
-function Navbar() {
+function Navbar({ showSectionLinks = true }) {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -21,39 +21,43 @@ function Navbar() {
   }
 
   return (
-    <motion.nav 
-      className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <nav className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
       <div className="navbar__container">
-        <Link to="/" className="navbar__logo">
-          <img src="/Movie.png" alt="" className="navbar__logo-icon" />
+        <Link to="/landing" className="navbar__logo">
+          <span className="logo-mark" aria-hidden="true" />
           Code Animator
         </Link>
-        
+
         <div className="navbar__links">
-          <button onClick={() => scrollToSection('features')} className="navbar__link">
-            Features
-          </button>
-          <button onClick={() => scrollToSection('how-it-works')} className="navbar__link">
-            How It Works
-          </button>
-          <a 
-            href="https://github.com/HeyItsJhello/CodeAnimator" 
-            target="_blank" 
+          {showSectionLinks && (
+            <>
+              <button onClick={() => scrollToSection('how-it-works')} className="navbar__link">
+                How it works
+              </button>
+              <button onClick={() => scrollToSection('why-i-made-this')} className="navbar__link">
+                Why I made this
+              </button>
+              {USED_IN_VIDEOS.length > 0 && (
+                <button onClick={() => scrollToSection('used-in')} className="navbar__link">
+                  Seen in
+                </button>
+              )}
+            </>
+          )}
+          <a
+            href="https://github.com/HeyItsJhello/CodeAnimator"
+            target="_blank"
             rel="noopener noreferrer"
             className="navbar__link"
           >
             GitHub
           </a>
-          <Link to="/app" className="navbar__cta">
-            Try It Free →
+          <Link to="/" className="navbar__cta">
+            Try it online
           </Link>
         </div>
       </div>
-    </motion.nav>
+    </nav>
   )
 }
 

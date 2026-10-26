@@ -1,0 +1,43 @@
+/* Responsive Design */
+/* Below laptop width the settings stack under the code */
+@media (max-width: 1000px) {
+    .app {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
+
+    .workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .editor {
+        height: 55vh;
+    }
+
+    .workspace--empty .editor {
+        height: auto;
+        min-height: 70vh;
+    }
+
+    .sidebar {
+        border-top: 2px solid #333;
+        border-left: none;
+    }
+
+    .topbar__actions {
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    h2 {
+        font-size: 0.95rem;
+    }
+
+    .btn-submit {
+        font-size: 0.85rem;
+    }
+
+}
+
