@@ -41,9 +41,22 @@ test('rejects path traversal', async () => {
   expect(res.status).toBe(400);
 });
 
-test('download deletes the video', async () => {
-  const res = await fetch(`${base}/api/download/test_fresh.mp4`);
-  expect(await res.text()).toBe('0123456789');
-  await new Promise((r) => setTimeout(r, 50));
+test('a video can be downloaded more than once', async () => {
+  for (let i = 0; i < 2; i++) {
+    const res = await fetch(`${base}/api/download/test_fresh.mp4`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('0123456789');
+  }
+  expect(fs.existsSync(fresh)).toBe(true);
+});
+
+test('delete removes the listed videos and ignores bad ids', async () => {
+  const res = await fetch(`${base}/api/videos/delete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, // what sendBeacon sends
+    body: JSON.stringify(['test_fresh.mp4', '../server.js', 42]),
+  });
+  expect(res.status).toBe(204);
   expect(fs.existsSync(fresh)).toBe(false);
+  expect(fs.existsSync(path.join(OUTPUTS_DIR, '..', 'server.js'))).toBe(true);
 });

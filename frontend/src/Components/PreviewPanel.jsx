@@ -21,7 +21,10 @@ function measureCharRatio(fontFamily) {
 }
 
 function PreviewPanel({
-  fileName,
+  tabs,
+  activeTabId,
+  onSelectTab,
+  onCloseTab,
   fileContent,
   highlightedLines,
   startLine,
@@ -102,7 +105,30 @@ function PreviewPanel({
   return (
     <div className="preview-panel">
       <div className="editor-tabs">
-        <span className="editor-tab">{fileName}</span>
+        <div className="editor-tabs__list" role="tablist" aria-label="Open files">
+          {tabs.map((tab) => (
+            <span key={tab.id} className={`editor-tab${tab.id === activeTabId ? " is-active" : ""}`}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tab.id === activeTabId}
+                className="editor-tab__name"
+                onClick={() => onSelectTab(tab.id)}
+              >
+                {tab.fileName}
+              </button>
+              <button
+                type="button"
+                className="editor-tab__close"
+                aria-label={`Close ${tab.fileName}`}
+                onClick={() => onCloseTab(tab.id)}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+          <label htmlFor="file-upload" className="editor-tabs__add" title="Add files" aria-label="Add files">+</label>
+        </div>
         <button type="button" className="editor-tabs__action" onClick={onEditColors}>
           Edit colors
         </button>

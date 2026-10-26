@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 // A group is one of: number[] (explicit lines), { type: 'SPLIT', line },
 // or 'ALL_REMAINING' (every line in range not claimed by an earlier group).
@@ -46,10 +46,8 @@ export function toApiGroups(lineGroups) {
   });
 }
 
-export function useLineGroups(startLine, endLine) {
-  const [lineGroups,   setLineGroups]   = useState([]);
-  const [currentGroup, setCurrentGroup] = useState('');
-
+// Group editing for one document; its state lives in the document.
+export function useLineGroups({ lineGroups, currentGroup, startLine, endLine }, setLineGroups, setCurrentGroup) {
   const lineGroupMap = useMemo(
     () => buildLineGroupMap(lineGroups, startLine, endLine),
     [lineGroups, startLine, endLine],
@@ -80,11 +78,11 @@ export function useLineGroups(startLine, endLine) {
 
     setLineGroups((prev) => [...prev, valid]);
     setCurrentGroup('');
-  }, [currentGroup, lineGroupMap, startLine, endLine]);
+  }, [currentGroup, lineGroupMap, startLine, endLine, setLineGroups, setCurrentGroup]);
 
   const removeLineGroup = useCallback((index) => {
     setLineGroups((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+  }, [setLineGroups]);
 
   // Returns true if the split was added, false if the line was invalid.
   const addSplit = useCallback((lineNum) => {
@@ -98,15 +96,14 @@ export function useLineGroups(startLine, endLine) {
     }
     setLineGroups((prev) => [...prev, { type: 'SPLIT', line: lineNum }]);
     return true;
-  }, [startLine, endLine, lineGroupMap]);
+  }, [startLine, endLine, lineGroupMap, setLineGroups]);
 
   const clearAll = useCallback(() => {
     setLineGroups([]);
     setCurrentGroup('');
-  }, []);
+  }, [setLineGroups, setCurrentGroup]);
 
   return {
-    lineGroups, currentGroup, lineGroupMap,
-    setCurrentGroup, addLineGroup, removeLineGroup, addSplit, clearAll,
+    lineGroupMap, addLineGroup, removeLineGroup, addSplit, clearAll,
   };
 }

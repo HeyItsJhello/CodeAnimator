@@ -28,7 +28,68 @@
     font-size: 1rem;
 }
 
+/* File tabs: the active one is lifted with an accent edge. */
+.editor-tabs__list {
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.editor-tabs .editor-tab {
+    flex-shrink: 0;
+    padding: 0;
+    background: transparent;
+    border-top-color: transparent;
+    color: #888;
+}
+
+.editor-tabs .editor-tab.is-active {
+    background: #262626;
+    border-top-color: #ff5e5b;
+    color: #e8e8e8;
+}
+
+.editor-tab__name,
+.editor-tab__close {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.editor-tab__name {
+    padding: 0.55rem 0.4rem 0.55rem 1.1rem;
+    white-space: nowrap;
+}
+
+.editor-tab__close {
+    padding: 0.55rem 0.8rem 0.55rem 0.4rem;
+    font-size: 0.75rem;
+    opacity: 0.6;
+}
+
+.editor-tab__close:hover {
+    color: #ff5e5b;
+    opacity: 1;
+}
+
+.editor-tabs__add {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 1rem;
+    color: #888;
+    font-size: 1.3rem;
+    cursor: pointer;
+}
+
+.editor-tabs__add:hover {
+    color: #ff5e5b;
+}
+
 .editor-tabs__action {
+    flex-shrink: 0;
     padding: 0 1rem;
     background: none;
     border: none;
