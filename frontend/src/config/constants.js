@@ -26,14 +26,14 @@ export const DEFAULT_TIMING_STR = Object.fromEntries(
 );
 
 export const ANIMATION_TYPES = [
+  { value: "typewriter", label: "Typewriter", desc: "Letter by letter" },
   { value: "slide_left", label: "Slide In", desc: "From the left" },
   { value: "fade_in", label: "Fade In", desc: "Opacity transition" },
-  { value: "typewriter", label: "Typewriter", desc: "Letter by letter" },
   { value: "drop_in", label: "Drop In", desc: "From the top" },
   { value: "scale_in", label: "Scale In", desc: "Grow from center" },
 ];
 
-export const DEFAULT_ANIMATION_TYPE = "slide_left";
+export const DEFAULT_ANIMATION_TYPE = "typewriter";
 
 export const FONT_OPTIONS = [
   { value: "default",         label: "Default",          family: "monospace",                      desc: "System monospace",    category: "system"    },
@@ -52,7 +52,7 @@ export const FONT_OPTIONS = [
   { value: "vt323",           label: "VT323",            family: "'VT323', monospace",             desc: "CRT terminal",        category: "retro"     },
 ];
 
-export const DEFAULT_FONT = "default";
+export const DEFAULT_FONT = "jetbrains_mono";
 
 export const QUALITY_OPTIONS = [
   { value: "fast",     label: "Fast",     size: "720p @ 30fps"  },

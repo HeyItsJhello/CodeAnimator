@@ -11,7 +11,7 @@ const CATEGORIES = [
   { key: "retro",     label: "Retro"     },
 ];
 
-const SAMPLE = "fn(x) => x * 2";
+const SAMPLE = 'print("Hello World!")';
 
 const findFont = (font) => FONT_OPTIONS.find((f) => f.value === font) ?? FONT_OPTIONS[0];
 
