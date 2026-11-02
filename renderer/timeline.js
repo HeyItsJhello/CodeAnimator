@@ -15,6 +15,25 @@ export function isCommentLine(content, language) {
   return prefixes.some((p) => trimmed.startsWith(p));
 }
 
+// Indentation every non-blank line starts with (spaces and tabs exactly as
+// written, so mixed indentation is only removed where all lines agree).
+function sharedIndent(contents) {
+  let shared = null;
+  for (const content of contents) {
+    if (!content.trim()) continue;
+    const indent = content.match(/^[ \t]*/)[0];
+    if (shared === null) { shared = indent; continue; }
+    let i = 0;
+    while (i < shared.length && shared[i] === indent[i]) i++;
+    shared = shared.slice(0, i);
+    if (!shared) break;
+  }
+  return shared ?? '';
+}
+
+// Lines in reveal order, each with the frame it starts appearing on. The
+// indentation shared by every shown line is removed, so a method taken from
+// inside a class starts at the left edge instead of floating right.
 export function buildTimeline({
   code, startLine, endLine, includeComments, language,
   lineGroups, initialFrames, lineFrames, pauseFrames,
@@ -35,5 +54,7 @@ export function buildTimeline({
     if (gi < groups.length - 1) currentFrame += pauseFrames;
   }
 
-  return timeline;
+  const indent = sharedIndent(timeline.map((t) => t.content));
+  if (!indent) return timeline;
+  return timeline.map((t) => ({ ...t, content: t.content.startsWith(indent) ? t.content.slice(indent.length) : '' }));
 }

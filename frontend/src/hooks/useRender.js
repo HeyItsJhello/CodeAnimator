@@ -27,7 +27,8 @@ export function useRender() {
   const [loadingStatus,   setLoadingStatus]   = useState('starting');
   // The job being rendered: { fileName, index, total } (index is 1-based).
   const [currentJob,      setCurrentJob]      = useState(null);
-  // One entry per rendered job: { fileName, videoUrl, downloadUrl, filename } or { fileName, error }.
+  // One entry per rendered job: { fileName, downloadName, videoUrl, downloadUrl, filename } or { fileName, error }.
+  // `filename` is the server's id for the video; `downloadName` is what it's saved as.
   const [results,         setResults]         = useState([]);
 
   const pollProgress = useCallback((taskId) => {
@@ -64,20 +65,20 @@ export function useRender() {
     });
   }, []);
 
-  // Renders jobs ({ fileName, file, config }) one at a time, the same request
+  // Renders jobs ({ fileName, downloadName, file, config }) one at a time, the same request
   // a single render makes. A failed job is recorded and the rest still run.
   const renderAll = useCallback(async (jobs) => {
     const completed = [];
     setIsLoading(true);
     try {
-      for (const [i, { fileName, file, config }] of jobs.entries()) {
+      for (const [i, { fileName, downloadName, file, config }] of jobs.entries()) {
         setCurrentJob({ fileName, index: i + 1, total: jobs.length });
         setLoadingProgress(0);
         setLoadingStatus('starting');
         try {
           const response = await fetch(`${API_URL}/api/animate`, { method: 'POST', body: toFormData(file, config) });
           const result   = await parseJsonResponse(response, 'Failed to generate animation');
-          completed.push({ fileName, ...(await pollProgress(result.taskId)) });
+          completed.push({ fileName, downloadName, ...(await pollProgress(result.taskId)) });
         } catch (err) {
           completed.push({ fileName, error: err.message });
         }
@@ -99,13 +100,13 @@ export function useRender() {
   // Fetched and saved from a blob URL: the API is cross-origin, so a plain
   // link would navigate away (to an error page on failure) and each one
   // would cancel the previous when downloading several.
-  const download = useCallback(async ({ downloadUrl, filename }) => {
+  const download = useCallback(async ({ downloadUrl, filename, downloadName }) => {
     const response = await fetch(downloadUrl);
     if (!response.ok) throw new Error(`Couldn't download ${filename}. It may have expired; render it again.`);
     const url = URL.createObjectURL(await response.blob());
     const a = document.createElement('a');
     a.href     = url;
-    a.download = filename;
+    a.download = downloadName ?? filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

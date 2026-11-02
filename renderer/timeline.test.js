@@ -58,3 +58,17 @@ test('isCommentLine handles unknown language via // default', () => {
   expect(isCommentLine('# x', 'rust')).toBe(false);
   expect(isCommentLine('<!-- x', 'html')).toBe(true);
 });
+
+test('removes indentation shared by every shown line, keeping nesting', () => {
+  const code = 'class A:\n    def f(self):\n\n        return 1\n    x = 2';
+  const timeline = buildTimeline({
+    ...base, code, startLine: 1, endLine: 5, lineGroups: [{ lines: [2, 3, 4] }],
+  });
+  expect(timeline.map((t) => t.content)).toEqual(['def f(self):', '', '    return 1']);
+});
+
+test('keeps indentation when lines disagree on tabs vs spaces', () => {
+  const code = '\tfoo\n    bar';
+  const timeline = buildTimeline({ ...base, code, startLine: 1, endLine: 2, lineGroups: [{ lines: [1, 2] }] });
+  expect(timeline.map((t) => t.content)).toEqual(['\tfoo', '    bar']);
+});

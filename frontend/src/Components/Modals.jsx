@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DEFAULT_SYNTAX_COLORS } from "../config/constants";
+import { formatDuration } from "../utils/duration";
 
 // Backdrop + animated card. Clicking the backdrop calls onClose when given.
 function Modal({ show, className, onClose, children }) {
@@ -290,12 +291,6 @@ export function VideoGalleryModal({ show, results, onClose, onDownload, onUpload
       </div>
     </Modal>
   );
-}
-
-function formatDuration(seconds) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.round(seconds % 60);
-  return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 }
 
 export function DryRunModal({ show, result, onClose, onRender }) {

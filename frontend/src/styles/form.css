@@ -134,6 +134,12 @@
     gap: 0.5rem;
 }
 
+.group-list__duration {
+    margin: 0.2rem 0 0;
+    color: var(--ui-muted);
+    font-size: 0.9rem;
+}
+
 .group-list {
     display: grid;
     gap: 0.4rem;

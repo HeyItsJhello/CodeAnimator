@@ -74,15 +74,20 @@ export function ApiStatusBanner({ apiStatus, onRetry }) {
   );
 }
 
-const describeGroup = (group) =>
-  group === "ALL_REMAINING" ? "All remaining lines"
-    : group.type === "SPLIT" ? `Split at line ${group.line}`
-      : `Lines ${group.join(", ")}`;
+const describeGroup = (group) => {
+  if (group === "ALL_REMAINING") return "All remaining lines";
+  if (group.type === "SPLIT") return `Split at line ${group.line}`;
+  if (group.type === "SEQUENCE") {
+    const lines = group.groups.flat();
+    return `Lines ${Math.min(...lines)}–${Math.max(...lines)}, one at a time (${group.groups.length} steps)`;
+  }
+  return `Lines ${group.join(", ")}`;
+};
 
 export function LinesPanel({
   startLine, endLine, totalLines, onStartLineChange, onEndLineChange,
   lineGroups, currentGroup, onCurrentGroupChange,
-  onAddLineGroup, onRemoveLineGroup, onClearAllGroups, onOpenSplitModal,
+  onAddLineGroup, onRemoveLineGroup, onClearAllGroups, onOpenSplitModal, duration,
 }) {
   return (
     <Panel title="Lines">
@@ -104,13 +109,13 @@ export function LinesPanel({
       <Field
         label="Groups"
         htmlFor="group-input"
-        hint="Lines in a group appear together. Click line numbers in the editor to fill this in, or leave it empty to add all remaining lines."
+        hint="Lines in a group appear together. Use 1_20 to show lines 1–20 one at a time. Click line numbers in the editor to fill this in, or drag across them to add a group. Leave it empty to add all remaining lines."
       >
         <div className="group-entry">
           <input
             type="text"
             id="group-input"
-            placeholder="e.g. 1-5 or 21 34"
+            placeholder="e.g. 1-5, 21 34 or 1_20"
             value={currentGroup}
             onChange={(e) => onCurrentGroupChange(e.target.value)}
             onKeyDown={(e) => {
@@ -148,6 +153,7 @@ export function LinesPanel({
               </motion.div>
             ))}
           </AnimatePresence>
+          <p className="group-list__duration">Video length ≈ {duration}</p>
           <button type="button" onClick={onClearAllGroups} className="text-btn">Clear all groups</button>
         </div>
       )}

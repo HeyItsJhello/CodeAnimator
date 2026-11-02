@@ -4,9 +4,10 @@ import "../App.css";
 
 import { API_URL, DEFAULT_TIMING, DEFAULT_TIMING_STR, FONT_OPTIONS, QUALITY_OPTIONS } from "../config/constants";
 import { getTokenPatterns, tokenizeLine } from "../config/tokenizer";
-import { useDocuments, documentLabel } from "../hooks/useDocuments";
+import { useDocuments, documentLabel, videoFileName } from "../hooks/useDocuments";
 import { useLineGroups, toApiGroups } from "../hooks/useLineGroups";
 import { useRender }            from "../hooks/useRender";
+import { estimateDuration, formatDuration } from "../utils/duration";
 
 import {
   ApiStatusBanner, LinesPanel, AnimationPanel, VideoPanel, LookPanel, SidebarLinks,
@@ -26,7 +27,8 @@ const LANGUAGES = {
 const ACCEPTED_EXTENSIONS = ".py,.js,.jsx,.ts,.tsx,.java,.cpp,.c,.h,.go,.rs,.rb,.php,.swift,.kt,.gd";
 
 // Shown in the editor before a file is loaded: an empty file you drop code into.
-function EmptyEditor({ onFiles }) {
+// The drop itself is handled for the whole page (see AppPage).
+function EmptyEditor() {
   const [dragging, setDragging] = useState(false);
 
   const lines = [
@@ -45,11 +47,7 @@ function EmptyEditor({ onFiles }) {
       className={`empty-editor${dragging ? " empty-editor--dragging" : ""}`}
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragging(false);
-        onFiles(e.dataTransfer.files);
-      }}
+      onDrop={() => setDragging(false)}
     >
       {lines.map((text, i) => (
         <span key={i} className="empty-editor__line">
@@ -93,6 +91,10 @@ function toTimingConfig(animationTiming) {
   }));
 }
 
+// True when a key press belongs to a text field (which has its own undo).
+const isTyping = (target) =>
+  target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+
 function AppPage() {
   const [apiStatus, checkApiStatus] = useApiStatus();
 
@@ -115,10 +117,41 @@ function AppPage() {
   const closeModal = () => setModal(null);
 
   const {
-    docs, active: doc, activeId, setActiveId, addFiles, addSection, closeDocument, setField, clear,
+    docs, active: doc, activeId, setActiveId, addFiles, addSection, closeDocument, setField, setContent, clear,
+    undo, redo, canUndo, canRedo,
   } = useDocuments();
+
+  // Files dropped anywhere on the page open as new tabs, instead of the
+  // browser leaving the app to show the file.
+  useEffect(() => {
+    const hasFiles = (e) => e.dataTransfer?.types.includes("Files");
+    const onDragOver = (e) => { if (hasFiles(e)) e.preventDefault(); };
+    const onDrop = (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      addFiles(e.dataTransfer.files);
+    };
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("drop", onDrop);
+    };
+  }, [addFiles]);
+
+  // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z or Ctrl+Y redoes, outside text fields.
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (!(e.metaKey || e.ctrlKey) || isTyping(e.target)) return;
+      const key = e.key.toLowerCase();
+      if (key === "z") { e.preventDefault(); (e.shiftKey ? redo : undo)(); }
+      else if (key === "y") { e.preventDefault(); redo(); }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [undo, redo]);
   const {
-    file, fileName, fileContent, totalLines, startLine, endLine, lineGroups, currentGroup,
+    fileName, fileContent, totalLines, startLine, endLine, lineGroups, currentGroup,
     includeComments, syntaxColors, orientation, quality, animationTiming, animationType, font,
   } = doc;
   // Setter for one field of the active tab's document.
@@ -126,7 +159,7 @@ function AppPage() {
   const updateTiming = (key, value) => setField("animationTiming", (prev) => ({ ...prev, [key]: value }));
   const resetTiming  = () => setField("animationTiming", DEFAULT_TIMING_STR);
 
-  const { lineGroupMap, addLineGroup, removeLineGroup, addSplit, clearAll } =
+  const { lineGroupMap, stepCount, addLineGroup, addRange, removeLineGroup, addSplit, clearAll } =
     useLineGroups(doc, set("lineGroups"), set("currentGroup"));
 
   const {
@@ -150,8 +183,9 @@ function AppPage() {
 
   // Each document becomes the same request a single render sends.
   const toJob = (d) => ({
-    fileName: documentLabel(d, docs),
-    file:     d.file,
+    fileName:     documentLabel(d, docs),
+    downloadName: videoFileName(d),
+    file:     new File([d.fileContent], d.fileName), // rebuilt so restored tabs can render
     config: {
       scriptPath:      d.fileName,
       startLine:       d.startLine,
@@ -181,7 +215,8 @@ function AppPage() {
   const handleDryRun = async () => {
     if (!canSubmit([doc])) return;
     try {
-      setDryRunResult(await submitDryRun(file, toJob(doc).config));
+      const { file, config } = toJob(doc);
+      setDryRunResult(await submitDryRun(file, config));
       setModal("dryRun");
     } catch (err) {
       alert(`Dry run failed: ${err.message}`);
@@ -223,10 +258,13 @@ function AppPage() {
   const addLineToGroup = (lineNum) =>
     setField("currentGroup", (prev) => (prev.trim() ? `${prev.trim()} ${lineNum}` : String(lineNum)));
 
+  const duration = formatDuration(estimateDuration(stepCount, toTimingConfig(animationTiming)));
+
   const qualityLabel = QUALITY_OPTIONS.find((q) => q.value === quality)?.size ?? quality;
   const statusItems = [
     `Lines ${startLine}–${endLine}`,
     `${lineGroups.length} ${lineGroups.length === 1 ? "group" : "groups"}`,
+    `≈ ${duration}`,
     LANGUAGES[fileExtension.slice(1)] ?? fileExtension.slice(1),
     `${orientation === "portrait" ? "Portrait" : "Landscape"}, ${qualityLabel}`,
   ];
@@ -256,6 +294,8 @@ function AppPage() {
         <div className="topbar__actions">
           {fileContent && (
             <>
+              <button type="button" className="btn-dry-run" disabled={!canUndo} onClick={undo} title="Undo (Ctrl+Z)">Undo</button>
+              <button type="button" className="btn-dry-run" disabled={!canRedo} onClick={redo} title="Redo (Ctrl+Shift+Z)">Redo</button>
               <button type="button" className="btn-dry-run" disabled={!ready} onClick={handleDryRun}>
                 Dry run
               </button>
@@ -286,6 +326,7 @@ function AppPage() {
             <PreviewPanel
               tabs={docs.map((d) => ({ id: d.id, label: documentLabel(d, docs) }))} activeTabId={activeId}
               onSelectTab={setActiveId} onCloseTab={closeDocument} onAddSection={addSection}
+              onCloseAll={clear} onContentChange={setContent}
               fileContent={fileContent}
               highlightedLines={highlightedLines}
               startLine={startLine} endLine={endLine}
@@ -294,10 +335,11 @@ function AppPage() {
               background={syntaxColors.background}
               statusItems={statusItems}
               onLineClick={addLineToGroup}
+              onLineRange={addRange}
               onEditColors={() => setModal("color")}
             />
           ) : (
-            <EmptyEditor onFiles={addFiles} />
+            <EmptyEditor />
           )}
         </section>
 
@@ -314,6 +356,7 @@ function AppPage() {
                 onCurrentGroupChange={set("currentGroup")}
                 onAddLineGroup={addLineGroup} onRemoveLineGroup={removeLineGroup}
                 onClearAllGroups={clearAll} onOpenSplitModal={() => setModal("split")}
+                duration={duration}
               />
               <AnimationPanel
                 animationType={animationType} onAnimationTypeChange={set("animationType")}

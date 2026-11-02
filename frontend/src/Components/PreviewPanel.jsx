@@ -26,6 +26,8 @@ function PreviewPanel({
   onSelectTab,
   onCloseTab,
   onAddSection,
+  onCloseAll,
+  onContentChange,
   fileContent,
   highlightedLines,
   startLine,
@@ -35,9 +37,37 @@ function PreviewPanel({
   background,
   statusItems,
   onLineClick,
+  onLineRange,
   onEditColors,
 }) {
   const containerRef = useRef(null);
+
+  // While editing, the code shows as a plain text box instead of the colored preview.
+  const [editing, setEditing] = useState(false);
+
+  // A drag across line numbers: { from, to }. Released over a different line,
+  // the lines in between become a group; a plain click falls through to onLineClick.
+  const [drag, setDrag] = useState(null);
+  useEffect(() => {
+    if (!drag) return;
+    const end = () => {
+      if (drag.from !== drag.to) onLineRange(drag.from, drag.to);
+      setDrag(null);
+    };
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+    return () => {
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+    };
+  }, [drag, onLineRange]);
+
+  // Found by position so touch drags work too (touch keeps events on the starting element).
+  const extendDrag = (e) => {
+    const lineNum = Number(document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-line]")?.dataset.line);
+    if (lineNum && lineNum !== drag.to) setDrag({ ...drag, to: lineNum });
+  };
+  const [dragMin, dragMax] = drag ? [Math.min(drag.from, drag.to), Math.max(drag.from, drag.to)] : [0, -1];
 
   const [scrollTop,  setScrollTop]  = useState(0);
   const [viewHeight, setViewHeight] = useState(500);
@@ -132,6 +162,15 @@ function PreviewPanel({
         </div>
         <div className="editor-tabs__actions">
           <button
+            type="button" className="editor-tabs__action"
+            onClick={() => { if (confirm("Close all tabs? Their sections and line groups will be lost.")) onCloseAll(); }}
+          >
+            Close all
+          </button>
+          <button type="button" className="editor-tabs__action" onClick={() => setEditing(!editing)}>
+            {editing ? "Done editing" : "Edit code"}
+          </button>
+          <button
             type="button" className="editor-tabs__action" onClick={onAddSection}
             title="Make another video from the lines after this one"
           >
@@ -149,8 +188,27 @@ function PreviewPanel({
         style={{ background }}
         onScroll={isVirtual ? (e) => setScrollTop(e.currentTarget.scrollTop) : undefined}
       >
+        {editing ? (
+          <textarea
+            className="code-editor"
+            aria-label="Edit code"
+            spellCheck={false}
+            autoFocus
+            value={fileContent}
+            style={{ fontSize: `${fontSize}px`, ...(fontFamily ? { fontFamily } : {}) }}
+            onChange={(e) => onContentChange(e.target.value)}
+            onKeyDown={(e) => {
+              // Tab indents instead of leaving the box; insertText keeps the box's own undo working.
+              if (e.key === "Tab" && !e.shiftKey) {
+                e.preventDefault();
+                document.execCommand("insertText", false, "\t");
+              }
+            }}
+          />
+        ) : (
         <pre
-          className="code-preview"
+          className={`code-preview${drag ? " is-dragging" : ""}`}
+          onPointerMove={drag ? extendDrag : undefined}
           style={{
             fontSize: `${fontSize}px`,
             ...(fontFamily ? { fontFamily } : {}),
@@ -170,13 +228,16 @@ function PreviewPanel({
             return (
               <div
                 key={lineNum}
-                className={`code-line${inRange ? "" : " is-dimmed"}${groupNums ? " is-grouped" : ""}`}
+                data-line={lineNum}
+                className={`code-line${inRange ? "" : " is-dimmed"}${groupNums ? " is-grouped" : ""}${
+                  lineNum >= dragMin && lineNum <= dragMax ? " is-selecting" : ""}`}
               >
                 <button
                   type="button"
                   tabIndex={-1}
                   className="line-gutter"
-                  title={`Add line ${lineNum} to the group field`}
+                  title={`Click to add line ${lineNum} to the group field, or drag to make a group`}
+                  onPointerDown={(e) => { if (e.button === 0) setDrag({ from: lineNum, to: lineNum }); }}
                   onClick={() => onLineClick(lineNum)}
                 >
                   <span className="line-group-marker">{groupNums ? groupNums.join(",") : ""}</span>
@@ -197,6 +258,7 @@ function PreviewPanel({
             <div aria-hidden style={{ height: bottomPad }} />
           )}
         </pre>
+        )}
       </div>
 
       <div className="status-bar">
