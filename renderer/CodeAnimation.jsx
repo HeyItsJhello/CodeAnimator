@@ -26,6 +26,7 @@ export function CodeAnimation({
   animationType = 'slide_left',
   font = 'default',
   language = 'python',
+  fileName = '',
 }) {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
@@ -43,7 +44,12 @@ export function CodeAnimation({
     lineGroups, initialFrames, lineFrames, pauseFrames,
   });
 
-  const layout = calculateLayout({ timeline, width, height, startLine, endLine });
+  // A small file-name label above the code, sized from the shorter side so
+  // landscape and portrait match.
+  const headerFontSize = Math.round(Math.min(width, height) * 0.028);
+  const headerH = fileName ? Math.round(headerFontSize * 2.6) : 0;
+
+  const layout = calculateLayout({ timeline, width, height, startLine, endLine, headerH });
 
   const scrollY = calculateScrollY({
     shouldScroll: layout.shouldScroll,
@@ -83,6 +89,25 @@ export function CodeAnimation({
           />
         ))}
       </div>
+      {fileName && (
+        // Drawn after the code with the same background so scrolled lines pass under it.
+        <div
+          style={{
+            position: 'absolute', top: 0, left: 0, right: 0,
+            height: headerH,
+            boxSizing: 'border-box',
+            padding: `0 ${layout.gutterPadLeft}px`, // lines up with the line numbers
+            display: 'flex', alignItems: 'center',
+            backgroundColor: syntaxColors.background || '#1e1e2e',
+            borderBottom: `${Math.max(1, Math.round(headerFontSize / 12))}px solid rgba(255, 255, 255, 0.08)`,
+            color: syntaxColors.comments || '#8899A6',
+            fontSize: headerFontSize,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}
+        >
+          {fileName}
+        </div>
+      )}
     </div>
   );
 }

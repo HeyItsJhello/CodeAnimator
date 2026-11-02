@@ -25,6 +25,7 @@ function PreviewPanel({
   activeTabId,
   onSelectTab,
   onCloseTab,
+  onAddSection,
   fileContent,
   highlightedLines,
   startLine,
@@ -115,12 +116,12 @@ function PreviewPanel({
                 className="editor-tab__name"
                 onClick={() => onSelectTab(tab.id)}
               >
-                {tab.fileName}
+                {tab.label}
               </button>
               <button
                 type="button"
                 className="editor-tab__close"
-                aria-label={`Close ${tab.fileName}`}
+                aria-label={`Close ${tab.label}`}
                 onClick={() => onCloseTab(tab.id)}
               >
                 ✕
@@ -129,9 +130,17 @@ function PreviewPanel({
           ))}
           <label htmlFor="file-upload" className="editor-tabs__add" title="Add files" aria-label="Add files">+</label>
         </div>
-        <button type="button" className="editor-tabs__action" onClick={onEditColors}>
-          Edit colors
-        </button>
+        <div className="editor-tabs__actions">
+          <button
+            type="button" className="editor-tabs__action" onClick={onAddSection}
+            title="Make another video from the lines after this one"
+          >
+            New section
+          </button>
+          <button type="button" className="editor-tabs__action" onClick={onEditColors}>
+            Edit colors
+          </button>
+        </div>
       </div>
 
       <div

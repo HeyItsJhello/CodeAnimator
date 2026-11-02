@@ -44,7 +44,15 @@ async function readDocument(file, settings) {
   };
 }
 
-// The open files, one tab each, every one with its own lines and settings.
+// Tab and video name. A file open in several tabs (one per section) gets
+// each tab's line range added so the videos can be told apart.
+export function documentLabel(doc, docs) {
+  const sections = docs.filter((d) => d.file === doc.file).length;
+  return sections > 1 ? `${doc.fileName} · ${doc.startLine}–${doc.endLine}` : doc.fileName;
+}
+
+// The open files, one tab per video. A file can be open in several tabs,
+// each covering its own section of lines.
 export function useDocuments() {
   const [docs,     setDocs]     = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -59,6 +67,21 @@ export function useDocuments() {
     const added = await Promise.all(files.map((file) => readDocument(file, settings)));
     setDocs((prev) => [...prev, ...added]);
     setActiveId(added[0].id);
+  }, [active]);
+
+  // Opens another tab of the active file, for a separate video of the lines
+  // after the active tab's section. Settings carry over; groups start empty.
+  const addSection = useCallback(() => {
+    if (!active.id) return;
+    const startLine = active.endLine < active.totalLines ? active.endLine + 1 : 1;
+    const section = {
+      ...active, id: nextId++, startLine, endLine: active.totalLines, lineGroups: [], currentGroup: '',
+    };
+    setDocs((prev) => {
+      const index = prev.findIndex((d) => d.id === active.id);
+      return [...prev.slice(0, index + 1), section, ...prev.slice(index + 1)];
+    });
+    setActiveId(section.id);
   }, [active]);
 
   const closeDocument = useCallback((id) => {
@@ -82,5 +105,5 @@ export function useDocuments() {
     setActiveId(null);
   }, []);
 
-  return { docs, active, activeId, setActiveId, addFiles, closeDocument, setField, clear };
+  return { docs, active, activeId, setActiveId, addFiles, addSection, closeDocument, setField, clear };
 }

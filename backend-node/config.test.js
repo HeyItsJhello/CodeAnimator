@@ -115,5 +115,6 @@ test('toRenderProps applies defaults and structures groups', () => {
     lineGroups: [{ lines: [2], lineCount: 1 }, { lines: [1, 3], lineCount: 2 }],
     syntaxColors: {}, animationTiming: {}, animationType: 'slide_left',
     font: 'default', orientation: 'landscape', quality: 'standard', language: 'gdscript',
+    fileName: 'x.gd',
   });
 });

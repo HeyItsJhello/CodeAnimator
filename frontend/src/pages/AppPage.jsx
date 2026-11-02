@@ -4,7 +4,7 @@ import "../App.css";
 
 import { API_URL, DEFAULT_TIMING, DEFAULT_TIMING_STR, FONT_OPTIONS, QUALITY_OPTIONS } from "../config/constants";
 import { getTokenPatterns, tokenizeLine } from "../config/tokenizer";
-import { useDocuments }         from "../hooks/useDocuments";
+import { useDocuments, documentLabel } from "../hooks/useDocuments";
 import { useLineGroups, toApiGroups } from "../hooks/useLineGroups";
 import { useRender }            from "../hooks/useRender";
 
@@ -115,7 +115,7 @@ function AppPage() {
   const closeModal = () => setModal(null);
 
   const {
-    docs, active: doc, activeId, setActiveId, addFiles, closeDocument, setField, clear,
+    docs, active: doc, activeId, setActiveId, addFiles, addSection, closeDocument, setField, clear,
   } = useDocuments();
   const {
     file, fileName, fileContent, totalLines, startLine, endLine, lineGroups, currentGroup,
@@ -141,7 +141,7 @@ function AppPage() {
     if (missing.length > 0) {
       alert(targets.length === 1
         ? "Please add at least one line group"
-        : `Add at least one line group to: ${missing.map((d) => d.fileName).join(", ")}`);
+        : `Add at least one line group to: ${missing.map((d) => documentLabel(d, docs)).join(", ")}`);
       setActiveId(missing[0].id);
       return false;
     }
@@ -150,7 +150,7 @@ function AppPage() {
 
   // Each document becomes the same request a single render sends.
   const toJob = (d) => ({
-    fileName: d.fileName,
+    fileName: documentLabel(d, docs),
     file:     d.file,
     config: {
       scriptPath:      d.fileName,
@@ -284,8 +284,8 @@ function AppPage() {
         <section className="editor" aria-label="Code preview">
           {fileContent ? (
             <PreviewPanel
-              tabs={docs} activeTabId={activeId}
-              onSelectTab={setActiveId} onCloseTab={closeDocument}
+              tabs={docs.map((d) => ({ id: d.id, label: documentLabel(d, docs) }))} activeTabId={activeId}
+              onSelectTab={setActiveId} onCloseTab={closeDocument} onAddSection={addSection}
               fileContent={fileContent}
               highlightedLines={highlightedLines}
               startLine={startLine} endLine={endLine}

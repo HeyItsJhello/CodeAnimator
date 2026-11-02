@@ -100,6 +100,7 @@ export function toRenderProps(fileContent, config, filename) {
     orientation:     config.orientation     || 'landscape',
     quality:         config.quality         || 'standard',
     language:        detectLanguage(filename),
+    fileName:        filename || '',
   };
 }
 

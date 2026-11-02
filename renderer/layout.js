@@ -23,10 +23,11 @@ export function visualLen(str) {
   return col;
 }
 
-export function calculateLayout({ timeline, width, height, startLine, endLine }) {
+// headerH is the band reserved above the code for the file name (0 for none).
+export function calculateLayout({ timeline, width, height, startLine, endLine, headerH = 0 }) {
   const vPad   = Math.round(height * 0.03);
   const hPad   = Math.round(width * 0.02);
-  const availH = height - vPad * 2;
+  const availH = height - headerH - vPad * 2;
   const availW = width - hPad * 2;
 
   const gutterChars = String(endLine).length;
@@ -55,8 +56,8 @@ export function calculateLayout({ timeline, width, height, startLine, endLine })
     + gutterPadLeft + gutterPadRight;
 
   const topOffset = shouldScroll
-    ? vPad
-    : Math.round((height - lineSpan * lineHeight) / 2);
+    ? headerH + vPad
+    : headerH + Math.round((height - headerH - lineSpan * lineHeight) / 2);
 
   return {
     fontSize, lineHeight, topOffset, shouldScroll,
