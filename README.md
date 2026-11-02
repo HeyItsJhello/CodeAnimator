@@ -10,7 +10,7 @@ Originally built for Godot / Xogot showcases: editing in line after line of code
 ![Remotion](https://img.shields.io/badge/Remotion-0B84F3?style=for-the-badge)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
-Try it at https://codemation.dev/
+Try an early deployment at https://codemation.dev/
 
 https://github.com/user-attachments/assets/ed7b0d6c-e840-499b-a7b9-a5f8b1194bd0
 
